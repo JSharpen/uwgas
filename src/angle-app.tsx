@@ -6,7 +6,6 @@
 // (wizard, presets, dual calibration, etc.) can be layered back
 // on top of this stable foundation.
 
-import * as React from 'react';
 
 // =============== Helpers ===============
 
@@ -47,9 +46,9 @@ function _load<T>(k: string, def: T): T {
 
 // =============== Core Types ===============
 
-export type BaseSide = 'rear' | 'front';
+type BaseSide = 'rear' | 'front';
 
-export type Wheel = {
+type Wheel = {
   id: string;
   name: string;
   D: number; // effective diameter
@@ -58,26 +57,26 @@ export type Wheel = {
   isHoning: boolean;
 };
 
-export type SessionStep = {
+type SessionStep = {
   id: string;
   wheelId: string;
   base: BaseSide;
   angleOffset: number; // Δβ at step level
 };
 
-export type SessionPreset = {
+type SessionPreset = {
   id: string;
   name: string;
   description?: string;
   steps: SessionStep[];
 };
 
-export type MachineConstants = {
+type MachineConstants = {
   rear: { hc: number; o: number };
   front: { hc: number; o: number };
 };
 
-export type MachineConfig = {
+type MachineConfig = {
   id: string;
   name: string;
   constants: MachineConstants;
@@ -85,7 +84,7 @@ export type MachineConfig = {
   jigDiameter: number;   // Dj for this machine
 };
 
-export type GlobalState = {
+type GlobalState = {
   projection: number; // A
   usbDiameter: number; // Ds
   targetAngle: number; // β per side
@@ -139,7 +138,7 @@ const DEFAULT_WHEELS: Wheel[] = [
 
 // =============== Ton/Dutchman Math Core ===============
 
-export type TonInput = {
+type TonInput = {
   base: BaseSide; // which base we reference hn to
   D: number; // wheel diameter (dw)
   A: number; // projection (A)
@@ -151,13 +150,13 @@ export type TonInput = {
   angleOffsetDeg?: number; // per‑wheel or per‑step Δβ
 };
 
-export type TonOutput = {
+type TonOutput = {
   hr: number; // wheel → USB top (rear reference)
   hn: number; // datum → USB top (chosen base)
   betaEffDeg: number; // effective grinding angle
 };
 
-export function computeTonHeights(input: TonInput): TonOutput {
+function computeTonHeights(input: TonInput): TonOutput {
   const {
     base,
     D,
@@ -207,7 +206,7 @@ export function computeTonHeights(input: TonInput): TonOutput {
 
 // =============== Session + Results Model ===============
 
-export type WheelResult = {
+type WheelResult = {
   wheel: Wheel;
   baseForHn: BaseSide;
   orientationLabel: string;
@@ -217,7 +216,7 @@ export type WheelResult = {
   step?: SessionStep;
 };
 
-export function computeWheelResults(
+function computeWheelResults(
   wheels: Wheel[],
   sessionSteps: SessionStep[] | null,
   global: GlobalState,
@@ -435,7 +434,7 @@ function estimateMaxAngleErrorDeg(
 
 // =============== React App ===============
 
-export default function App() {
+function App() {
   const [global, setGlobal] = React.useState<GlobalState>(() =>
     _load('t_global', DEFAULT_GLOBAL)
   );
