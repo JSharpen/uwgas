@@ -9,6 +9,9 @@
   <meta name="theme-color" content="#000000" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  
+  <!-- 🔗 Link the manifest -->
+  <link rel="manifest" href="./manifest.webmanifest" />
 
   <!-- ✅ Tailwind CSS (Play CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -55,14 +58,16 @@
 
     <!-- Mount the App component -->
     <script type="text/babel" data-presets="typescript,react">
-      console.log("Index bootstrap running");
-
       const rootEl = document.getElementById('root');
       const root = ReactDOM.createRoot(rootEl);
-
-      // App is defined globally in angle-app.tsx
-      console.log("App is:", typeof App);
       root.render(<App />);
+    </script>
+
+    <!-- Register a very simple service worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(console.error);
+      }
     </script>
   </body>
 </html>
