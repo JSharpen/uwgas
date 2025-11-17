@@ -1,0 +1,482 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tormek Base Calibration Wizard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 1rem;
+      background: #050507;
+      color: #f5f5f5;
+    }
+    .card {
+      max-width: 640px;
+      margin: 0 auto;
+      background: #111218;
+      border-radius: 12px;
+      padding: 1rem 1.25rem 1.5rem;
+      border: 1px solid #2c2f3a;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+    }
+    h1 {
+      font-size: 1.1rem;
+      margin: 0 0 0.25rem;
+    }
+    p {
+      font-size: 0.8rem;
+      line-height: 1.4;
+      color: #d0d3dd;
+    }
+    .row {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .field {
+      flex: 1 1 120px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    label {
+      font-size: 0.75rem;
+      color: #e0e3f0;
+    }
+    input, select {
+      font-size: 0.8rem;
+      padding: 0.35rem 0.45rem;
+      border-radius: 6px;
+      border: 1px solid #333746;
+      background: #05060a;
+      color: #f5f5f5;
+      outline: none;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    input:focus, select:focus {
+      border-color: #27c29d;
+      box-shadow: 0 0 0 1px #27c29d55;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.4rem;
+      font-size: 0.75rem;
+    }
+    th, td {
+      padding: 0.25rem 0.3rem;
+      text-align: left;
+    }
+    th {
+      font-weight: 500;
+      color: #c3c7d9;
+      border-bottom: 1px solid #333746;
+    }
+    tr:nth-child(even) td {
+      background: #10111a;
+    }
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+    button {
+      font-size: 0.8rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      background: #1f9f7a;
+      color: #fff;
+      font-weight: 500;
+    }
+    button.secondary {
+      background: #111218;
+      border-color: #3a3f52;
+      color: #e6e8f2;
+    }
+    button:active {
+      transform: translateY(1px);
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+      transform: none;
+    }
+    .error {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: #ff6b7a;
+    }
+    .results {
+      margin-top: 0.75rem;
+      padding: 0.6rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid #333746;
+      background: #080910;
+      font-size: 0.78rem;
+    }
+    .mono {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .tagline {
+      font-size: 0.68rem;
+      color: #8f93a8;
+      margin-bottom: 0.4rem;
+    }
+    .hint {
+      font-size: 0.7rem;
+      color: #9ea3bc;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      background: #171926;
+      border: 1px solid #32364a;
+      color: #c3c7d9;
+    }
+    .base-select {
+      display: flex;
+      gap: 0.75rem;
+      font-size: 0.72rem;
+      margin-top: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .base-select label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      font-size: 0.72rem;
+      color: #d0d3dd;
+    }
+    @media (max-width: 480px) {
+      .card {
+        padding: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Tormek Base Calibration Wizard</h1>
+    <div class="tagline">
+      Solve <span class="mono">hc</span> and <span class="mono">o</span> from datum→USB heights and axle↔USB spans.
+    </div>
+    <p>
+      Use a rigid datum (e.g. machine case top), measure:
+      <br />
+      • <span class="mono">hₙ</span>: datum → USB <b>top</b> (mm)
+      <br />
+      • <span class="mono">CAo</span>: outer-to-outer span <span class="mono">|O______O|</span> between axle and USB (mm)
+      <br />
+      at 3–5 different USB heights.
+      The wizard solves <span class="mono">hc</span> and <span class="mono">o</span> for the selected base and reports residual error.
+    </p>
+
+    <div class="row">
+      <div class="field">
+        <label>Base to calibrate</label>
+        <div class="base-select">
+          <label><input type="radio" name="base" value="rear" checked /> Rear base</label>
+          <label><input type="radio" name="base" value="front" /> Front base</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="daInput">Axle diameter Dₐ (mm)</label>
+        <input type="number" id="daInput" inputmode="decimal" value="12" />
+        <div class="hint">Default 12 mm for Tormek main shaft.</div>
+      </div>
+      <div class="field">
+        <label for="dsInput">USB diameter Dₛ (mm)</label>
+        <input type="number" id="dsInput" inputmode="decimal" value="12" />
+        <div class="hint">Measure your USB with calipers (e.g. ~12 mm).</div>
+      </div>
+      <div class="field">
+        <label for="countSelect">Number of measurements</label>
+        <select id="countSelect">
+          <option value="3">3 (fast)</option>
+          <option value="4" selected>4 (recommended)</option>
+          <option value="5">5 (robust)</option>
+        </select>
+        <div class="hint">Rows beyond this are ignored.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:0.75rem;">
+      <div class="pill">
+        Measurement table
+      </div>
+      <div class="hint" style="margin-top:0.3rem;">
+        For each USB position, record <span class="mono">hₙ</span> and <span class="mono">CAo</span>.
+        The wizard converts to centre distance: <span class="mono">CA = CAo − (Dₐ/2 + Dₛ/2)</span>.
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>hₙ (datum → USB top, mm)</th>
+            <th>CAo (outer span axle↔USB, mm)</th>
+          </tr>
+        </thead>
+        <tbody id="measBody">
+          <tr>
+            <td>1</td>
+            <td><input type="number" inputmode="decimal" data-role="hn" data-index="0" /></td>
+            <td><input type="number" inputmode="decimal" data-role="CAo" data-index="0" /></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><input type="number" inputmode="decimal" data-role="hn" data-index="1" /></td>
+            <td><input type="number" inputmode="decimal" data-role="CAo" data-index="1" /></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><input type="number" inputmode="decimal" data-role="hn" data-index="2" /></td>
+            <td><input type="number" inputmode="decimal" data-role="CAo" data-index="2" /></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><input type="number" inputmode="decimal" data-role="hn" data-index="3" /></td>
+            <td><input type="number" inputmode="decimal" data-role="CAo" data-index="3" /></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><input type="number" inputmode="decimal" data-role="hn" data-index="4" /></td>
+            <td><input type="number" inputmode="decimal" data-role="CAo" data-index="4" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="btn-row">
+      <button id="solveBtn">Solve hc &amp; o</button>
+      <button id="clearBtn" class="secondary">Clear measurements</button>
+    </div>
+
+    <div id="errorBox" class="error" style="display:none;"></div>
+    <div id="resultBox" class="results" style="display:none;"></div>
+  </div>
+
+  <script>
+    function nz(v, fallback) {
+      var n = Number(v);
+      return isFinite(n) ? n : fallback;
+    }
+
+    function calibrateBase(rows, Da, Ds) {
+      var Ra = Da / 2;
+      var Rs = Ds / 2;
+
+      var CA = [];
+      var hn = [];
+
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        var hn_i = Number(row.hn);
+        var CAo_i = Number(row.CAo);
+        if (!isFinite(hn_i) || !isFinite(CAo_i)) continue;
+        var CA_i = CAo_i - Ra - Rs;
+        CA.push(CA_i);
+        hn.push(hn_i);
+      }
+
+      var N = CA.length;
+      if (N < 2) return null;
+
+      var hn1 = hn[0];
+      var CA1 = CA[0];
+      var tValues = [];
+
+      for (var j = 1; j < N; j++) {
+        var hni = hn[j];
+        var CAi = CA[j];
+        if (Math.abs(hni - hn1) < 1e-9) continue;
+
+        var num = (CA1 * CA1 - CAi * CAi) - (hn1 * hn1 - hni * hni);
+        var den = 2 * (hn1 - hni);
+        tValues.push(num / den);
+      }
+
+      if (!tValues.length) return null;
+
+      var tSum = 0;
+      for (var k = 0; k < tValues.length; k++) {
+        tSum += tValues[k];
+      }
+      var t = tSum / tValues.length;
+
+      var hc = t + Rs;
+
+      var O2Values = [];
+      for (var m = 0; m < N; m++) {
+        var y = hn[m] + t;
+        var O2_i = CA[m] * CA[m] - y * y;
+        if (O2_i > 0) O2Values.push(O2_i);
+      }
+      if (!O2Values.length) return null;
+
+      var O2sum = 0;
+      for (var p = 0; p < O2Values.length; p++) {
+        O2sum += O2Values[p];
+      }
+      var O2mean = O2sum / O2Values.length;
+      var o = Math.sqrt(O2mean);
+
+      var residuals = [];
+      var maxAbsResidualMm = 0;
+      for (var r = 0; r < N; r++) {
+        var underRoot = CA[r] * CA[r] - o * o;
+        var y2 = Math.sqrt(Math.max(underRoot, 0));
+        var predHn = y2 - hc + Rs;
+        var res = hn[r] - predHn;
+        residuals.push(res);
+        if (Math.abs(res) > maxAbsResidualMm) {
+          maxAbsResidualMm = Math.abs(res);
+        }
+      }
+
+      return { hc: hc, o: o, diagnostics: { residuals: residuals, maxAbsResidualMm: maxAbsResidualMm } };
+    }
+
+    var measBody = document.getElementById("measBody");
+    var countSelect = document.getElementById("countSelect");
+    var solveBtn = document.getElementById("solveBtn");
+    var clearBtn = document.getElementById("clearBtn");
+    var errorBox = document.getElementById("errorBox");
+    var resultBox = document.getElementById("resultBox");
+
+    function updateRowEnabled() {
+      var count = Number(countSelect.value);
+      var inputs = measBody.querySelectorAll("input");
+      for (var i = 0; i < inputs.length; i++) {
+        var input = inputs[i];
+        var idx = Number(input.getAttribute("data-index") || "0");
+        var row = input.parentElement.parentElement;
+        if (idx < count) {
+          input.disabled = false;
+          row.style.opacity = "1";
+        } else {
+          input.disabled = true;
+          input.value = "";
+          row.style.opacity = "0.35";
+        }
+      }
+    }
+
+    countSelect.addEventListener("change", updateRowEnabled);
+
+    solveBtn.addEventListener("click", function () {
+      errorBox.style.display = "none";
+      resultBox.style.display = "none";
+      errorBox.textContent = "";
+      resultBox.textContent = "";
+
+      var Da = nz(document.getElementById("daInput").value, NaN);
+      var Ds = nz(document.getElementById("dsInput").value, NaN);
+      var count = Number(countSelect.value || "3");
+      var baseRadio = document.querySelector('input[name="base"]:checked');
+      var base = baseRadio ? baseRadio.value : "rear";
+
+      if (!isFinite(Da) || Da <= 0 || !isFinite(Ds) || Ds <= 0) {
+        errorBox.textContent = "Please enter valid diameters for Dₐ and Dₛ.";
+        errorBox.style.display = "block";
+        return;
+      }
+
+      var rows = [];
+      var inputs = measBody.querySelectorAll("input");
+      for (var i = 0; i < count; i++) {
+        var hnInput = null;
+        var caoInput = null;
+
+        for (var j = 0; j < inputs.length; j++) {
+          var el = inputs[j];
+          var role = el.getAttribute("data-role");
+          var idx = Number(el.getAttribute("data-index") || "0");
+          if (idx === i && role === "hn") hnInput = el;
+          if (idx === i && role === "CAo") caoInput = el;
+        }
+
+        rows.push({
+          hn: hnInput ? hnInput.value.trim() : "",
+          CAo: caoInput ? caoInput.value.trim() : ""
+        });
+      }
+
+      var validPairs = 0;
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].hn !== "" && rows[i].CAo !== "") {
+          validPairs++;
+        }
+      }
+      if (validPairs < 2) {
+        errorBox.textContent = "Enter at least two rows where both hₙ and CAo are filled with numbers.";
+        errorBox.style.display = "block";
+        return;
+      }
+
+      var result = calibrateBase(rows, Da, Ds);
+      if (!result) {
+        errorBox.textContent =
+          "Calibration failed. Check that at least two rows have valid numbers and that the measurements vary.";
+        errorBox.style.display = "block";
+        return;
+      }
+
+      var hc = result.hc;
+      var o = result.o;
+      var maxRes = result.diagnostics.maxAbsResidualMm;
+
+      var html = "";
+      html += "<div>Base: <span class='mono'>" + (base === "rear" ? "rear" : "front") + "</span></div>";
+      html += "<div style='margin-top:0.25rem;'>Solved constants:</div>";
+      html += "<div class='mono' style='margin-top:0.15rem;'>";
+      html += "hc = " + hc.toFixed(3) + " mm";
+      html += " &nbsp;&nbsp; o = " + o.toFixed(3) + " mm";
+      html += "</div>";
+      html += "<div style='margin-top:0.35rem;'>Diagnostic:</div>";
+      html += "<div class='mono' style='margin-top:0.15rem;'>";
+      html += "max |residual hₙ| ≈ " + maxRes.toFixed(3) + " mm";
+      html += "</div>";
+      html += "<div class='hint' style='margin-top:0.3rem;'>";
+      html += "Residual is measured minus modelled hₙ. Values &lt; 0.05 mm are excellent; 0.05–0.10 mm are good. ";
+      html += "If &gt; 0.10 mm, consider re-measuring.";
+      html += "</div>";
+
+      resultBox.innerHTML = html;
+      resultBox.style.display = "block";
+    });
+
+    clearBtn.addEventListener("click", function () {
+      var inputs = measBody.querySelectorAll("input");
+      for (var i = 0; i < inputs.length; i++) {
+        inputs[i].value = "";
+      }
+      errorBox.style.display = "none";
+      resultBox.style.display = "none";
+      errorBox.textContent = "";
+      resultBox.textContent = "";
+    });
+
+    // Initialize row enable state on load
+    updateRowEnabled();
+  </script>
+</body>
+</html>

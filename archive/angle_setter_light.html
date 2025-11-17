@@ -1,0 +1,738 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tormek Angle Setter – Lightweight v2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 1rem;
+      background: #050507;
+      color: #f5f5f5;
+    }
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .card {
+      background: #111218;
+      border-radius: 12px;
+      padding: 0.9rem 1rem 1.1rem;
+      border: 1px solid #2c2f3a;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+    }
+    h1 {
+      font-size: 1.15rem;
+      margin: 0 0 0.25rem;
+    }
+    h2 {
+      font-size: 0.95rem;
+      margin: 0 0 0.4rem;
+    }
+    p {
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: #d0d3dd;
+      margin: 0.1rem 0 0.4rem;
+    }
+    .row {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .field {
+      flex: 1 1 130px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    label {
+      font-size: 0.75rem;
+      color: #e0e3f0;
+    }
+    input, select {
+      font-size: 0.8rem;
+      padding: 0.35rem 0.45rem;
+      border-radius: 6px;
+      border: 1px solid #333746;
+      background: #05060a;
+      color: #f5f5f5;
+      outline: none;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    input[type="number"] {
+      text-align: right;
+    }
+    input:focus, select:focus {
+      border-color: #27c29d;
+      box-shadow: 0 0 0 1px #27c29d55;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.4rem;
+      font-size: 0.75rem;
+    }
+    th, td {
+      padding: 0.25rem 0.3rem;
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      font-weight: 500;
+      color: #c3c7d9;
+      border-bottom: 1px solid #333746;
+    }
+    tr:nth-child(even) td {
+      background: #10111a;
+    }
+    .hint {
+      font-size: 0.7rem;
+      color: #9ea3bc;
+    }
+    .mono {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    button {
+      font-size: 0.8rem;
+      padding: 0.35rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      background: #1f9f7a;
+      color: #fff;
+      font-weight: 500;
+    }
+    button.secondary {
+      background: #111218;
+      border-color: #3a3f52;
+      color: #e6e8f2;
+    }
+    button.danger {
+      background: #4b1115;
+      border-color: #b0232e;
+    }
+    button:active {
+      transform: translateY(1px);
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+      transform: none;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      background: #171926;
+      border: 1px solid #32364a;
+      color: #c3c7d9;
+    }
+    .error {
+      color: #ff6b7a;
+      font-size: 0.75rem;
+      margin-top: 0.3rem;
+    }
+    .wheels-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+    .wheel-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      margin-top: 0.35rem;
+    }
+    .wheel-card {
+      border-radius: 10px;
+      border: 1px solid #2f3244;
+      padding: 0.6rem 0.65rem 0.65rem;
+      background: #0b0c14;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .wheel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .wheel-name {
+      flex: 1;
+    }
+    .wheel-orientation {
+      font-size: 0.68rem;
+      color: #b4b7c8;
+      text-align: right;
+    }
+    .wheel-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+    .wheel-field {
+      flex: 1 1 110px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .wheel-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      font-size: 0.72rem;
+    }
+    .metric {
+      flex: 1 1 80px;
+    }
+    .metric-label {
+      color: #9ea3bc;
+    }
+    .metric-value {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+    }
+    .small-label {
+      font-size: 0.72rem;
+      color: #d0d3dd;
+    }
+    @media (max-width: 720px) {
+      .card {
+        padding: 0.8rem 0.8rem 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>Tormek Angle Setter (Lightweight)</h1>
+      <p>
+        Multi-wheel USB height calculator using Ton/Dutchman geometry.
+        Enter your projection, angle and base constants; wheel cards update automatically.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Global geometry</h2>
+      <div class="row">
+        <div class="field">
+          <label for="projectionInput">Projection A (mm)</label>
+          <input type="number" id="projectionInput" inputmode="decimal" step="0.01" value="127.39" />
+          <div class="hint">Tip to USB contact. Use your normal jig projection.</div>
+        </div>
+        <div class="field">
+          <label for="angleInput">Target angle β (° per side)</label>
+          <input type="number" id="angleInput" inputmode="decimal" step="0.01" value="16" />
+          <div class="hint">Per-side edge angle.</div>
+        </div>
+        <div class="field">
+          <label for="usbInput">USB diameter Dₛ (mm)</label>
+          <input type="number" id="usbInput" inputmode="decimal" step="0.01" value="11.98" />
+          <div class="hint">Measured USB diameter.</div>
+        </div>
+        <div class="field">
+          <label for="jigInput">Jig diameter Dⱼ (mm)</label>
+          <input type="number" id="jigInput" inputmode="decimal" step="0.01" value="12" />
+          <div class="hint">E.g. SE-77 approx. 12 mm.</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:0.6rem;">
+        <div class="field">
+          <label><input type="checkbox" id="microBumpEnabled" /> Apply micro-bump (deburring)</label>
+          <div class="hint">Adds a small extra angle globally.</div>
+        </div>
+        <div class="field">
+          <label for="microBumpDeg">Micro-bump (°)</label>
+          <input type="number" id="microBumpDeg" inputmode="decimal" step="0.01" value="0.30" />
+          <div class="hint">Only used if enabled.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Base constants</h2>
+      <p class="hint">
+        Use your calibrated values for each base. <span class="mono">hc</span> is datum→USB centre offset; <span class="mono">o</span> is horizontal offset from wheel centre.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Base</th>
+            <th>hc (mm)</th>
+            <th>o (mm)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Rear</td>
+            <td><input type="number" id="rearHc" inputmode="decimal" step="0.01" value="29.00" /></td>
+            <td><input type="number" id="rearO" inputmode="decimal" step="0.01" value="50.00" /></td>
+          </tr>
+          <tr>
+            <td>Front</td>
+            <td><input type="number" id="frontHc" inputmode="decimal" step="0.01" value="51.33" /></td>
+            <td><input type="number" id="frontO" inputmode="decimal" step="0.01" value="131.69" /></td>
+          </tr>
+        </tbody>
+      </table>
+      <div id="constantsError" class="error" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <div class="wheels-header">
+        <div>
+          <h2>Wheels</h2>
+          <div class="hint">Each wheel can have its own angle offset, base for hₙ and honing flag.</div>
+        </div>
+        <button id="addWheelBtn" type="button">+ Add wheel</button>
+      </div>
+
+      <div id="wheelsList" class="wheel-list">
+        <!-- cards injected -->
+      </div>
+      <div class="hint" style="margin-top:0.4rem;">
+        hr: USB height from rear axle. hₙ: height at chosen base. β eff: geometrically resulting angle.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Math core ----------
+
+    function deg2rad(d) {
+      return (d * Math.PI) / 180;
+    }
+
+    function rad2deg(r) {
+      return (r * 180) / Math.PI;
+    }
+
+    function num(v, fallback) {
+      var n = Number(v);
+      return isFinite(n) ? n : fallback;
+    }
+
+    function computeTonHeights(input) {
+      var base = input.base;
+      var D = input.D;
+      var A = input.A;
+      var betaDeg = input.betaDeg;
+      var Dj = input.Dj;
+      var Ds = input.Ds;
+      var constants = input.constants;
+      var microBumpDeg = input.microBumpDeg || 0;
+      var angleOffsetDeg = input.angleOffsetDeg || 0;
+
+      var R = D / 2;
+      var K = A - Ds / 2;
+      var JC = Dj / 2;
+
+      if (K <= 0 || !isFinite(R) || !isFinite(K) || !isFinite(JC)) {
+        return { hr: NaN, hn: NaN, betaEffDeg: NaN };
+      }
+
+      var CG = Math.sqrt(K * K + JC * JC);
+      var phi = Math.atan(JC / K);
+
+      var betaTotalDeg = betaDeg + microBumpDeg + angleOffsetDeg;
+      var betaRad = deg2rad(betaTotalDeg);
+
+      var CA = Math.sqrt(CG * CG + R * R + 2 * CG * R * Math.sin(betaRad - phi));
+
+      var hr = (CA - R) + Ds / 2;
+
+      var baseConst = base === 'rear' ? constants.rear : constants.front;
+      var O = baseConst.o;
+      var hc = baseConst.hc;
+
+      var under = CA * CA - O * O;
+      if (under < 0) under = 0;
+      var y = Math.sqrt(under);
+
+      var hn = y - hc + Ds / 2;
+
+      var arg = (CA * CA - CG * CG - R * R) / (2 * CG * R);
+      if (arg < -1) arg = -1;
+      if (arg > 1) arg = 1;
+      var betaEffRad = Math.asin(arg) + phi;
+      var betaEffDeg = rad2deg(betaEffRad);
+
+      return { hr: hr, hn: hn, betaEffDeg: betaEffDeg };
+    }
+
+    // ---------- State ----------
+
+    var wheels = [
+      { id: 'sg-250', name: 'SG-250', D: 248.00, angleOffset: 0.00, baseForHn: 'rear', isHoning: false },
+      { id: 'df-250', name: 'DF-250', D: 248.00, angleOffset: 0.00, baseForHn: 'rear', isHoning: false },
+      { id: 'la-220', name: 'LA-220 (leather)', D: 215.00, angleOffset: 0.00, baseForHn: 'front', isHoning: true }
+    ];
+
+    function getGlobal() {
+      return {
+        projection: num(document.getElementById('projectionInput').value, 0),
+        targetAngle: num(document.getElementById('angleInput').value, 0),
+        usbDiameter: num(document.getElementById('usbInput').value, 0),
+        jigDiameter: num(document.getElementById('jigInput').value, 0),
+        microBumpEnabled: document.getElementById('microBumpEnabled').checked,
+        microBumpDeg: num(document.getElementById('microBumpDeg').value, 0)
+      };
+    }
+
+    function getConstants() {
+      var rearHc = num(document.getElementById('rearHc').value, NaN);
+      var rearO = num(document.getElementById('rearO').value, NaN);
+      var frontHc = num(document.getElementById('frontHc').value, NaN);
+      var frontO = num(document.getElementById('frontO').value, NaN);
+
+      var errorBox = document.getElementById('constantsError');
+      if (!isFinite(rearHc) || !isFinite(rearO) || !isFinite(frontHc) || !isFinite(frontO)) {
+        errorBox.textContent = 'All hc / o fields must be valid numbers.';
+        errorBox.style.display = 'block';
+        return null;
+      }
+      errorBox.style.display = 'none';
+      return {
+        rear: { hc: rearHc, o: rearO },
+        front: { hc: frontHc, o: frontO }
+      };
+    }
+
+    // ---------- Wheels rendering (cards) ----------
+
+    var wheelsList = document.getElementById('wheelsList');
+
+    function renderWheels() {
+      var global = getGlobal();
+      var constants = getConstants();
+      wheelsList.innerHTML = '';
+
+      for (var i = 0; i < wheels.length; i++) {
+        var w = wheels[i];
+        var hrRear = null;
+        var hBase = null;
+        var orientationLabel = '';
+
+        if (constants) {
+          var A = global.projection;
+          var Ds = global.usbDiameter;
+          var Dj = global.jigDiameter;
+          var beta = global.targetAngle;
+          var mb = global.microBumpEnabled ? global.microBumpDeg : 0;
+          var baseForHn = w.isHoning ? 'front' : w.baseForHn;
+
+          var commonInput = {
+            base: baseForHn,
+            D: num(w.D, 0),
+            A: A,
+            betaDeg: beta,
+            Dj: Dj,
+            Ds: Ds,
+            constants: constants,
+            microBumpDeg: mb,
+            angleOffsetDeg: num(w.angleOffset, 0)
+          };
+
+          hrRear = computeTonHeights({
+            base: 'rear',
+            D: commonInput.D,
+            A: commonInput.A,
+            betaDeg: commonInput.betaDeg,
+            Dj: commonInput.Dj,
+            Ds: commonInput.Ds,
+            constants: commonInput.constants,
+            microBumpDeg: commonInput.microBumpDeg,
+            angleOffsetDeg: commonInput.angleOffsetDeg
+          });
+
+          hBase = computeTonHeights(commonInput);
+
+          orientationLabel = baseForHn === 'rear'
+            ? 'Edge leading (rear base)'
+            : 'Edge trailing (front base)';
+          if (w.isHoning) {
+            orientationLabel += ' • honing';
+          }
+        }
+
+        appendWheelCard(w, i, hrRear, hBase, orientationLabel);
+      }
+    }
+
+    function appendWheelCard(w, index, hrRear, hBase, orientationLabel) {
+      var card = document.createElement('div');
+      card.className = 'wheel-card';
+
+      var header = document.createElement('div');
+      header.className = 'wheel-header';
+
+      var nameField = document.createElement('div');
+      nameField.className = 'wheel-name';
+
+      var nameLabel = document.createElement('div');
+      nameLabel.className = 'small-label';
+      nameLabel.textContent = 'Wheel name';
+      var nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.value = w.name;
+      nameInput.setAttribute('data-index', index);
+      nameInput.setAttribute('data-field', 'name');
+
+      nameField.appendChild(nameLabel);
+      nameField.appendChild(nameInput);
+
+      header.appendChild(nameField);
+
+      var orientationDiv = document.createElement('div');
+      orientationDiv.className = 'wheel-orientation';
+      orientationDiv.textContent = orientationLabel || '';
+      header.appendChild(orientationDiv);
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'secondary danger';
+      delBtn.textContent = 'Delete';
+      delBtn.setAttribute('data-index', index);
+      delBtn.setAttribute('data-action', 'deleteWheel');
+      header.appendChild(delBtn);
+
+      card.appendChild(header);
+
+      var row1 = document.createElement('div');
+      row1.className = 'wheel-row';
+
+      // Diameter
+      var dField = document.createElement('div');
+      dField.className = 'wheel-field';
+      var dLabel = document.createElement('div');
+      dLabel.className = 'small-label';
+      dLabel.textContent = 'Diameter D (mm)';
+      var dInput = document.createElement('input');
+      dInput.type = 'number';
+      dInput.inputMode = 'decimal';
+      dInput.step = '0.01';
+      dInput.value = w.D.toFixed(2);
+      dInput.setAttribute('data-index', index);
+      dInput.setAttribute('data-field', 'D');
+      dField.appendChild(dLabel);
+      dField.appendChild(dInput);
+      row1.appendChild(dField);
+
+      // Angle offset
+      var offField = document.createElement('div');
+      offField.className = 'wheel-field';
+      var offLabel = document.createElement('div');
+      offLabel.className = 'small-label';
+      offLabel.textContent = 'Angle offset Δβ (°)';
+      var offInput = document.createElement('input');
+      offInput.type = 'number';
+      offInput.inputMode = 'decimal';
+      offInput.step = '0.01';
+      offInput.value = w.angleOffset.toFixed(2);
+      offInput.setAttribute('data-index', index);
+      offInput.setAttribute('data-field', 'angleOffset');
+      offField.appendChild(offLabel);
+      offField.appendChild(offInput);
+      row1.appendChild(offField);
+
+      // Base for hn
+      var baseField = document.createElement('div');
+      baseField.className = 'wheel-field';
+      var baseLabel = document.createElement('div');
+      baseLabel.className = 'small-label';
+      baseLabel.textContent = 'Base for hₙ';
+      var sel = document.createElement('select');
+      sel.setAttribute('data-index', index);
+      sel.setAttribute('data-field', 'baseForHn');
+      var optRear = document.createElement('option');
+      optRear.value = 'rear';
+      optRear.textContent = 'Rear';
+      var optFront = document.createElement('option');
+      optFront.value = 'front';
+      optFront.textContent = 'Front';
+      sel.appendChild(optRear);
+      sel.appendChild(optFront);
+      sel.value = w.baseForHn === 'front' ? 'front' : 'rear';
+      baseField.appendChild(baseLabel);
+      baseField.appendChild(sel);
+      row1.appendChild(baseField);
+
+      // Honing
+      var honField = document.createElement('div');
+      honField.className = 'wheel-field';
+      var honLabel = document.createElement('div');
+      honLabel.className = 'small-label';
+      honLabel.textContent = 'Honing wheel?';
+      var honInput = document.createElement('input');
+      honInput.type = 'checkbox';
+      honInput.checked = !!w.isHoning;
+      honInput.setAttribute('data-index', index);
+      honInput.setAttribute('data-field', 'isHoning');
+      honField.appendChild(honLabel);
+      honField.appendChild(honInput);
+      row1.appendChild(honField);
+
+      card.appendChild(row1);
+
+      var metrics = document.createElement('div');
+      metrics.className = 'wheel-metrics';
+
+      var mHr = document.createElement('div');
+      mHr.className = 'metric';
+      var mHrLabel = document.createElement('div');
+      mHrLabel.className = 'metric-label';
+      mHrLabel.textContent = 'hr (rear axle)';
+      var mHrVal = document.createElement('div');
+      mHrVal.className = 'metric-value';
+      mHrVal.textContent = (hrRear && isFinite(hrRear.hr)) ? hrRear.hr.toFixed(2) : '–';
+      mHr.appendChild(mHrLabel);
+      mHr.appendChild(mHrVal);
+      metrics.appendChild(mHr);
+
+      var mHn = document.createElement('div');
+      mHn.className = 'metric';
+      var mHnLabel = document.createElement('div');
+      mHnLabel.className = 'metric-label';
+      mHnLabel.textContent = 'hₙ (base)';
+      var mHnVal = document.createElement('div');
+      mHnVal.className = 'metric-value';
+      mHnVal.textContent = (hBase && isFinite(hBase.hn)) ? hBase.hn.toFixed(2) : '–';
+      mHn.appendChild(mHnLabel);
+      mHn.appendChild(mHnVal);
+      metrics.appendChild(mHn);
+
+      var mBe = document.createElement('div');
+      mBe.className = 'metric';
+      var mBeLabel = document.createElement('div');
+      mBeLabel.className = 'metric-label';
+      mBeLabel.textContent = 'β eff (°)';
+      var mBeVal = document.createElement('div');
+      mBeVal.className = 'metric-value';
+      mBeVal.textContent = (hBase && isFinite(hBase.betaEffDeg)) ? hBase.betaEffDeg.toFixed(2) : '–';
+      mBe.appendChild(mBeLabel);
+      mBe.appendChild(mBeVal);
+      metrics.appendChild(mBe);
+
+      card.appendChild(metrics);
+
+      wheelsList.appendChild(card);
+    }
+
+    // ---------- Event handling ----------
+
+    wheelsList.addEventListener('change', function (ev) {
+      var target = ev.target;
+      if (!target || !target.getAttribute) return;
+
+      var action = target.getAttribute('data-action');
+      if (action === 'deleteWheel') {
+        var idxDel = Number(target.getAttribute('data-index') || '-1');
+        if (idxDel >= 0 && idxDel < wheels.length) {
+          wheels.splice(idxDel, 1);
+          renderWheels();
+        }
+        return;
+      }
+
+      var indexStr = target.getAttribute('data-index');
+      var field = target.getAttribute('data-field');
+      if (indexStr == null || field == null) return;
+      var index = Number(indexStr);
+      if (!(index >= 0 && index < wheels.length)) return;
+
+      if (field === 'name') {
+        wheels[index].name = target.value;
+      } else if (field === 'D') {
+        wheels[index].D = num(target.value, wheels[index].D);
+      } else if (field === 'angleOffset') {
+        wheels[index].angleOffset = num(target.value, wheels[index].angleOffset);
+      } else if (field === 'baseForHn') {
+        wheels[index].baseForHn = target.value === 'front' ? 'front' : 'rear';
+      } else if (field === 'isHoning') {
+        wheels[index].isHoning = target.checked;
+      }
+      renderWheels();
+    });
+
+    wheelsList.addEventListener('click', function (ev) {
+      var target = ev.target;
+      if (!target || !target.getAttribute) return;
+      var action = target.getAttribute('data-action');
+      if (action === 'deleteWheel') {
+        var idx = Number(target.getAttribute('data-index') || '-1');
+        if (idx >= 0 && idx < wheels.length) {
+          wheels.splice(idx, 1);
+          renderWheels();
+        }
+      }
+    });
+
+    // Global/base inputs re-render on change (not per keystroke for mobile comfort)
+    var globalInputs = [
+      'projectionInput',
+      'angleInput',
+      'usbInput',
+      'jigInput',
+      'microBumpEnabled',
+      'microBumpDeg',
+      'rearHc',
+      'rearO',
+      'frontHc',
+      'frontO'
+    ];
+    for (var i = 0; i < globalInputs.length; i++) {
+      var id = globalInputs[i];
+      var el = document.getElementById(id);
+      if (!el) continue;
+      el.addEventListener('change', function () {
+        renderWheels();
+      });
+    }
+
+    // Add wheel button
+    document.getElementById('addWheelBtn').addEventListener('click', function () {
+      var id = 'wheel-' + Date.now();
+      wheels.push({
+        id: id,
+        name: 'New wheel',
+        D: 250.00,
+        angleOffset: 0.00,
+        baseForHn: 'rear',
+        isHoning: false
+      });
+      renderWheels();
+    });
+
+    // Initial render
+    renderWheels();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1084 @@
+// Tormek USB Height Multi‑wheel Calculator – Rebuilt Baseline
+// -----------------------------------------------------------
+// This is a minimal, but fully working, single‑file React app
+// that restores core Ton/Dutchman math, wheel handling and a
+// basic UI so you can run and iterate again. Advanced features
+// (wizard, presets, dual calibration, etc.) can be layered back
+// on top of this stable foundation.
+
+import * as React from 'react';
+
+// =============== Helpers ===============
+
+function _nz(v: any, fallback = 0): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function deg2rad(d: number): number {
+  return (d * Math.PI) / 180;
+}
+
+function rad2deg(r: number): number {
+  return (r * 180) / Math.PI;
+}
+
+function _save(k: string, v: any) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(k, JSON.stringify(v));
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function _load<T>(k: string, def: T): T {
+  try {
+    if (typeof localStorage === 'undefined') return def;
+    const raw = localStorage.getItem(k);
+    if (!raw) return def;
+    const parsed = JSON.parse(raw);
+    return parsed as T;
+  } catch {
+    return def;
+  }
+}
+
+// =============== Core Types ===============
+
+export type BaseSide = 'rear' | 'front';
+
+export type Wheel = {
+  id: string;
+  name: string;
+  D: number; // effective diameter
+  angleOffset: number; // Δβ at wheel level (default)
+  baseForHn: BaseSide; // default base for this wheel
+  isHoning: boolean;
+};
+
+export type SessionStep = {
+  id: string;
+  wheelId: string;
+  base: BaseSide;
+  angleOffset: number; // Δβ at step level
+};
+
+export type SessionPreset = {
+  id: string;
+  name: string;
+  description?: string;
+  steps: SessionStep[];
+};
+
+export type MachineConstants = {
+  rear: { hc: number; o: number };
+  front: { hc: number; o: number };
+};
+
+export type MachineConfig = {
+  id: string;
+  name: string;
+  constants: MachineConstants;
+  usbDiameter: number;   // Ds for this machine
+  jigDiameter: number;   // Dj for this machine
+};
+
+export type GlobalState = {
+  projection: number; // A
+  usbDiameter: number; // Ds
+  targetAngle: number; // β per side
+  jig: { Dj: number }; // jig diameter
+  microBump: { enabled: boolean; bumpDeg: number };
+};
+
+
+// =============== Defaults ===============
+
+const DEFAULT_GLOBAL: GlobalState = {
+  projection: 127.39,
+  usbDiameter: 11.98,
+  targetAngle: 16,
+  jig: { Dj: 12 },
+  microBump: { enabled: false, bumpDeg: 0 },
+};
+
+const DEFAULT_CONSTANTS: MachineConstants = {
+  // These are "reasonable" T8‑like defaults and can be edited in UI
+  rear: { hc: 29.0, o: 50.0 },
+  front: { hc: 51.3, o: 131.7 },
+};
+
+const DEFAULT_WHEELS: Wheel[] = [
+  {
+    id: 'sg-250',
+    name: 'SG‑250',
+    D: 248.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+  {
+    id: 'df-250',
+    name: 'DF‑250',
+    D: 248.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+  {
+    id: 'la-220',
+    name: 'LA‑220 (leather)',
+    D: 215.0,
+    angleOffset: 0,
+    baseForHn: 'front',
+    isHoning: true,
+  },
+];
+
+// =============== Ton/Dutchman Math Core ===============
+
+export type TonInput = {
+  base: BaseSide; // which base we reference hn to
+  D: number; // wheel diameter (dw)
+  A: number; // projection (A)
+  betaDeg: number; // target β (per side)
+  Dj: number; // jig diameter
+  Ds: number; // USB diameter
+  constants: MachineConstants;
+  microBumpDeg?: number; // optional additional angle bump
+  angleOffsetDeg?: number; // per‑wheel or per‑step Δβ
+};
+
+export type TonOutput = {
+  hr: number; // wheel → USB top (rear reference)
+  hn: number; // datum → USB top (chosen base)
+  betaEffDeg: number; // effective grinding angle
+};
+
+export function computeTonHeights(input: TonInput): TonOutput {
+  const {
+    base,
+    D,
+    A,
+    betaDeg,
+    Dj,
+    Ds,
+    constants,
+    microBumpDeg = 0,
+    angleOffsetDeg = 0,
+  } = input;
+
+  const R = D / 2; // wheel radius
+  const K = A - Ds / 2; // USB contact → apex
+  const JC = Dj / 2; // jig radius
+
+  const CG = Math.sqrt(K * K + JC * JC); // apex → USB centre
+  const phi = Math.atan(JC / K); // jig offset angle
+
+  const betaTotalDeg = betaDeg + microBumpDeg + angleOffsetDeg;
+  const betaRad = deg2rad(betaTotalDeg);
+
+  // Ton F9: CA = distance wheel centre ↔ USB centre
+  const CA = Math.sqrt(CG * CG + R * R + 2 * CG * R * Math.sin(betaRad - phi));
+
+  // hr: wheel → USB top, always referenced to rear wheel centre
+  const hr = (CA - R) + Ds / 2;
+
+  // Base offsets
+  const baseConst = base === 'rear' ? constants.rear : constants.front;
+  const O = baseConst.o;
+  const hc = baseConst.hc;
+
+  // Vertical coordinate of USB centre relative to axle
+  const y = Math.sqrt(Math.max(CA * CA - O * O, 0));
+
+  const hn = y - hc + Ds / 2;
+
+  // Inverse: effective β from geometry (for diagnostics)
+  const arg = (CA * CA - CG * CG - R * R) / (2 * CG * R);
+  const clamped = Math.max(-1, Math.min(1, arg));
+  const betaEffRad = Math.asin(clamped) + phi;
+  const betaEffDeg = rad2deg(betaEffRad);
+
+  return { hr, hn, betaEffDeg };
+}
+
+// =============== Session + Results Model ===============
+
+export type WheelResult = {
+  wheel: Wheel;
+  baseForHn: BaseSide;
+  orientationLabel: string;
+  betaEffDeg: number;
+  hrWheel: number;
+  hnBase: number;
+  step?: SessionStep;
+};
+
+export function computeWheelResults(
+  wheels: Wheel[],
+  sessionSteps: SessionStep[] | null,
+  global: GlobalState,
+  machine: MachineConfig
+): WheelResult[] {
+  const A = _nz(global.projection);
+  const Ds = _nz(machine.usbDiameter);
+  const Dj = _nz(machine.jigDiameter);
+  const beta = _nz(global.targetAngle);
+  const mb = global.microBump?.enabled ? _nz(global.microBump.bumpDeg) : 0;
+  const items: { step?: SessionStep; wheel: Wheel }[] = [];
+
+  if (sessionSteps && sessionSteps.length) {
+    for (const step of sessionSteps) {
+      const w = wheels.find(wh => wh.id === step.wheelId);
+      if (!w) continue;
+      items.push({ step, wheel: w });
+    }
+  } else {
+    for (const w of wheels) {
+      items.push({ wheel: w });
+    }
+  }
+
+  return items.map(({ step, wheel }) => {
+    const baseForHn: BaseSide = wheel.isHoning
+      ? 'front'
+      : step?.base ?? wheel.baseForHn;
+
+    const common: TonInput = {
+      base: baseForHn,
+      D: _nz(wheel.D),
+      A,
+      betaDeg: beta,
+      Dj,
+      Ds,
+      constants: machine.constants,
+      microBumpDeg: mb,
+      angleOffsetDeg: _nz(step?.angleOffset ?? wheel.angleOffset),
+    };
+
+    const hrRear = computeTonHeights({ ...common, base: 'rear' });
+    const hBase = computeTonHeights(common);
+
+    const orientationLabel = baseForHn === 'rear'
+      ? 'Edge leading (rear base)'
+      : 'Edge trailing (front base)';
+
+    return {
+      wheel,
+      baseForHn,
+      orientationLabel,
+      betaEffDeg: hBase.betaEffDeg,
+      hrWheel: hrRear.hr,
+      hnBase: hBase.hn,
+      step,
+    };
+  });
+}
+
+// =============== Calibration Math (Single-base, wheel-less) ===============
+
+type CalibrationMeasurement = {
+  hn: string;  // datum → USB TOP (mm) as entered
+  CAo: string; // outer-to-outer span |O______O| between axle and USB (mm) as entered
+};
+
+type CalibrationDiagnostics = {
+  residuals: number[];
+  maxAbsResidualMm: number;
+};
+
+type CalibrationResult = {
+  hc: number;
+  o: number;
+  diagnostics: CalibrationDiagnostics;
+};
+
+/**
+ * Calibrate one base (rear or front) from 3–5 measurements.
+ * Uses only axle↔USB geometry, no wheel, no angle.
+ */
+function calibrateBase(
+  rows: CalibrationMeasurement[],
+  Da: number,
+  Ds: number
+): CalibrationResult | null {
+  const Ra = Da / 2;
+  const Rs = Ds / 2;
+
+  // Build numeric arrays, only keeping rows with both values present
+  const CA: number[] = [];
+  const hn: number[] = [];
+
+  for (const row of rows) {
+    const hn_i = _nz(row.hn, NaN);
+    const CAo_i = _nz(row.CAo, NaN);
+    if (!Number.isFinite(hn_i) || !Number.isFinite(CAo_i)) continue;
+    const CA_i = CAo_i - Ra - Rs; // centre-to-centre distance axle ↔ USB (outer-to-outer span |O______O|)
+    CA.push(CA_i);
+    hn.push(hn_i);
+  }
+
+  const N = CA.length;
+  if (N < 2) return null;
+
+  // 1) Estimate t = hc - Ds/2 using pairwise linear equations
+  const hn1 = hn[0];
+  const CA1 = CA[0];
+  const tValues: number[] = [];
+
+  for (let i = 1; i < N; i++) {
+    const hni = hn[i];
+    const CAi = CA[i];
+    if (Math.abs(hni - hn1) < 1e-9) continue; // avoid divide-by-zero
+
+    const num = (CA1 * CA1 - CAi * CAi) - (hn1 * hn1 - hni * hni);
+    const den = 2 * (hn1 - hni);
+    tValues.push(num / den);
+  }
+
+  if (!tValues.length) return null;
+
+  const t =
+    tValues.reduce((sum, v) => sum + v, 0) / tValues.length;
+
+  // 2) Recover hc
+  const hc = t + Rs; // Rs = Ds/2
+
+  // 3) Estimate O using all points
+  const O2Values: number[] = [];
+  for (let i = 0; i < N; i++) {
+    const y = hn[i] + t;
+    const O2_i = CA[i] * CA[i] - y * y;
+    if (O2_i > 0) O2Values.push(O2_i);
+  }
+  if (!O2Values.length) return null;
+
+  const O2mean =
+    O2Values.reduce((sum, v) => sum + v, 0) / O2Values.length;
+  const o = Math.sqrt(O2mean);
+
+  // 4) Diagnostics: residuals in hn (mm)
+  const residuals: number[] = [];
+  for (let i = 0; i < N; i++) {
+    const y = Math.sqrt(Math.max(CA[i] * CA[i] - o * o, 0));
+    const predHn = y - hc + Rs;
+    residuals.push(hn[i] - predHn); // measured - predicted
+  }
+  const maxAbsResidualMm = residuals.reduce(
+    (m, r) => Math.max(m, Math.abs(r)),
+    0
+  );
+
+  return { hc, o, diagnostics: { residuals, maxAbsResidualMm } };
+}
+
+/**
+ * Estimate worst-case angle error (deg) implied by a height residual, over
+ * the user's wheels, for a given base. Uses numeric ∂hn/∂β via Ton core.
+ */
+function estimateMaxAngleErrorDeg(
+  diagnostics: CalibrationDiagnostics,
+  base: BaseSide,
+  global: GlobalState,
+  machineLike: MachineConfig,
+  wheels: Wheel[]
+): number | null {
+  const maxRes = diagnostics.maxAbsResidualMm;
+  if (!Number.isFinite(maxRes) || maxRes <= 0) return null;
+
+  const A = _nz(global.projection);
+  const beta = _nz(global.targetAngle);
+  const Dj = machineLike.jigDiameter;
+  const Ds = machineLike.usbDiameter;
+
+  const candidateDs =
+    wheels.length > 0 ? wheels.map(w => _nz(w.D)) : [250, 215, 200];
+
+  let maxAngle = 0;
+
+  for (const D of candidateDs) {
+    if (!Number.isFinite(D) || D <= 0) continue;
+
+    const delta = 0.05; // small angle step in degrees
+    const baseInput: TonInput = {
+      base,
+      D,
+      A,
+      betaDeg: beta,
+      Dj,
+      Ds,
+      constants: machineLike.constants,
+    };
+
+    const hnPlus = computeTonHeights({
+      ...baseInput,
+      betaDeg: beta + delta,
+    }).hn;
+    const hnMinus = computeTonHeights({
+      ...baseInput,
+      betaDeg: beta - delta,
+    }).hn;
+
+    const dHn_dBeta = (hnPlus - hnMinus) / (2 * delta);
+    if (Math.abs(dHn_dBeta) < 1e-6) continue;
+
+    const angleErr = Math.abs(maxRes / dHn_dBeta);
+    if (angleErr > maxAngle) maxAngle = angleErr;
+  }
+
+  if (maxAngle === 0) return null;
+  return maxAngle;
+}
+
+// =============== React App ===============
+
+export default function App() {
+  const [global, setGlobal] = React.useState<GlobalState>(() =>
+    _load('t_global', DEFAULT_GLOBAL)
+  );
+  const [constants, setConstants] = React.useState<MachineConstants>(() =>
+    _load('t_constants', DEFAULT_CONSTANTS)
+  );
+  const [wheels, setWheels] = React.useState<Wheel[]>(() =>
+    _load('t_wheels', DEFAULT_WHEELS)
+  );
+  const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() => []);
+  const [view, setView] = React.useState<'calculator' | 'settings'>('calculator');
+  const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
+
+  // Calibration wizard state (single-base)
+  const [calibBase, setCalibBase] = React.useState<BaseSide>('rear');
+  const [calibDa, setCalibDa] = React.useState<number>(12); // axle diameter
+  const [calibDs, setCalibDs] = React.useState<number>(DEFAULT_GLOBAL.usbDiameter);
+  const [calibCount, setCalibCount] = React.useState<number>(4); // 3/4/5, default 4 (recommended)
+  const [calibRows, setCalibRows] = React.useState<CalibrationMeasurement[]>(() => []);
+  const [calibResult, setCalibResult] = React.useState<{
+    hc: number;
+    o: number;
+    diagnostics: CalibrationDiagnostics;
+    angleErrorDeg: number | null;
+  } | null>(null);
+  const [calibError, setCalibError] = React.useState<string | null>(null);
+
+  const activeMachine: MachineConfig = {
+    id: 'machine-1',
+    name: 'Default machine',
+    constants,
+    usbDiameter: global.usbDiameter,
+    jigDiameter: global.jig.Dj,
+  };
+
+  // Persist basic state
+  React.useEffect(() => {
+    _save('t_global', global);
+  }, [global]);
+
+  React.useEffect(() => {
+    _save('t_constants', constants);
+  }, [constants]);
+
+  React.useEffect(() => {
+    _save('t_wheels', wheels);
+  }, [wheels]);
+
+  const ensureCalibRowsLength = (count: number) => {
+    setCalibRows(prev => {
+      const next = [...prev];
+      while (next.length < count) {
+        next.push({ hn: '', CAo: '' });
+      }
+      return next;
+    });
+  };
+
+  const handleRunCalibration = () => {
+    setCalibError(null);
+    setCalibResult(null);
+
+    const Da = calibDa || 12;
+    const Ds = calibDs || global.usbDiameter;
+
+    const rowsToUse = calibRows.slice(0, calibCount);
+    const result = calibrateBase(rowsToUse, Da, Ds);
+    if (!result) {
+      setCalibError('Need at least two valid hn + CAo rows with numeric values.');
+      return;
+    }
+
+    const proposedConstants: MachineConstants = {
+      ...activeMachine.constants,
+      [calibBase]: {
+        hc: result.hc,
+        o: result.o,
+      },
+    } as MachineConstants;
+
+    const machineLike: MachineConfig = {
+      ...activeMachine,
+      constants: proposedConstants,
+    };
+
+    const angleErr = estimateMaxAngleErrorDeg(
+      result.diagnostics,
+      calibBase,
+      global,
+      machineLike,
+      wheels
+    );
+
+    setCalibResult({
+      hc: result.hc,
+      o: result.o,
+      diagnostics: result.diagnostics,
+      angleErrorDeg: angleErr,
+    });
+  };
+
+  const handleApplyCalibration = () => {
+    if (!calibResult) return;
+    setConstants(prev => ({
+      ...prev,
+      [calibBase]: {
+        ...prev[calibBase],
+        hc: calibResult.hc,
+        o: calibResult.o,
+      },
+    }) as MachineConstants);
+  };
+
+  const wheelResults = computeWheelResults(wheels, sessionSteps, global, activeMachine);
+
+  const updateWheel = (id: string, patch: Partial<Wheel>) => {
+    setWheels(prev => prev.map(w => (w.id === id ? { ...w, ...patch } : w)));
+  };
+
+  const addWheel = () => {
+    const id = `wheel-${Date.now()}`;
+    const w: Wheel = {
+      id,
+      name: 'New wheel',
+      D: 250,
+      angleOffset: 0,
+      baseForHn: 'rear',
+      isHoning: false,
+    };
+    setWheels(prev => [...prev, w]);
+  };
+
+  const deleteWheel = (id: string) => {
+    setWheels(prev => prev.filter(w => w.id !== id));
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
+      <h1 className="text-lg font-semibold">Tormek USB Height Calculator (Baseline)</h1>
+
+      <div className="flex gap-2 text-sm mb-2">
+        <button
+          type="button"
+          className={
+            "px-2 py-1 rounded border " +
+            (view === 'calculator'
+              ? "border-emerald-500 bg-emerald-900/40"
+              : "border-neutral-700 bg-neutral-900")
+          }
+          onClick={() => setView('calculator')}
+        >
+          Calculator
+        </button>
+        <button
+          type="button"
+          className={
+            "px-2 py-1 rounded border " +
+            (view === 'settings'
+              ? "border-emerald-500 bg-emerald-900/40"
+              : "border-neutral-700 bg-neutral-900")
+          }
+          onClick={() => setView('settings')}
+        >
+          Settings
+        </button>
+      </div>
+
+      {view === 'calculator' && (
+        <>
+          {/* Global controls */}
+          <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/40 flex flex-col gap-2 max-w-xl">
+            <h2 className="text-sm font-semibold text-neutral-200">Global setup</h2>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <label className="flex flex-col gap-1">
+                <span className="text-neutral-300">Projection A (mm)</span>
+                <input
+                  type="number"
+                  className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                  value={global.projection}
+                  onChange={e =>
+                    setGlobal(g => ({ ...g, projection: _nz(e.target.value, g.projection) }))
+                  }
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-neutral-300">Target angle β (°/side)</span>
+                <input
+                  type="number"
+                  className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                  value={global.targetAngle}
+                  onChange={e =>
+                    setGlobal(g => ({ ...g, targetAngle: _nz(e.target.value, g.targetAngle) }))
+                  }
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-neutral-300">USB diameter Ds (mm)</span>
+                <input
+                  type="number"
+                  className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                  value={global.usbDiameter}
+                  onChange={e =>
+                    setGlobal(g => ({ ...g, usbDiameter: _nz(e.target.value, g.usbDiameter) }))
+                  }
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-neutral-300">Jig diameter Dj (mm)</span>
+                <input
+                  type="number"
+                  className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                  value={global.jig.Dj}
+                  onChange={e =>
+                    setGlobal(g => ({ ...g, jig: { ...g.jig, Dj: _nz(e.target.value, g.jig.Dj) } }))
+                  }
+                />
+              </label>
+            </div>
+          </section>
+
+          {/* Wheels */}
+          <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/20 flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <h2 className="text-sm font-semibold text-neutral-200">Wheels</h2>
+              <button
+                type="button"
+                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
+                onClick={addWheel}
+              >
+                + Add wheel
+              </button>
+            </div>
+
+            <div className="grid gap-2 md:grid-cols-2">
+              {wheelResults.map(r => (
+                <div
+                  key={r.wheel.id}
+                  className="border border-neutral-700 rounded px-2 py-2 flex flex-col gap-2 bg-neutral-950/40"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          className="rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-xs min-w-[8rem]"
+                          value={r.wheel.name}
+                          onChange={e => updateWheel(r.wheel.id, { name: e.target.value })}
+                        />
+                        <span className="text-[0.7rem] text-neutral-400">{r.orientationLabel}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[0.75rem] text-neutral-300">
+                        <span className="text-neutral-400">D</span>
+                        <input
+                          type="number"
+                          className="w-20 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right"
+                          value={r.wheel.D}
+                          onChange={e => updateWheel(r.wheel.id, { D: _nz(e.target.value, r.wheel.D) })}
+                        />
+                        <span className="text-neutral-400">mm</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[0.75rem] text-neutral-300">
+                        <label className="flex items-center gap-1">
+                          <input
+                            type="checkbox"
+                            checked={r.wheel.isHoning}
+                            onChange={e =>
+                              updateWheel(r.wheel.id, {
+                                isHoning: e.target.checked,
+                                baseForHn: e.target.checked ? 'front' : r.wheel.baseForHn,
+                              })
+                            }
+                          />
+                          <span>Honing wheel (front, edge trailing)</span>
+                        </label>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-neutral-500 hover:text-red-400 text-sm"
+                      onClick={() => deleteWheel(r.wheel.id)}
+                      title="Delete wheel"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[0.75rem]">
+                    <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
+                      <div className="text-neutral-300">Wheel → USB top (rear reference)</div>
+                      <div className="font-mono text-sm">hᵣ = {r.hrWheel.toFixed(2)} mm</div>
+                    </div>
+                    <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
+                      <div className="text-neutral-300">Datum → USB top (selected base)</div>
+                      <div className="font-mono text-sm">hₙ = {r.hnBase.toFixed(2)} mm</div>
+                      <div className="text-neutral-400 text-[0.7rem]">βₑₑₚ = {r.betaEffDeg.toFixed(2)}°</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      {view === 'settings' && (
+        <>
+          <div className="flex gap-2 mb-2 text-xs">
+            <button
+              type="button"
+              className={
+                'px-2 py-1 rounded border ' +
+                (settingsView === 'machine'
+                  ? 'border-emerald-500 bg-emerald-900/40'
+                  : 'border-neutral-700 bg-neutral-900')
+              }
+              onClick={() => setSettingsView('machine')}
+            >
+              Machine &amp; constants
+            </button>
+            <button
+              type="button"
+              className={
+                'px-2 py-1 rounded border ' +
+                (settingsView === 'calibration'
+                  ? 'border-emerald-500 bg-emerald-900/40'
+                  : 'border-neutral-700 bg-neutral-900')
+              }
+              onClick={() => setSettingsView('calibration')}
+            >
+              Calibration wizard
+            </button>
+          </div>
+
+          {settingsView === 'machine' && (
+            <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-2 max-w-xl">
+              <h2 className="text-sm font-semibold text-neutral-200">Machine constants (rear/front)</h2>
+              <p className="text-xs text-neutral-300 mb-2">
+                Rear and front base geometry for the active machine. Calibration will update these
+                values; you can also tweak them manually.
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex flex-col gap-1">
+                  <span className="text-neutral-400 text-xs">Rear base</span>
+                  <label className="flex items-center gap-1">
+                    <span className="w-10 text-neutral-300 text-xs">hc</span>
+                    <input
+                      type="number"
+                      className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                      value={constants.rear.hc}
+                      onChange={e =>
+                        setConstants(c => ({
+                          ...c,
+                          rear: { ...c.rear, hc: _nz(e.target.value, c.rear.hc) },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <span className="w-10 text-neutral-300 text-xs">o</span>
+                    <input
+                      type="number"
+                      className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                      value={constants.rear.o}
+                      onChange={e =>
+                        setConstants(c => ({
+                          ...c,
+                          rear: { ...c.rear, o: _nz(e.target.value, c.rear.o) },
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-neutral-400 text-xs">Front base</span>
+                  <label className="flex items-center gap-1">
+                    <span className="w-10 text-neutral-300 text-xs">hc</span>
+                    <input
+                      type="number"
+                      className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                      value={constants.front.hc}
+                      onChange={e =>
+                        setConstants(c => ({
+                          ...c,
+                          front: { ...c.front, hc: _nz(e.target.value, c.front.hc) },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <span className="w-10 text-neutral-300 text-xs">o</span>
+                    <input
+                      type="number"
+                      className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                      value={constants.front.o}
+                      onChange={e =>
+                        setConstants(c => ({
+                          ...c,
+                          front: { ...c.front, o: _nz(e.target.value, c.front.o) },
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {settingsView === 'calibration' && (
+            <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl">
+              <h2 className="text-sm font-semibold text-neutral-200">Calibration wizard (single base)</h2>
+              <p className="text-xs text-neutral-300">
+                Measure from your chosen datum to USB top (hₙ) and from axle outer surface to USB outer surface as the full outer-to-outer span CAo at several heights. The wizard will solve hc and o for the selected base
+                and estimate the worst-case angle error over your wheels.
+              </p>
+
+              {/* Base selection */}
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-neutral-300">Base to calibrate:</span>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    checked={calibBase === 'rear'}
+                    onChange={() => setCalibBase('rear')}
+                  />
+                  <span>Rear (edge leading)</span>
+                </label>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    checked={calibBase === 'front'}
+                    onChange={() => setCalibBase('front')}
+                  />
+                  <span>Front (edge trailing)</span>
+                </label>
+              </div>
+
+              {/* Diameters */}
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <label className="flex flex-col gap-1">
+                  <span className="text-neutral-300">
+                    Axle diameter Dₐ (mm)
+                    <span className="text-neutral-500 text-xs ml-1">(default 12)</span>
+                  </span>
+                  <input
+                    type="number"
+                    className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                    value={calibDa}
+                    onChange={e => setCalibDa(_nz(e.target.value, calibDa))}
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-neutral-300">
+                    USB diameter Dₛ (mm)
+                    <span className="text-neutral-500 text-xs ml-1">(prefilled, editable)</span>
+                  </span>
+                  <input
+                    type="number"
+                    className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                    value={calibDs}
+                    onChange={e => setCalibDs(_nz(e.target.value, calibDs))}
+                  />
+                </label>
+              </div>
+
+              {/* Measurement count */}
+              <div className="flex flex-col gap-1 text-xs">
+                <span className="text-neutral-300">Number of measurements:</span>
+                <div className="flex flex-wrap gap-4">
+                  <label
+                    className="flex items-center gap-1"
+                    title="3 points: fast, but less robust to noise."
+                  >
+                    <input
+                      type="radio"
+                      checked={calibCount === 3}
+                      onChange={() => {
+                        setCalibCount(3);
+                        ensureCalibRowsLength(3);
+                      }}
+                    />
+                    <span>3</span>
+                  </label>
+                  <label
+                    className="flex items-center gap-1"
+                    title="4 points (recommended): good balance of effort and robustness."
+                  >
+                    <input
+                      type="radio"
+                      checked={calibCount === 4}
+                      onChange={() => {
+                        setCalibCount(4);
+                        ensureCalibRowsLength(4);
+                      }}
+                    />
+                    <span>4 (recommended)</span>
+                  </label>
+                  <label
+                    className="flex items-center gap-1"
+                    title="5 points: best redundancy, but more work. Use if you suspect noisy readings."
+                  >
+                    <input
+                      type="radio"
+                      checked={calibCount === 5}
+                      onChange={() => {
+                        setCalibCount(5);
+                        ensureCalibRowsLength(5);
+                      }}
+                    />
+                    <span>5</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Measurement table */}
+              <div className="flex flex-col gap-1 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-300">
+                    Measurements: for each height, record hₙ (datum → USB top) and CAo, the full outer-to-outer span between axle and USB (press calipers square: |O______O|, outer face of axle to outer face of USB). CA is then computed as CA = CAo − (Dₐ/2 + Dₛ/2).
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 font-mono text-[0.7rem] text-neutral-400">
+                  <div>#</div>
+                  <div>hₙ (mm)</div>
+                  <div>CAo (mm)</div>
+                </div>
+                {Array.from({ length: calibCount }, (_, i) => {
+                  const row = calibRows[i] ?? { hn: '', CAo: '' };
+                  return (
+                    <div
+                      key={i}
+                      className="grid grid-cols-3 gap-1 items-center text-[0.75rem]"
+                    >
+                      <div className="text-neutral-500">{i + 1}</div>
+                      <input
+                        type="number"
+                        className="rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5"
+                        value={row.hn}
+                        onChange={e =>
+                          setCalibRows(prev => {
+                            const next = [...prev];
+                            while (next.length <= i) {
+                              next.push({ hn: '', CAo: '' });
+                            }
+                            next[i] = { ...next[i], hn: e.target.value };
+                            return next;
+                          })
+                        }
+                      />
+                      <input
+                        type="number"
+                        className="rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5"
+                        value={row.CAo}
+                        onChange={e =>
+                          setCalibRows(prev => {
+                            const next = [...prev];
+                            while (next.length <= i) {
+                              next.push({ hn: '', CAo: '' });
+                            }
+                            next[i] = { ...next[i], CAo: e.target.value };
+                            return next;
+                          })
+                        }
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Actions and results */}
+              <div className="flex flex-col gap-2 text-xs">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded border border-emerald-500 bg-emerald-900/40 hover:bg-emerald-900 text-emerald-50"
+                    onClick={handleRunCalibration}
+                  >
+                    Compute hc &amp; o
+                  </button>
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-neutral-100 disabled:opacity-40"
+                    disabled={!calibResult}
+                    onClick={handleApplyCalibration}
+                  >
+                    Apply to {calibBase === 'rear' ? 'rear base' : 'front base'}
+                  </button>
+                </div>
+
+                {calibError && (
+                  <div className="text-red-400 text-xs">{calibError}</div>
+                )}
+
+                {calibResult && (
+                  <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
+                    <div className="text-neutral-200">
+                      Proposed constants for {calibBase === 'rear' ? 'rear' : 'front'} base:
+                    </div>
+                    <div className="font-mono text-[0.8rem]">
+                      hc = {calibResult.hc.toFixed(3)} mm, o = {calibResult.o.toFixed(3)} mm
+                    </div>
+                    <div className="text-neutral-300 text-[0.75rem]">
+                      Max |residual| in hₙ: {calibResult.diagnostics.maxAbsResidualMm.toFixed(3)} mm
+                    </div>
+                    <div className="text-[0.75rem]">
+                      {(() => {
+                        const a = calibResult.angleErrorDeg;
+                        if (a == null) {
+                          return (
+                            <span className="text-neutral-400">
+                              Angle error estimate not available (derivative too small).
+                            </span>
+                          );
+                        }
+                        let label = '';
+                        let cls = '';
+                        if (a <= 0.05) {
+                          label = 'Excellent';
+                          cls = 'text-emerald-300';
+                        } else if (a <= 0.1) {
+                          label = 'Good';
+                          cls = 'text-emerald-200';
+                        } else if (a <= 0.2) {
+                          label = 'Fair';
+                          cls = 'text-amber-300';
+                        } else {
+                          label = 'Poor';
+                          cls = 'text-red-400';
+                        }
+                        return (
+                          <span className={cls}>
+                            Estimated worst-case angle error over your wheels ≈ {a.toFixed(3)}° ({label}).{' '}
+                            If &gt; 0.10°, consider re-measuring.
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
