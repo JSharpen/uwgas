@@ -448,7 +448,9 @@ function App() {
     _load('t_wheels', DEFAULT_WHEELS)
   );
   const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() => []);
-  const [view, setView] = React.useState<'calculator' | 'wheels' | 'settings'>('calculator');
+const [view, setView] = React.useState<
+  'calculator' | 'wheels' | 'progression' | 'settings'
+>('calculator');
   const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
 
   // Calibration wizard state (single-base)
@@ -573,32 +575,83 @@ function App() {
   const deleteWheel = (id: string) => {
     setWheels(prev => prev.filter(w => w.id !== id));
   };
+const addStep = () => {
+  if (wheels.length === 0) return;
+  const defaultWheel = wheels[0];
+
+  const step: SessionStep = {
+    id: `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    wheelId: defaultWheel.id,
+    base: defaultWheel.isHoning ? 'front' : defaultWheel.baseForHn,
+    angleOffset: 0,
+  };
+
+  setSessionSteps(prev => [...prev, step]);
+};
+
+const updateStep = (id: string, patch: Partial<SessionStep>) => {
+  setSessionSteps(prev =>
+    prev.map(s => (s.id === id ? { ...s, ...patch } : s))
+  );
+};
+
+const deleteStep = (id: string) => {
+  setSessionSteps(prev => prev.filter(s => s.id !== id));
+};
+
+const moveStep = (index: number, delta: number) => {
+  setSessionSteps(prev => {
+    const next = [...prev];
+    const newIndex = index + delta;
+    if (newIndex < 0 || newIndex >= next.length) return prev;
+    const [item] = next.splice(index, 1);
+    next.splice(newIndex, 0, item);
+    return next;
+  });
+};
+
+const clearSteps = () => {
+  setSessionSteps([]);
+};
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
-      <h1 className="text-lg font-semibold">Tormek USB Height Calculator (Baseline)</h1>
+      <h1 className="text-lg font-semibold">Wet Grinder Angle Setter (Early Limited Version)</h1>
 
 <div className="flex gap-2 text-sm mb-2">
   <button
     type="button"
     className={
-      "px-2 py-1 rounded border " +
+      'px-2 py-1 rounded border ' +
       (view === 'calculator'
-        ? "border-emerald-500 bg-emerald-900/40"
-        : "border-neutral-700 bg-neutral-900")
+        ? 'border-emerald-500 bg-emerald-900/40'
+        : 'border-neutral-700 bg-neutral-900')
     }
     onClick={() => setView('calculator')}
   >
     Calculator
   </button>
+  <button
+    type="button"
+    className={
+      'px-2 py-1 rounded border ' +
+      (view === 'progression'
+        ? 'border-emerald-500 bg-emerald-900/40'
+        : 'border-neutral-700 bg-neutral-900')
+    }
+    onClick={() => setView('progression')}
+  >
+    Progression
+  </button>
+
 
   <button
     type="button"
     className={
-      "px-2 py-1 rounded border " +
+      'px-2 py-1 rounded border ' +
       (view === 'wheels'
-        ? "border-emerald-500 bg-emerald-900/40"
-        : "border-neutral-700 bg-neutral-900")
+        ? 'border-emerald-500 bg-emerald-900/40'
+        : 'border-neutral-700 bg-neutral-900')
     }
     onClick={() => setView('wheels')}
   >
@@ -608,10 +661,10 @@ function App() {
   <button
     type="button"
     className={
-      "px-2 py-1 rounded border " +
+      'px-2 py-1 rounded border ' +
       (view === 'settings'
-        ? "border-emerald-500 bg-emerald-900/40"
-        : "border-neutral-700 bg-neutral-900")
+        ? 'border-emerald-500 bg-emerald-900/40'
+        : 'border-neutral-700 bg-neutral-900')
     }
     onClick={() => setView('settings')}
   >
@@ -679,9 +732,9 @@ function App() {
               <button
                 type="button"
                 className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
-                onClick={addWheel}
+                onClick={() => setView('progression')}
               >
-                + Add wheel
+                Edit progression
               </button>
             </div>
 
@@ -848,7 +901,7 @@ function App() {
                   })
                 }
               />
-              <span className="text-neutral-300">Honing wheel (front, edge trailing by default)</span>
+              <span className="text-neutral-300">Honing wheel? (Locks to Front base)</span>
             </label>
 
             {!w.isHoning && (
@@ -887,6 +940,184 @@ function App() {
         </div>
       ))}
     </div>
+  </section>
+)}
+
+{view === 'progression' && (
+  <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-3xl mx-auto">
+    <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-semibold text-neutral-200">Progression builder</h2>
+        <p className="text-xs text-neutral-300">
+          Define an ordered sharpening progression. If any steps are present, the calculator will
+          use this list (in order) instead of showing a simple row per wheel.
+        </p>
+      </div>
+      <div className="flex flex-col gap-1 items-end text-xs">
+        <button
+          type="button"
+          className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-40"
+          onClick={addStep}
+          disabled={wheels.length === 0}
+        >
+          + Add step
+        </button>
+        <button
+          type="button"
+          className="px-2 py-1 rounded border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-neutral-300 disabled:opacity-40"
+          onClick={clearSteps}
+          disabled={sessionSteps.length === 0}
+        >
+          Clear progression
+        </button>
+      </div>
+    </div>
+
+    {sessionSteps.length === 0 && (
+      <div className="text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-2">
+        No steps defined yet. Click <span className="font-semibold">+ Add step</span> to start
+        building a progression. When at least one step exists, the calculator view will follow
+        this sequence.
+      </div>
+    )}
+
+    {sessionSteps.length > 0 && (
+      <div className="flex flex-col gap-2 text-xs">
+        <div className="grid grid-cols-[auto,1fr,auto] gap-2 font-mono text-[0.7rem] text-neutral-400 pb-1 border-b border-neutral-700">
+          <div>#</div>
+          <div>Step</div>
+          <div className="text-right">Actions</div>
+        </div>
+
+        {sessionSteps.map((step, index) => {
+          const wheel = wheels.find(w => w.id === step.wheelId) || wheels[0];
+          const isHoning = wheel?.isHoning;
+
+          return (
+            <div
+              key={step.id}
+              className="grid grid-cols-[auto,1fr,auto] gap-2 items-center border border-neutral-700 rounded-md p-2 bg-neutral-950/40"
+            >
+              {/* Step number */}
+              <div className="font-mono text-[0.8rem] text-neutral-300">
+                {index + 1}
+              </div>
+
+              {/* Main step config */}
+              <div className="flex flex-col gap-1">
+                {/* Wheel selector */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-neutral-400 text-[0.7rem]">Wheel</span>
+                  <select
+                    className="rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-xs"
+                    value={step.wheelId}
+                    onChange={e => {
+                      const newWheel = wheels.find(w => w.id === e.target.value);
+                      if (!newWheel) return;
+                      updateStep(step.id, {
+                        wheelId: newWheel.id,
+                        base: newWheel.isHoning ? 'front' : step.base,
+                      });
+                    }}
+                  >
+                    {wheels.map(w => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                  {wheel && (
+                    <span className="text-[0.7rem] text-neutral-500">
+                      D = {wheel.D} mm {wheel.isHoning ? '(honing)' : ''}
+                    </span>
+                  )}
+                </div>
+
+                {/* Base selection */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-neutral-400 text-[0.7rem]">Base</span>
+                  {isHoning ? (
+                    <span className="text-[0.7rem] text-emerald-300">
+                      Honing wheel: front base (edge trailing)
+                    </span>
+                  ) : (
+                    <>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="radio"
+                          checked={step.base === 'rear'}
+                          onChange={() => updateStep(step.id, { base: 'rear' })}
+                        />
+                        <span>Rear (edge leading)</span>
+                      </label>
+                      <label className="flex items-center gap-1">
+                        <input
+                          type="radio"
+                          checked={step.base === 'front'}
+                          onChange={() => updateStep(step.id, { base: 'front' })}
+                        />
+                        <span>Front (edge trailing)</span>
+                      </label>
+                    </>
+                  )}
+                </div>
+
+                {/* Angle offset */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-neutral-400 text-[0.7rem]">Angle offset Δβ</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
+                    value={step.angleOffset}
+                    onChange={e =>
+                      updateStep(step.id, {
+                        angleOffset: Number(e.target.value),
+                      })
+                    }
+                  />
+                  <span className="text-neutral-400 text-[0.7rem]">°</span>
+                  <span className="text-neutral-500 text-[0.7rem]">
+                    (applied on top of global β and micro bump)
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    className="px-1 py-0.5 text-[0.7rem] rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-40"
+                    onClick={() => moveStep(index, -1)}
+                    disabled={index === 0}
+                    title="Move up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className="px-1 py-0.5 text-[0.7rem] rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-40"
+                    onClick={() => moveStep(index, 1)}
+                    disabled={index === sessionSteps.length - 1}
+                    title="Move down"
+                  >
+                    ↓
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="text-red-400 text-[0.7rem] border border-red-400 rounded px-2 py-0.5 hover:bg-red-900/30"
+                  onClick={() => deleteStep(step.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
   </section>
 )}
 
