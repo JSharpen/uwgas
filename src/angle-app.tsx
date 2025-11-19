@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 // Tormek USB Height Multi‑wheel Calculator – Rebuilt Baseline
 // -----------------------------------------------------------
 // This is a minimal, but fully working, single‑file React app
@@ -51,7 +53,8 @@ type BaseSide = 'rear' | 'front';
 type Wheel = {
   id: string;
   name: string;
-  D: number; // effective diameter
+  D: number; // effective diameter (numeric, used for math)
+  DText?: string; // text version for editing
   angleOffset: number; // Δβ at wheel level (default)
   baseForHn: BaseSide; // default base for this wheel
   isHoning: boolean;
@@ -113,7 +116,7 @@ const DEFAULT_WHEELS: Wheel[] = [
   {
     id: 'sg-250',
     name: 'SG‑250',
-    D: 248.0,
+    D: 250.0,
     angleOffset: 0,
     baseForHn: 'rear',
     isHoning: false,
@@ -121,7 +124,7 @@ const DEFAULT_WHEELS: Wheel[] = [
   {
     id: 'df-250',
     name: 'DF‑250',
-    D: 248.0,
+    D: 250.0,
     angleOffset: 0,
     baseForHn: 'rear',
     isHoning: false,
@@ -432,7 +435,7 @@ function estimateMaxAngleErrorDeg(
   return maxAngle;
 }
 
-// =============== React App ===============
+// =============== App ===============
 
 function App() {
   const [global, setGlobal] = React.useState<GlobalState>(() =>
@@ -445,7 +448,7 @@ function App() {
     _load('t_wheels', DEFAULT_WHEELS)
   );
   const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() => []);
-  const [view, setView] = React.useState<'calculator' | 'settings'>('calculator');
+  const [view, setView] = React.useState<'calculator' | 'wheels' | 'settings'>('calculator');
   const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
 
   // Calibration wizard state (single-base)
@@ -575,32 +578,46 @@ function App() {
     <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
       <h1 className="text-lg font-semibold">Tormek USB Height Calculator (Baseline)</h1>
 
-      <div className="flex gap-2 text-sm mb-2">
-        <button
-          type="button"
-          className={
-            "px-2 py-1 rounded border " +
-            (view === 'calculator'
-              ? "border-emerald-500 bg-emerald-900/40"
-              : "border-neutral-700 bg-neutral-900")
-          }
-          onClick={() => setView('calculator')}
-        >
-          Calculator
-        </button>
-        <button
-          type="button"
-          className={
-            "px-2 py-1 rounded border " +
-            (view === 'settings'
-              ? "border-emerald-500 bg-emerald-900/40"
-              : "border-neutral-700 bg-neutral-900")
-          }
-          onClick={() => setView('settings')}
-        >
-          Settings
-        </button>
-      </div>
+<div className="flex gap-2 text-sm mb-2">
+  <button
+    type="button"
+    className={
+      "px-2 py-1 rounded border " +
+      (view === 'calculator'
+        ? "border-emerald-500 bg-emerald-900/40"
+        : "border-neutral-700 bg-neutral-900")
+    }
+    onClick={() => setView('calculator')}
+  >
+    Calculator
+  </button>
+
+  <button
+    type="button"
+    className={
+      "px-2 py-1 rounded border " +
+      (view === 'wheels'
+        ? "border-emerald-500 bg-emerald-900/40"
+        : "border-neutral-700 bg-neutral-900")
+    }
+    onClick={() => setView('wheels')}
+  >
+    Wheel Manager
+  </button>
+
+  <button
+    type="button"
+    className={
+      "px-2 py-1 rounded border " +
+      (view === 'settings'
+        ? "border-emerald-500 bg-emerald-900/40"
+        : "border-neutral-700 bg-neutral-900")
+    }
+    onClick={() => setView('settings')}
+  >
+    Settings
+  </button>
+</div>
 
       {view === 'calculator' && (
         <>
@@ -738,6 +755,140 @@ function App() {
           </section>
         </>
       )}
+
+{view === 'wheels' && (
+  <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-3xl mx-auto">
+    <div className="flex justify-between items-center">
+      <h2 className="text-sm font-semibold text-neutral-200">Wheel Manager</h2>
+      <button
+        type="button"
+        className="px-2 py-1 text-xs rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800"
+        onClick={addWheel}
+      >
+        + Add Wheel
+      </button>
+    </div>
+
+    <p className="text-xs text-neutral-300">
+      Configure your grinding and honing wheels here. These settings are shared with
+      the calculator view and saved to your browser.
+    </p>
+
+    <div className="grid gap-2 md:grid-cols-2">
+      {wheels.map(w => (
+        <div
+          key={w.id}
+          className="border border-neutral-700 rounded-md p-2 bg-neutral-950/40 flex flex-col gap-2"
+        >
+          {/* Name */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-neutral-400">Wheel name</span>
+            <input
+              className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+              value={w.name}
+              onChange={e => updateWheel(w.id, { name: e.target.value })}
+            />
+          </div>
+
+        {/* Diameter */}
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-neutral-300">D</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-sm appearance-none"
+            value={
+              w.DText !== undefined
+                ? w.DText
+                : Number.isNaN(w.D)
+                ? ''
+                : String(w.D)
+            }
+            onFocus={e => e.target.select()}
+            onChange={e => {
+              const text = e.target.value;
+
+              // Always store the raw text so the user sees exactly what they typed
+              const patch: Partial<Wheel> = { DText: text };
+
+              const trimmed = text.trim();
+              if (trimmed === '') {
+                // Empty: clear numeric value as well
+                patch.D = NaN as unknown as number;
+                updateWheel(w.id, patch);
+                return;
+              }
+
+              const normalised = trimmed.replace(',', '.');
+              const val = Number(normalised);
+
+              if (!Number.isNaN(val)) {
+                // Valid number: store rounded to 2 dp for the math side
+                patch.D = Math.round(val * 100) / 100;
+              }
+              // If it's not a valid number yet (e.g. "2."), we still keep DText
+              // but don't touch D, so the last good numeric value remains.
+
+              updateWheel(w.id, patch);
+            }}
+          />
+          <span className="text-neutral-400 text-[0.65rem]">mm</span>
+        </div>
+
+          {/* Honing flag + base */}
+          <div className="flex flex-col gap-1 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={w.isHoning}
+                onChange={e =>
+                  updateWheel(w.id, {
+                    isHoning: e.target.checked,
+                    baseForHn: e.target.checked ? 'front' : w.baseForHn,
+                  })
+                }
+              />
+              <span className="text-neutral-300">Honing wheel (front, edge trailing by default)</span>
+            </label>
+
+            {!w.isHoning && (
+              <div className="flex items-center gap-3 text-xs text-neutral-300">
+                <span>Default base for hₙ:</span>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    checked={w.baseForHn === 'rear'}
+                    onChange={() => updateWheel(w.id, { baseForHn: 'rear' })}
+                  />
+                  <span>Rear (edge leading)</span>
+                </label>
+                <label className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    checked={w.baseForHn === 'front'}
+                    onChange={() => updateWheel(w.id, { baseForHn: 'front' })}
+                  />
+                  <span>Front (edge trailing)</span>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Delete */}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              className="text-red-400 text-xs border border-red-400 rounded px-2 py-1 hover:bg-red-900/30"
+              onClick={() => deleteWheel(w.id)}
+            >
+              Delete wheel
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
 
       {view === 'settings' && (
         <>

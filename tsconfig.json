@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "checkJs": false,
+    "allowJs": true,
+    "target": "ES2020",
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "strict": false
+  },
+  "exclude": [
+    "node_modules",
+    "**/sw.js"
+  ]
+}
