@@ -448,10 +448,14 @@ function App() {
     _load('t_wheels', DEFAULT_WHEELS)
   );
   const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() => []);
-const [view, setView] = React.useState<
+  const [view, setView] = React.useState<
   'calculator' | 'wheels' | 'progression' | 'settings'
 >('calculator');
   const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
+
+    // Track which wheel should auto-focus in the Wheel Manager
+  const focusWheelIdRef = React.useRef<string | null>(null);
+
 
   // Calibration wizard state (single-base)
   const [calibBase, setCalibBase] = React.useState<BaseSide>('rear');
@@ -565,15 +569,33 @@ const [view, setView] = React.useState<
       id,
       name: 'New wheel',
       D: 250,
+      DText: '250',
       angleOffset: 0,
       baseForHn: 'rear',
       isHoning: false,
     };
+
+    // Tell the Wheel Manager to auto-focus this wheel's name input
+    focusWheelIdRef.current = id;
+
     setWheels(prev => [...prev, w]);
   };
 
   const deleteWheel = (id: string) => {
+    const target = wheels.find(w => w.id === id);
+    const label = target
+      ? `Delete wheel "${target.name}"?`
+      : 'Delete this wheel?';
+
+    if (!window.confirm(label)) {
+      return;
+    }
+
+    // Remove the wheel itself
     setWheels(prev => prev.filter(w => w.id !== id));
+
+    // Also remove any progression steps that referenced this wheel
+    setSessionSteps(prev => prev.filter(step => step.wheelId !== id));
   };
 const addStep = () => {
   if (wheels.length === 0) return;
@@ -839,6 +861,15 @@ const clearSteps = () => {
             <input
               className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
               value={w.name}
+              ref={el => {
+                if (el && focusWheelIdRef.current === w.id && view === 'wheels') {
+                  el.focus();
+                  el.select();
+                  // one-shot: don't refocus on every render
+                  focusWheelIdRef.current = null;
+                }
+              }}
+              onFocus={e => e.target.select()}
               onChange={e => updateWheel(w.id, { name: e.target.value })}
             />
           </div>
@@ -947,21 +978,13 @@ const clearSteps = () => {
   <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-3xl mx-auto">
     <div className="flex justify-between items-center">
       <div className="flex flex-col gap-1">
-        <h2 className="text-sm font-semibold text-neutral-200">Progression builder</h2>
+        <h2 className="text-sm font-semibold text-neutral-200">Progression Setup</h2>
         <p className="text-xs text-neutral-300">
           Define an ordered sharpening progression. If any steps are present, the calculator will
           use this list (in order) instead of showing a simple row per wheel.
         </p>
       </div>
       <div className="flex flex-col gap-1 items-end text-xs">
-        <button
-          type="button"
-          className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-40"
-          onClick={addStep}
-          disabled={wheels.length === 0}
-        >
-          + Add step
-        </button>
         <button
           type="button"
           className="px-2 py-1 rounded border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-neutral-300 disabled:opacity-40"
@@ -1069,12 +1092,30 @@ const clearSteps = () => {
                     type="number"
                     step="0.1"
                     className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
-                    value={step.angleOffset}
-                    onChange={e =>
-                      updateStep(step.id, {
-                        angleOffset: Number(e.target.value),
-                      })
-                    }
+                    value={step.angleOffset === 0 ? '' : step.angleOffset}
+                    placeholder="0"
+                    onFocus={e => {
+                      // If there's already a non-zero value, select it for quick overwrite
+                      if (e.target.value !== '') {
+                        e.target.select();
+                      }
+                    }}
+                    onChange={e => {
+                      const text = e.target.value;
+
+                      // Empty input → treat as "no offset" = 0
+                      if (text.trim() === '') {
+                        updateStep(step.id, { angleOffset: 0 });
+                        return;
+                      }
+
+                      const val = Number(text);
+                      if (!Number.isNaN(val)) {
+                        updateStep(step.id, { angleOffset: val });
+                      }
+                      // If it's not a valid number yet (e.g. user typed "-" or "1."),
+                      // we just don't update the step until it becomes valid.
+                    }}
                   />
                   <span className="text-neutral-400 text-[0.7rem]">°</span>
                   <span className="text-neutral-500 text-[0.7rem]">
@@ -1084,20 +1125,25 @@ const clearSteps = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex flex-col items-end gap-1">
-                <div className="flex gap-1">
+              <div className="flex flex-col items-end h-full">
+
+                {/* Sort buttons (top aligned) */}
+                <div className="flex flex-col gap-2 items-end">
                   <button
                     type="button"
-                    className="px-1 py-0.5 text-[0.7rem] rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-40"
+                    className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
+                              disabled:opacity-40 active:scale-95 transition-transform"
                     onClick={() => moveStep(index, -1)}
                     disabled={index === 0}
                     title="Move up"
                   >
                     ↑
                   </button>
+
                   <button
                     type="button"
-                    className="px-1 py-0.5 text-[0.7rem] rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-40"
+                    className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
+                              disabled:opacity-40 active:scale-95 transition-transform"
                     onClick={() => moveStep(index, 1)}
                     disabled={index === sessionSteps.length - 1}
                     title="Move down"
@@ -1105,19 +1151,40 @@ const clearSteps = () => {
                     ↓
                   </button>
                 </div>
+
+                {/* Spacer pushes Delete to the bottom */}
+                <div className="flex-grow"></div>
+
+                {/* Delete button (bottom aligned) */}
                 <button
                   type="button"
-                  className="text-red-400 text-[0.7rem] border border-red-400 rounded px-2 py-0.5 hover:bg-red-900/30"
+                  className="text-red-400 text-[0.7rem] border border-red-400 rounded px-1.5 py-0.5 hover:bg-red-900/30
+                            active:scale-95 transition-transform"
                   onClick={() => deleteStep(step.id)}
                 >
                   Delete
                 </button>
+
               </div>
+
             </div>
           );
         })}
       </div>
     )}
+        {/* Bottom Add Step button – full width, sticky near bottom */}
+    <div className="sticky bottom-2 mt-4">
+      <button
+        type="button"
+        className="w-full px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
+                   disabled:opacity-40"
+        onClick={addStep}
+        disabled={wheels.length === 0}
+      >
+        + Add step
+      </button>
+    </div>
+
   </section>
 )}
 
