@@ -489,7 +489,9 @@ function ProgressionEditor(props: {
           </div>
 
           {sessionSteps.map((step, index) => {
-            const wheel = wheels.find(w => w.id === step.wheelId) || wheels[0];
+            const wheel = wheels.find(w => w.id === step.wheelId);
+if (!wheel) return null;
+
             const isHoning = wheel?.isHoning;
 
             return (
@@ -961,7 +963,9 @@ const clearSteps = () => {
                     </div>
 
                     {sessionSteps.map((step, index) => {
-                      const wheel = wheels.find(w => w.id === step.wheelId) || wheels[0];
+                      const wheel = wheels.find(w => w.id === step.wheelId);
+if (!wheel) return null;
+
                       const isHoning = wheel?.isHoning;
 
                       return (
