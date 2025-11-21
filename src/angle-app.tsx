@@ -433,179 +433,6 @@ function estimateMaxAngleErrorDeg(
   if (maxAngle === 0) return null;
   return maxAngle;
 }
-function ProgressionEditor(props: {
-  wheels: Wheel[];
-  sessionSteps: SessionStep[];
-  addStep: () => void;
-  clearSteps: () => void;
-  updateStep: (id: string, patch: Partial<SessionStep>) => void;
-  deleteStep: (id: string) => void;
-  moveStep: (index: number, delta: number) => void;
-}) {
-  const { wheels, sessionSteps, addStep, clearSteps, updateStep, deleteStep, moveStep } = props;
-
-  const hasSteps = sessionSteps.length > 0;
-
-  return (
-    <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-sm font-semibold text-neutral-200">Progression builder</h2>
-          <p className="text-xs text-neutral-300">
-            Define an ordered sharpening progression. If any steps are present, the calculator will
-            use this list (in order) instead of showing a simple row per wheel.
-          </p>
-        </div>
-        <div className="flex flex-col gap-1 items-end text-xs">
-          <button
-            type="button"
-            className="px-2 py-1 rounded border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-neutral-300 disabled:opacity-40"
-            onClick={clearSteps}
-            disabled={!hasSteps}
-          >
-            Clear progression
-          </button>
-        </div>
-      </div>
-
-      {/* Empty state */}
-      {!hasSteps && (
-        <div className="text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-2">
-          No steps defined yet. Use <span className="font-semibold">+ Add step</span> below to start
-          building a progression. When at least one step exists, the calculator view will follow
-          this sequence.
-        </div>
-      )}
-
-      {/* Steps list */}
-      {hasSteps && (
-        <div className="flex flex-col gap-2 text-xs">
-          {/* header row */}
-          <div className="grid grid-cols-[auto,1fr,auto] gap-2 font-semibold text-[0.7rem] text-neutral-400 pb-1 border-b border-neutral-700">
-            <div>#</div>
-            <div>Step</div>
-            <div className="text-right">Actions</div>
-          </div>
-
-          {sessionSteps.map((step, index) => {
-            const wheel = wheels.find(w => w.id === step.wheelId);
-if (!wheel) return null;
-
-            const isHoning = wheel?.isHoning;
-
-            return (
-              <div
-                key={step.id}
-                className="grid grid-cols-[auto,1fr,auto] gap-2 items-center border border-neutral-700 rounded-md p-2 bg-neutral-950/40"
-              >
-                {/* Step number */}
-                <div className="font-mono text-[0.8rem] text-neutral-300">
-                  {index + 1}
-                </div>
-
-                {/* Main step config */}
-                <div className="flex flex-col gap-1">
-                  {/* Wheel selector */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-neutral-400 text-[0.7rem]">Wheel</span>
-                    <select
-                      className="rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-xs"
-                      value={step.wheelId}
-                      onChange={e => {
-                        const newWheel = wheels.find(w => w.id === e.target.value);
-                        if (!newWheel) return;
-                        updateStep(step.id, {
-                          wheelId: newWheel.id,
-                          base: newWheel.isHoning ? 'front' : step.base,
-                        });
-                      }}
-                    >
-                      {wheels.map(w => (
-                        <option key={w.id} value={w.id}>
-                          {w.name}
-                        </option>
-                      ))}
-                    </select>
-                    {wheel && (
-                      <span className="text-[0.7rem] text-neutral-500">
-                        D = {wheel.D} mm {wheel.isHoning ? '(honing)' : ''}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Base selection */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-neutral-400 text-[0.7rem]">Base</span>
-                    {isHoning ? (
-                      <span className="text-[0.7rem] text-emerald-300">
-                        Honing wheel: front base (edge trailing)
-                      </span>
-                    ) : (
-                      <>
-                        <label className="flex items-center gap-1">
-                          <input
-                            type="radio"
-                            checked={step.base === 'rear'}
-                            onChange={() => updateStep(step.id, { base: 'rear' })}
-                          />
-                          <span>Rear (edge leading)</span>
-                        </label>
-                        <label className="flex items-center gap-1">
-                          <input
-                            type="radio"
-                            checked={step.base === 'front'}
-                            onChange={() => updateStep(step.id, { base: 'front' })}
-                          />
-                          <span>Front (edge trailing)</span>
-                        </label>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Angle offset */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-neutral-400 text-[0.7rem]">Angle offset Δβ</span>
-                    <input
-                      type="number"
-                      step="0.1"
-                      className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
-                      value={step.angleOffset}
-                      onChange={e =>
-                        updateStep(step.id, {
-                          angleOffset: Number(e.target.value),
-                        })
-                      }
-                    />
-                    <span className="text-neutral-400 text-[0.7rem]">°</span>
-                    <span className="text-neutral-500 text-[0.7rem]">
-                      (applied on top of global β and micro bump)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Actions (you can drop your new stacked layout in here) */}
-                {/* ... keep your current moveStep / delete layout ... */}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Add step under the cards */}
-      <div className="flex justify-end pt-2">
-        <button
-          type="button"
-          className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40"
-          onClick={addStep}
-          disabled={wheels.length === 0}
-        >
-          + Add step
-        </button>
-      </div>
-    </section>
-  );
-}
 
 // =============== App ===============
 
@@ -964,9 +791,9 @@ const clearSteps = () => {
 
                     {sessionSteps.map((step, index) => {
                       const wheel = wheels.find(w => w.id === step.wheelId);
-if (!wheel) return null;
+                      if (!wheel) return null;
 
-                      const isHoning = wheel?.isHoning;
+                      const isHoning = wheel.isHoning;
 
                       return (
                         <div
@@ -1001,26 +828,26 @@ if (!wheel) return null;
                                   </option>
                                 ))}
                               </select>
-                            {wheel && (
-                              <div className="flex items-center gap-2 text-[0.7rem] text-neutral-500">
-                                <span className="text-neutral-400">D</span>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  inputMode="decimal"
-                                  className="w-20 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right"
-                                  value={Number.isNaN(wheel.D) ? '' : wheel.D}
-                                  onChange={e => {
-                                    const val = Number(e.target.value);
-                                    if (Number.isNaN(val)) return;        // ignore junk
-                                    updateWheel(wheel.id, { D: val });    // update the wheel’s diameter
-                                  }}
-                                />
-                                <span className="text-neutral-400">
-                                  mm {wheel.isHoning ? '(honing)' : ''}
-                                </span>
-                              </div>
-                            )}
+                            </div>
+
+                            {/* Diameter editor for this wheel */}
+                            <div className="flex items-center gap-2 text-[0.7rem] text-neutral-500">
+                              <span className="text-neutral-400">D</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                inputMode="decimal"
+                                className="w-20 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right"
+                                value={Number.isNaN(wheel.D) ? '' : wheel.D}
+                                onChange={e => {
+                                  const val = Number(e.target.value);
+                                  if (Number.isNaN(val)) return;
+                                  updateWheel(wheel.id, { D: val });
+                                }}
+                              />
+                              <span className="text-neutral-400">
+                                mm {wheel.isHoning ? '(honing)' : ''}
+                              </span>
                             </div>
 
                             {/* Base selection */}
@@ -1068,12 +895,10 @@ if (!wheel) return null;
                                 }}
                                 onChange={e => {
                                   const text = e.target.value;
-
                                   if (text.trim() === '') {
                                     updateStep(step.id, { angleOffset: 0 });
                                     return;
                                   }
-
                                   const val = Number(text);
                                   if (!Number.isNaN(val)) {
                                     updateStep(step.id, { angleOffset: val });
@@ -1087,14 +912,57 @@ if (!wheel) return null;
                             </div>
                           </div>
 
-                          {/* Actions – sort up/down + bottom-aligned delete */}
+                          {/* Actions – delete top, sort bottom */}
                           <div className="flex flex-col items-end h-full">
-                            {/* Sort buttons (top aligned) */}
+                            {/* Delete button (top aligned, icon only) */}
+                            <button
+                              type="button"
+                              className="text-red-400 text-[0.7rem] border border-red-400 rounded px-1.5 py-0.5 hover:bg-red-900/30
+                                        active:scale-95 transition-transform"
+                              onClick={() => deleteStep(step.id)}
+                              title="Delete step"
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                className="w-3 h-3"
+                                aria-hidden="true"
+                              >
+                                {/* Bin body */}
+                                <path
+                                  d="M9 9h6l-.5 9h-5z"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                {/* Lid */}
+                                <path
+                                  d="M8 7h8"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                />
+                                {/* Handle */}
+                                <path
+                                  d="M10 7l.5-2h3l.5 2"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </button>
+
+                            {/* Spacer pushes sort controls to the bottom */}
+                            <div className="flex-grow" />
+
+                            {/* Sort buttons (bottom aligned) */}
                             <div className="flex flex-col gap-2 items-end">
                               <button
                                 type="button"
                                 className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
-                                           disabled:opacity-40 active:scale-95 transition-transform"
+                                          disabled:opacity-40 active:scale-95 transition-transform"
                                 onClick={() => moveStep(index, -1)}
                                 disabled={index === 0}
                                 title="Move up"
@@ -1105,7 +973,7 @@ if (!wheel) return null;
                               <button
                                 type="button"
                                 className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
-                                           disabled:opacity-40 active:scale-95 transition-transform"
+                                          disabled:opacity-40 active:scale-95 transition-transform"
                                 onClick={() => moveStep(index, 1)}
                                 disabled={index === sessionSteps.length - 1}
                                 title="Move down"
@@ -1113,19 +981,6 @@ if (!wheel) return null;
                                 ↓
                               </button>
                             </div>
-
-                            {/* Spacer pushes Delete to the bottom */}
-                            <div className="flex-grow"></div>
-
-                            {/* Delete button (bottom aligned) */}
-                            <button
-                              type="button"
-                              className="text-red-400 text-[0.7rem] border border-red-400 rounded px-1.5 py-0.5 hover:bg-red-900/30
-                                         active:scale-95 transition-transform"
-                              onClick={() => deleteStep(step.id)}
-                            >
-                              Delete
-                            </button>
                           </div>
                         </div>
                       );
