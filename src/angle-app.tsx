@@ -114,24 +114,24 @@ const DEFAULT_CONSTANTS: MachineConstants = {
 
 const DEFAULT_WHEELS: Wheel[] = [
   {
-    id: 'sg-250',
-    name: 'SG‑250',
+    id: `wheel-sg-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+    name: 'SG-250',
     D: 250.0,
     angleOffset: 0,
     baseForHn: 'rear',
     isHoning: false,
   },
   {
-    id: 'df-250',
-    name: 'DF‑250',
+    id: `wheel-df-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+    name: 'DF-250',
     D: 250.0,
     angleOffset: 0,
     baseForHn: 'rear',
     isHoning: false,
   },
   {
-    id: 'la-220',
-    name: 'LA‑220 (leather)',
+    id: `wheel-la-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+    name: 'LA-220 (leather)',
     D: 215.0,
     angleOffset: 0,
     baseForHn: 'front',
@@ -460,6 +460,23 @@ const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
     // Track which wheel should auto-focus in the Wheel Manager
   const focusWheelIdRef = React.useRef<string | null>(null);
 
+    // Scroll target for newly added progression steps
+  const progressionEndRef = React.useRef<HTMLDivElement | null>(null);
+
+
+  // 🔒 Safety net: de-duplicate wheels by id (keep first, drop duplicates)
+  React.useEffect(() => {
+    const seen = new Set<string>();
+    const deduped = wheels.filter(w => {
+      if (seen.has(w.id)) return false;
+      seen.add(w.id);
+      return true;
+    });
+
+    if (deduped.length !== wheels.length) {
+      setWheels(deduped);
+    }
+  }, []); // run once on mount
 
   // Calibration wizard state (single-base)
   const [calibBase, setCalibBase] = React.useState<BaseSide>('rear');
@@ -617,26 +634,19 @@ const addStep = () => {
     angleOffset: 0,
   };
 
-  setSessionSteps(prev => [...prev, step]);
-};
-
-const updateStep = (id: string, patch: Partial<SessionStep>) => {
-  setSessionSteps(prev =>
-    prev.map(s => (s.id === id ? { ...s, ...patch } : s))
-  );
-};
-
-const deleteStep = (id: string) => {
-  setSessionSteps(prev => prev.filter(s => s.id !== id));
-};
-
-const moveStep = (index: number, delta: number) => {
   setSessionSteps(prev => {
-    const next = [...prev];
-    const newIndex = index + delta;
-    if (newIndex < 0 || newIndex >= next.length) return prev;
-    const [item] = next.splice(index, 1);
-    next.splice(newIndex, 0, item);
+    const next = [...prev, step];
+
+    // Auto-scroll after DOM update
+    window.requestAnimationFrame(() => {
+      if (progressionEndRef.current) {
+        progressionEndRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end',
+        });
+      }
+    });
+
     return next;
   });
 };
@@ -746,7 +756,7 @@ const clearSteps = () => {
           {/* Wheels / progression */}
           <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/20 flex flex-col gap-2">
             <div className="flex justify-between items-center">
-              <h2 className="text-sm font-semibold text-neutral-200">Wheels</h2>
+              <h2 className="text-sm font-semibold text-neutral-200">Progression</h2>
               <div className="flex items-center gap-2">
                 {isWheelConfigOpen && (
                   <button
@@ -758,18 +768,18 @@ const clearSteps = () => {
                     Clear
                   </button>
                 )}
-                <button
-                  type="button"
-                  className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
-                  onClick={() => setIsWheelConfigOpen(open => !open)}
-                >
-                  {isWheelConfigOpen ? 'Close progression' : 'Edit progression'}
-                </button>
+              <button
+                type="button"
+                className="w-12 px-2 py-1 text-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
+                onClick={() => setIsWheelConfigOpen(open => !open)}
+              >
+                {isWheelConfigOpen ? 'Back' : 'Edit'}
+              </button>
               </div>
             </div>
             {/* TOGGLE: math vs progression cards */}
             {isWheelConfigOpen ? (
-              // EDIT MODE – progression controls (same logic as the Progression tab)
+              // EDIT MODE – progression controls
               <div className="mt-2 flex flex-col gap-3 text-xs">
                 {/* Empty state */}
                 {sessionSteps.length === 0 && (
@@ -919,7 +929,9 @@ const clearSteps = () => {
                               type="button"
                               className="text-red-400 text-[0.7rem] border border-red-400 rounded px-1.5 py-0.5 hover:bg-red-900/30
                                         active:scale-95 transition-transform"
-                              onClick={() => deleteStep(step.id)}
+                              onClick={() =>
+                                setSessionSteps(prev => prev.filter(s => s.id !== step.id))
+                              }
                               title="Delete step"
                             >
                               <svg
@@ -988,16 +1000,18 @@ const clearSteps = () => {
                   </div>
                 )}
 
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40"
-                    onClick={addStep}
-                    disabled={wheels.length === 0}
-                  >
-                    + Add step
-                  </button>
-                </div>
+                {/* Add step button — same width and spacing as cards */}
+                <button
+                  type="button"
+                  className="w-full px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-center disabled:opacity-40"
+                  onClick={addStep}
+                  disabled={wheels.length === 0}
+                >
+                  + Add step
+                </button>
+
+                {/* Scroll anchor */}
+                <div ref={progressionEndRef} />
               </div>
             ) : (
               // VIEW MODE – if no progression, show prompt instead of default wheels
@@ -1011,7 +1025,7 @@ const clearSteps = () => {
                 <div className="grid gap-2 md:grid-cols-2">
                   {wheelResults.map(r => (
                     <div
-                      key={r.wheel.id}
+                      key={r.step?.id ?? r.wheel.id}
                       className="border border-neutral-700 rounded px-2 py-2 flex flex-col gap-2 bg-neutral-950/40"
                     >
                       {/* Header: name + orientation, read-only */}
