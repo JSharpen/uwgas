@@ -67,11 +67,20 @@ type SessionStep = {
   angleOffset: number; // Δβ at step level
 };
 
+type PresetStepRef = {
+  wheelId: string;
+  wheelName: string;
+  base: BaseSide;
+  angleOffset: number;
+};
+
 type SessionPreset = {
   id: string;
   name: string;
-  description?: string;
-  steps: SessionStep[];
+  notes?: string;
+  createdAt: string;
+  version: 1;
+  steps: PresetStepRef[];
 };
 
 type MachineConstants = {
@@ -446,9 +455,14 @@ function App() {
   const [wheels, setWheels] = React.useState<Wheel[]>(() =>
     _load('t_wheels', DEFAULT_WHEELS)
   );
-const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
-  _load('t_sessionSteps', [])
-);
+  const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
+    _load('t_sessionSteps', [])
+  );
+    const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(() =>
+    _load('t_sessionPresets', [])
+  );
+  const [selectedPresetId, setSelectedPresetId] = React.useState<string>('');
+
   const [view, setView] = React.useState<
   'calculator' | 'wheels' | 'settings'
 >('calculator');
@@ -462,6 +476,10 @@ const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
 
     // Scroll target for newly added progression steps
   const progressionEndRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Track last loaded preset and its steps
+const lastLoadedPresetIdRef = React.useRef<string | null>(null);
+const lastLoadedStepsRef = React.useRef<string | null>(null);
 
 
   // 🔒 Safety net: de-duplicate wheels by id (keep first, drop duplicates)
@@ -514,8 +532,44 @@ const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
   }, [wheels]);
 
   React.useEffect(() => {
-  _save('t_sessionSteps', sessionSteps);
-}, [sessionSteps]);
+    _save('t_sessionSteps', sessionSteps);
+  }, [sessionSteps]);
+
+  React.useEffect(() => {
+    _save('t_sessionPresets', sessionPresets);
+  }, [sessionPresets]);
+
+  // Keep preset dropdown in sync when the progression is edited
+  React.useEffect(() => {
+    // If no preset is currently selected, nothing to sync
+    if (!selectedPresetId) {
+      lastLoadedStepsRef.current = null;
+      return;
+    }
+
+    // Build a minimal snapshot of the current progression configuration
+    const currentSnapshot = JSON.stringify(
+      sessionSteps.map(s => ({
+        wheelId: s.wheelId,
+        base: s.base,
+        angleOffset: s.angleOffset,
+      }))
+    );
+
+    // If we don't yet have a snapshot for this selection, initialise it once
+    if (lastLoadedStepsRef.current === null) {
+      lastLoadedStepsRef.current = currentSnapshot;
+      return;
+    }
+
+    // If the current progression no longer matches the snapshot,
+    // the user has modified the config → clear the preset selection.
+    if (currentSnapshot !== lastLoadedStepsRef.current) {
+      lastLoadedStepsRef.current = null;
+      setSelectedPresetId('');
+    }
+  }, [sessionSteps, selectedPresetId]);
+
 
   // Ensure calibRows length matches calibCount
   const ensureCalibRowsLength = (count: number) => {
@@ -651,6 +705,98 @@ const addStep = () => {
   });
 };
 
+const updateStep = (id: string, patch: Partial<SessionStep>) => {
+  setSessionSteps(prev =>
+    prev.map(s => (s.id === id ? { ...s, ...patch } : s))
+  );
+};
+
+const moveStep = (index: number, delta: number) => {
+  setSessionSteps(prev => {
+    const next = [...prev];
+    const newIndex = index + delta;
+    if (newIndex < 0 || newIndex >= next.length) return prev;
+    const [item] = next.splice(index, 1);
+    next.splice(newIndex, 0, item);
+    return next;
+  });
+};
+
+const handleSavePreset = () => {
+  if (sessionSteps.length === 0) return;
+
+  const nameRaw = window.prompt('Preset name', '');
+  if (!nameRaw) return;
+  const name = nameRaw.trim();
+  if (!name) return;
+
+  // Build preset steps from current session steps
+  const presetSteps: PresetStepRef[] = sessionSteps
+    .map(step => {
+      const wheel = wheels.find(w => w.id === step.wheelId);
+      if (!wheel) return null;
+      return {
+        wheelId: wheel.id,
+        wheelName: wheel.name,
+        base: step.base,
+        angleOffset: step.angleOffset,
+      } as PresetStepRef;
+    })
+    .filter((x): x is PresetStepRef => x !== null);
+
+  if (presetSteps.length === 0) return;
+
+  const newPreset: SessionPreset = {
+    id: `preset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    name,
+    notes: undefined,
+    createdAt: new Date().toISOString(),
+    version: 1,
+    steps: presetSteps,
+  };
+
+  setSessionPresets(prev => [...prev, newPreset]);
+  setSelectedPresetId(newPreset.id);
+};
+
+const handleLoadPreset = (presetId: string) => {
+  const preset = sessionPresets.find(p => p.id === presetId);
+  if (!preset) return;
+
+  const resolvedSteps: SessionStep[] = [];
+
+  for (const ref of preset.steps) {
+    // Prefer ID, fall back to matching by name
+    const wheel =
+      wheels.find(w => w.id === ref.wheelId) ||
+      wheels.find(w => w.name === ref.wheelName);
+
+    if (!wheel) continue;
+
+    resolvedSteps.push({
+      id: `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      wheelId: wheel.id,
+      base: ref.base,
+      angleOffset: ref.angleOffset,
+    });
+  }
+
+  if (resolvedSteps.length === 0) return;
+  setSessionSteps(resolvedSteps);
+
+  // Remember that this preset is now the active one
+lastLoadedPresetIdRef.current = preset.id;
+lastLoadedStepsRef.current = JSON.stringify(
+  resolvedSteps.map(s => ({
+    wheelId: s.wheelId,
+    base: s.base,
+    angleOffset: s.angleOffset,
+  }))
+);
+setSelectedPresetId(preset.id);
+};
+
+
 const clearSteps = () => {
   setSessionSteps([]);
 };
@@ -757,322 +903,360 @@ const clearSteps = () => {
           <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/20 flex flex-col gap-2">
             <div className="flex justify-between items-center">
               <h2 className="text-sm font-semibold text-neutral-200">Progression</h2>
+
               <div className="flex items-center gap-2">
-                {isWheelConfigOpen && (
-                  <button
-                    type="button"
-                    className="px-2 py-1 rounded border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-xs text-neutral-300 disabled:opacity-40"
-                    onClick={clearSteps}
-                    disabled={sessionSteps.length === 0}
-                  >
-                    Clear
-                  </button>
+
+                {/* VIEW MODE — Load preset UI */}
+                {!isWheelConfigOpen && (
+                  <>
+                    <select
+                      className="w-28 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs"
+                      value={selectedPresetId || ''}
+                      onChange={e => {
+                        const id = e.target.value;
+                        setSelectedPresetId(id);
+                        if (id) {
+                          handleLoadPreset(id); // auto-load on selection
+                        }
+                      }}
+                    >
+                      <option value="">Presets…</option>
+                      {sessionPresets.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                    {/* no Load button anymore */}
+                  </>
                 )}
-              <button
-                type="button"
-                className="w-12 px-2 py-1 text-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
-                onClick={() => setIsWheelConfigOpen(open => !open)}
-              >
-                {isWheelConfigOpen ? 'Back' : 'Edit'}
-              </button>
+
+                {/* EDIT MODE — Save preset + Clear */}
+                {isWheelConfigOpen && (
+                  <>
+                    <button
+                      type="button"
+                      className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40"
+                      onClick={handleSavePreset}
+                      disabled={sessionSteps.length === 0}
+                    >
+                      Save preset
+                    </button>
+
+                    <button
+                      type="button"
+                      className="px-2 py-1 rounded border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-xs text-neutral-300 disabled:opacity-40"
+                      onClick={clearSteps}
+                      disabled={sessionSteps.length === 0}
+                    >
+                      Clear
+                    </button>
+                  </>
+                )}
+
+                {/* Always present: Edit / Back toggle */}
+                <button
+                  type="button"
+                  className="w-12 px-2 py-1 text-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
+                  onClick={() => setIsWheelConfigOpen(open => !open)}
+                >
+                  {isWheelConfigOpen ? 'Back' : 'Edit'}
+                </button>
               </div>
             </div>
             {/* TOGGLE: math vs progression cards */}
-            {isWheelConfigOpen ? (
-              // EDIT MODE – progression controls
-              <div className="mt-2 flex flex-col gap-3 text-xs">
-                {/* Empty state */}
-                {sessionSteps.length === 0 && (
-                  <div className="text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-2">
-                    No steps defined yet. Click <span className="font-semibold">+ Add step</span> to
-                    start building a progression. When at least one step exists, the calculator
-                    view will follow this sequence.
-                  </div>
-                )}
-
-                {/* Steps list */}
-                {sessionSteps.length > 0 && (
-                  <div className="flex flex-col gap-2 text-xs">
-                    <div className="grid grid-cols-[auto,1fr,auto] gap-2 font-mono text-[0.7rem] text-neutral-400 pb-1 border-b border-neutral-700">
-                      <div>#</div>
-                      <div>Step</div>
-                      <div className="text-right">Actions</div>
+            {/* Shared wrapper so cards start at the exact same vertical position in both modes */}
+            <div className="mt-2">
+              {isWheelConfigOpen ? (
+                // EDIT MODE – progression controls
+                <div className="flex flex-col gap-3 text-xs">
+                  {/* Empty state when no steps exist */}
+                  {sessionSteps.length === 0 && (
+                    <div className="text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-2">
+                      No steps defined yet. Click <span className="font-semibold">+ Add step</span> to
+                      start building a progression. When at least one step exists, the calculator
+                      view will follow this sequence.
                     </div>
+                  )}
 
-                    {sessionSteps.map((step, index) => {
-                      const wheel = wheels.find(w => w.id === step.wheelId);
-                      if (!wheel) return null;
+                  {/* Steps list */}
+                  {sessionSteps.length > 0 && (
+                    <div className="flex flex-col gap-2 text-xs">
+                      {sessionSteps.map((step, index) => {
+                        const wheel = wheels.find(w => w.id === step.wheelId);
+                        if (!wheel) return null;
 
-                      const isHoning = wheel.isHoning;
+                        const isHoning = wheel.isHoning;
 
-                      return (
-                        <div
-                          key={step.id}
-                          className="grid grid-cols-[auto,1fr,auto] gap-2 items-center border border-neutral-700 rounded-md p-2 bg-neutral-950/40"
-                        >
-                          {/* Step number */}
-                          <div className="font-mono text-[0.8rem] text-neutral-300">
-                            {index + 1}
-                          </div>
-
-                          {/* Main step config */}
-                          <div className="flex flex-col gap-1">
-                            {/* Wheel selector */}
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-neutral-400 text-[0.7rem]">Wheel</span>
-                              <select
-                                className="rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-xs"
-                                value={step.wheelId}
-                                onChange={e => {
-                                  const newWheel = wheels.find(w => w.id === e.target.value);
-                                  if (!newWheel) return;
-                                  updateStep(step.id, {
-                                    wheelId: newWheel.id,
-                                    base: newWheel.isHoning ? 'front' : step.base,
-                                  });
-                                }}
-                              >
-                                {wheels.map(w => (
-                                  <option key={w.id} value={w.id}>
-                                    {w.name}
-                                  </option>
-                                ))}
-                              </select>
+                        return (
+                          <div
+                            key={step.id}
+                            className="grid grid-cols-[auto,1fr,auto] gap-2 items-center border border-neutral-700 rounded-md p-2 bg-neutral-950/40"
+                          >
+                            {/* Step number */}
+                            <div className="font-mono text-[0.8rem] text-neutral-300">
+                              {index + 1}
                             </div>
 
-                            {/* Diameter editor for this wheel */}
-                            <div className="flex items-center gap-2 text-[0.7rem] text-neutral-500">
-                              <span className="text-neutral-400">D</span>
-                              <input
-                                type="number"
-                                step="0.01"
-                                inputMode="decimal"
-                                className="w-20 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right"
-                                value={Number.isNaN(wheel.D) ? '' : wheel.D}
-                                onChange={e => {
-                                  const val = Number(e.target.value);
-                                  if (Number.isNaN(val)) return;
-                                  updateWheel(wheel.id, { D: val });
-                                }}
-                              />
-                              <span className="text-neutral-400">
-                                mm {wheel.isHoning ? '(honing)' : ''}
-                              </span>
-                            </div>
+                            {/* Main step config */}
+                            <div className="flex flex-col gap-1">
+                              {/* Wheel selector */}
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-neutral-400 text-[0.7rem]">Wheel</span>
+                                <select
+                                  className="rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-xs"
+                                  value={step.wheelId}
+                                  onChange={e => {
+                                    const newWheel = wheels.find(w => w.id === e.target.value);
+                                    if (!newWheel) return;
+                                    updateStep(step.id, {
+                                      wheelId: newWheel.id,
+                                      base: newWheel.isHoning ? 'front' : step.base,
+                                    });
+                                  }}
+                                >
+                                  {wheels.map(w => (
+                                    <option key={w.id} value={w.id}>
+                                      {w.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
 
-                            {/* Base selection */}
-                            <div className="flex flex-wrap items-center gap-3">
-                              <span className="text-neutral-400 text-[0.7rem]">Base</span>
-                              {isHoning ? (
-                                <span className="text-[0.7rem] text-emerald-300">
-                                  Honing wheel: front base (edge trailing)
+                              {/* Diameter editor for this wheel */}
+                              <div className="flex items-center gap-2 text-[0.7rem] text-neutral-500">
+                                <span className="text-neutral-400">D</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  inputMode="decimal"
+                                  className="w-20 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right"
+                                  value={Number.isNaN(wheel.D) ? '' : wheel.D}
+                                  onChange={e => {
+                                    const val = Number(e.target.value);
+                                    if (Number.isNaN(val)) return;
+                                    updateWheel(wheel.id, { D: val });
+                                  }}
+                                />
+                                <span className="text-neutral-400">
+                                  mm {wheel.isHoning ? '(honing)' : ''}
                                 </span>
-                              ) : (
-                                <>
-                                  <label className="flex items-center gap-1">
-                                    <input
-                                      type="radio"
-                                      checked={step.base === 'rear'}
-                                      onChange={() => updateStep(step.id, { base: 'rear' })}
-                                    />
-                                    <span>Rear (edge leading)</span>
-                                  </label>
-                                  <label className="flex items-center gap-1">
-                                    <input
-                                      type="radio"
-                                      checked={step.base === 'front'}
-                                      onChange={() => updateStep(step.id, { base: 'front' })}
-                                    />
-                                    <span>Front (edge trailing)</span>
-                                  </label>
-                                </>
-                              )}
+                              </div>
+
+                              {/* Base selection */}
+                              <div className="flex flex-wrap items-center gap-3">
+                                <span className="text-neutral-400 text-[0.7rem]">Base</span>
+                                {isHoning ? (
+                                  <span className="text-[0.7rem] text-emerald-300">
+                                    Honing wheel: front base (edge trailing)
+                                  </span>
+                                ) : (
+                                  <>
+                                    <label className="flex items-center gap-1">
+                                      <input
+                                        type="radio"
+                                        checked={step.base === 'rear'}
+                                        onChange={() => updateStep(step.id, { base: 'rear' })}
+                                      />
+                                      <span>Rear (edge leading)</span>
+                                    </label>
+                                    <label className="flex items-center gap-1">
+                                      <input
+                                        type="radio"
+                                        checked={step.base === 'front'}
+                                        onChange={() => updateStep(step.id, { base: 'front' })}
+                                      />
+                                      <span>Front (edge trailing)</span>
+                                    </label>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Angle offset */}
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-neutral-400 text-[0.7rem]">Angle offset Δβ</span>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
+                                  value={step.angleOffset === 0 ? '' : step.angleOffset}
+                                  placeholder="0"
+                                  onFocus={e => {
+                                    if (e.target.value !== '') {
+                                      e.target.select();
+                                    }
+                                  }}
+                                  onChange={e => {
+                                    const text = e.target.value;
+                                    if (text.trim() === '') {
+                                      updateStep(step.id, { angleOffset: 0 });
+                                      return;
+                                    }
+                                    const val = Number(text);
+                                    if (!Number.isNaN(val)) {
+                                      updateStep(step.id, { angleOffset: val });
+                                    }
+                                  }}
+                                />
+                                <span className="text-neutral-400 text-[0.7rem]">°</span>
+                                <span className="text-neutral-500 text-[0.7rem]">
+                                  (applied on top of global β and micro bump)
+                                </span>
+                              </div>
                             </div>
 
-                            {/* Angle offset */}
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-neutral-400 text-[0.7rem]">Angle offset Δβ</span>
-                              <input
-                                type="number"
-                                step="0.1"
-                                className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
-                                value={step.angleOffset === 0 ? '' : step.angleOffset}
-                                placeholder="0"
-                                onFocus={e => {
-                                  if (e.target.value !== '') {
-                                    e.target.select();
-                                  }
-                                }}
-                                onChange={e => {
-                                  const text = e.target.value;
-                                  if (text.trim() === '') {
-                                    updateStep(step.id, { angleOffset: 0 });
-                                    return;
-                                  }
-                                  const val = Number(text);
-                                  if (!Number.isNaN(val)) {
-                                    updateStep(step.id, { angleOffset: val });
-                                  }
-                                }}
-                              />
-                              <span className="text-neutral-400 text-[0.7rem]">°</span>
-                              <span className="text-neutral-500 text-[0.7rem]">
-                                (applied on top of global β and micro bump)
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Actions – delete top, sort bottom */}
-                          <div className="flex flex-col items-end h-full">
-                            {/* Delete button (top aligned, icon only) */}
-                            <button
-                              type="button"
-                              className="text-red-400 text-[0.7rem] border border-red-400 rounded px-1.5 py-0.5 hover:bg-red-900/30
-                                        active:scale-95 transition-transform"
-                              onClick={() =>
-                                setSessionSteps(prev => prev.filter(s => s.id !== step.id))
-                              }
-                              title="Delete step"
-                            >
-                              <svg
-                                viewBox="0 0 24 24"
-                                className="w-3 h-3"
-                                aria-hidden="true"
-                              >
-                                {/* Bin body */}
-                                <path
-                                  d="M9 9h6l-.5 9h-5z"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                {/* Lid */}
-                                <path
-                                  d="M8 7h8"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                />
-                                {/* Handle */}
-                                <path
-                                  d="M10 7l.5-2h3l.5 2"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </button>
-
-                            {/* Spacer pushes sort controls to the bottom */}
-                            <div className="flex-grow" />
-
-                            {/* Sort buttons (bottom aligned) */}
-                            <div className="flex flex-col gap-2 items-end">
+                            {/* Actions – delete top, sort bottom */}
+                            <div className="flex flex-col items-end h-full">
+                              {/* Delete button (top aligned, icon only) */}
                               <button
                                 type="button"
-                                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
-                                          disabled:opacity-40 active:scale-95 transition-transform"
-                                onClick={() => moveStep(index, -1)}
-                                disabled={index === 0}
-                                title="Move up"
+                                className="text-red-400 text-[0.7rem] border border-red-400 rounded px-1.5 py-0.5 hover:bg-red-900/30
+                                          active:scale-95 transition-transform"
+                                onClick={() =>
+                                  setSessionSteps(prev => prev.filter(s => s.id !== step.id))
+                                }
+                                title="Delete step"
                               >
-                                ↑
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  className="w-3 h-3"
+                                  aria-hidden="true"
+                                >
+                                  {/* Bin body */}
+                                  <path
+                                    d="M9 9h6l-.5 9h-5z"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                  {/* Lid */}
+                                  <path
+                                    d="M8 7h8"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                  />
+                                  {/* Handle */}
+                                  <path
+                                    d="M10 7l.5-2h3l.5 2"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
                               </button>
 
-                              <button
-                                type="button"
-                                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
-                                          disabled:opacity-40 active:scale-95 transition-transform"
-                                onClick={() => moveStep(index, 1)}
-                                disabled={index === sessionSteps.length - 1}
-                                title="Move down"
-                              >
-                                ↓
-                              </button>
+                              {/* Spacer pushes sort controls to the bottom */}
+                              <div className="flex-grow" />
+
+                              {/* Sort buttons (bottom aligned) */}
+                              <div className="flex flex-col gap-2 items-end">
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
+                                            disabled:opacity-40 active:scale-95 transition-transform"
+                                  onClick={() => moveStep(index, -1)}
+                                  disabled={index === 0}
+                                  title="Move up"
+                                >
+                                  ↑
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
+                                            disabled:opacity-40 active:scale-95 transition-transform"
+                                  onClick={() => moveStep(index, 1)}
+                                  disabled={index === sessionSteps.length - 1}
+                                  title="Move down"
+                                >
+                                  ↓
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  )}
 
-                {/* Add step button — same width and spacing as cards */}
-                <button
-                  type="button"
-                  className="w-full px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-center disabled:opacity-40"
-                  onClick={addStep}
-                  disabled={wheels.length === 0}
-                >
-                  + Add step
-                </button>
+                  {/* Add step button — same width and spacing as cards */}
+                  <button
+                    type="button"
+                    className="w-full px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-center disabled:opacity-40"
+                    onClick={addStep}
+                    disabled={wheels.length === 0}
+                  >
+                    + Add step
+                  </button>
 
-                {/* Scroll anchor */}
-                <div ref={progressionEndRef} />
-              </div>
-            ) : (
-              // VIEW MODE – if no progression, show prompt instead of default wheels
-              sessionSteps.length === 0 ? (
-                <div className="mt-2 text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-2">
-                  No progression steps defined yet. Click{' '}
-                  <span className="font-semibold">Edit progression</span> above to add wheels and
-                  steps for this calculator.
+                  {/* Scroll anchor */}
+                  <div ref={progressionEndRef} />
                 </div>
               ) : (
-                <div className="grid gap-2 md:grid-cols-2">
-                  {wheelResults.map(r => (
-                    <div
-                      key={r.step?.id ?? r.wheel.id}
-                      className="border border-neutral-700 rounded px-2 py-2 flex flex-col gap-2 bg-neutral-950/40"
-                    >
-                      {/* Header: name + orientation, read-only */}
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <div className="text-xs font-semibold text-neutral-100 min-w-[8rem]">
-                              {r.wheel.name}
+                // VIEW MODE – if no progression, show prompt instead of default wheels
+                sessionSteps.length === 0 ? (
+                  <div className="text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-2">
+                    No progression steps defined yet. Click{' '}
+                    <span className="font-semibold">Edit progression</span> above to add wheels and
+                    steps for this calculator.
+                  </div>
+                ) : (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {wheelResults.map(r => (
+                      <div
+                        key={r.step?.id ?? r.wheel.id}
+                        className="border border-neutral-700 rounded px-2 py-2 flex flex-col gap-2 bg-neutral-950/40"
+                      >
+                        {/* Header: name + orientation, read-only */}
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <div className="text-xs font-semibold text-neutral-100 min-w-[8rem]">
+                                {r.wheel.name}
+                              </div>
+                              <span className="text-[0.7rem] text-neutral-400">
+                                {r.orientationLabel}
+                              </span>
                             </div>
-                            <span className="text-[0.7rem] text-neutral-400">
-                              {r.orientationLabel}
-                            </span>
-                          </div>
-                          <div className="text-[0.7rem] text-neutral-500">
-                            D = {Number.isFinite(r.wheel.D) ? r.wheel.D.toFixed(2) : '—'} mm
-                            {r.wheel.isHoning ? ' (honing)' : ''}
+                            <div className="text-[0.7rem] text-neutral-500">
+                              D = {Number.isFinite(r.wheel.D) ? r.wheel.D.toFixed(2) : '—'} mm
+                              {r.wheel.isHoning ? ' (honing)' : ''}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Math block */}
-                      <div className="grid grid-cols-2 gap-2 text-[0.75rem]">
-                        <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
-                          <div className="text-neutral-300">
-                            Wheel → USB top (rear reference)
+                        {/* Math block */}
+                        <div className="grid grid-cols-2 gap-2 text-[0.75rem]">
+                          <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
+                            <div className="text-neutral-300">
+                              Wheel → USB top (rear reference)
+                            </div>
+                            <div className="font-mono text-sm">
+                              hᵣ = {r.hrWheel.toFixed(2)} mm
+                            </div>
                           </div>
-                          <div className="font-mono text-sm">
-                            hᵣ = {r.hrWheel.toFixed(2)} mm
-                          </div>
-                        </div>
-                        <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
-                          <div className="text-neutral-300">
-                            Datum → USB top (selected base)
-                          </div>
-                          <div className="font-mono text-sm">
-                            hₙ = {r.hnBase.toFixed(2)} mm
-                          </div>
-                          <div className="text-neutral-400 text-[0.7rem]">
-                            βₑₑₚ = {r.betaEffDeg.toFixed(2)}°
+                          <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
+                            <div className="text-neutral-300">
+                              Datum → USB top (selected base)
+                            </div>
+                            <div className="font-mono text-sm">
+                              hₙ = {r.hnBase.toFixed(2)} mm
+                            </div>
+                            <div className="text-neutral-400 text-[0.7rem]">
+                              βₑₑₚ = {r.betaEffDeg.toFixed(2)}°
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
           </section>
         </>
       )}
