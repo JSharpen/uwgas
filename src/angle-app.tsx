@@ -443,6 +443,230 @@ function estimateMaxAngleErrorDeg(
   return maxAngle;
 }
 
+function GrindDirToggle({
+  base,
+  isHoning,
+  canToggle,
+  onToggle,
+}: {
+  base: BaseSide;
+  isHoning: boolean;
+  canToggle: boolean; // edit-mode control
+  onToggle: () => void;
+}) {
+  const label = base === 'rear' ? 'EL' : 'ET'; // Edge Leading / Edge Trailing
+
+  const effectiveLocked = isHoning || !canToggle;
+
+  const title = isHoning
+    ? 'Honing wheel: fixed to Edge Trailing (front base)'
+    : !canToggle
+    ? base === 'rear'
+      ? 'Edge Leading (rear base)'
+      : 'Edge Trailing (front base)'
+    : base === 'rear'
+    ? 'Edge Leading (rear base) – click to switch to Edge Trailing'
+    : 'Edge Trailing (front base) – click to switch to Edge Leading';
+
+  const baseClasses =
+    'px-1.5 py-0.5 text-[0.65rem] rounded border text-neutral-50 transition-colors';
+
+  let stateClasses: string;
+
+  if (effectiveLocked) {
+    // Greyed out (view mode or honing)
+    stateClasses =
+      'border-neutral-700 bg-neutral-900 text-neutral-500 opacity-60 cursor-not-allowed';
+  } else if (base === 'rear') {
+    // EL
+    stateClasses = 'border-emerald-500 bg-emerald-900/40 text-emerald-200';
+  } else {
+    // ET
+    stateClasses = 'border-sky-500 bg-sky-900/40 text-sky-200';
+  }
+
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={() => {
+        if (effectiveLocked) return;
+        onToggle();
+      }}
+      className={baseClasses + ' ' + stateClasses}
+    >
+      {label}
+    </button>
+  );
+}
+// =============== Wheel Selector Dropdown===============
+function WheelSelect({
+  wheels,
+  value,
+  onChange,
+}: {
+  wheels: Wheel[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+
+  const selected = wheels.find(w => w.id === value) || null;
+
+  const handleSelect = (id: string) => {
+    onChange(id);
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative inline-block text-xs">
+      {/* Shell / trigger */}
+      <button
+        type="button"
+        className="inline-flex items-center justify-between gap-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 min-w-[9rem] hover:bg-neutral-900"
+        onClick={() => setOpen(o => !o)}
+      >
+        <span className="truncate text-left">
+          {selected ? selected.name : 'Select wheel'}
+        </span>
+        <svg
+          viewBox="0 0 24 24"
+          className={
+            'w-3 h-3 transition-transform ' + (open ? 'rotate-180' : 'rotate-0')
+          }
+          aria-hidden="true"
+        >
+          <path
+            d="M7 10l5 5 5-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      {/* Menu */}
+      {open && (
+        <div className="absolute left-0 mt-1 z-20 w-44 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg">
+          {wheels.length === 0 && (
+            <div className="px-2 py-1 text-[0.7rem] text-neutral-500">
+              No wheels defined
+            </div>
+          )}
+          {wheels.map(w => {
+            const isActive = w.id === value;
+            return (
+              <button
+                key={w.id}
+                type="button"
+                className={
+                  'w-full px-2 py-1 text-left text-[0.75rem] ' +
+                  (isActive
+                    ? 'bg-emerald-900/40 text-emerald-100'
+                    : 'bg-neutral-950 text-neutral-100 hover:bg-neutral-900')
+                }
+                onClick={() => handleSelect(w.id)}
+              >
+                {w.name}
+                {w.isHoning && (
+                  <span className="ml-1 text-[0.65rem] text-emerald-300">
+                    · honing
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============== Preset Selector Dropdown===============
+function PresetSelect({
+  presets,
+  value,
+  onChange,
+}: {
+  presets: SessionPreset[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+
+  const selected = presets.find(p => p.id === value) || null;
+
+  const handleSelect = (id: string) => {
+    onChange(id);  // parent will load the preset
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative inline-block text-xs">
+      {/* Trigger */}
+      <button
+        type="button"
+        className="inline-flex items-center justify-between gap-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 min-w-[9rem] hover:bg-neutral-900"
+        onClick={() => setOpen(o => !o)}
+      >
+        <span className="truncate text-left">
+          {selected ? selected.name : 'Presets…'}
+        </span>
+        <svg
+          viewBox="0 0 24 24"
+          className={
+            'w-3 h-3 transition-transform ' + (open ? 'rotate-180' : 'rotate-0')
+          }
+          aria-hidden="true"
+        >
+          <path
+            d="M7 10l5 5 5-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      {/* Menu */}
+      {open && (
+        <div className="absolute right-0 mt-1 z-20 w-48 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg">
+          {presets.length === 0 && (
+            <div className="px-2 py-1 text-[0.7rem] text-neutral-500">
+              No presets saved
+            </div>
+          )}
+          {presets.map(p => {
+            const isActive = p.id === value;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                className={
+                  'w-full px-2 py-1 text-left text-[0.75rem] ' +
+                  (isActive
+                    ? 'bg-emerald-900/40 text-emerald-100'
+                    : 'bg-neutral-950 text-neutral-100 hover:bg-neutral-900')
+                }
+                onClick={() => handleSelect(p.id)}
+              >
+                <span className="truncate">{p.name}</span>
+                <span className="ml-1 text-[0.65rem] text-neutral-500">
+                  · {p.steps.length} step{p.steps.length === 1 ? '' : 's'}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // =============== App ===============
 
 function App() {
@@ -908,27 +1132,16 @@ const clearSteps = () => {
 
                 {/* VIEW MODE — Load preset UI */}
                 {!isWheelConfigOpen && (
-                  <>
-                    <select
-                      className="w-28 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs"
-                      value={selectedPresetId || ''}
-                      onChange={e => {
-                        const id = e.target.value;
-                        setSelectedPresetId(id);
-                        if (id) {
-                          handleLoadPreset(id); // auto-load on selection
-                        }
-                      }}
-                    >
-                      <option value="">Presets…</option>
-                      {sessionPresets.map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                    {/* no Load button anymore */}
-                  </>
+                  <PresetSelect
+                    presets={sessionPresets}
+                    value={selectedPresetId || ''}
+                    onChange={id => {
+                      setSelectedPresetId(id);
+                      if (id) {
+                        handleLoadPreset(id); // auto-load on selection
+                      }
+                    }}
+                  />
                 )}
 
                 {/* EDIT MODE — Save preset + Clear */}
@@ -991,190 +1204,187 @@ const clearSteps = () => {
                         return (
                           <div
                             key={step.id}
-                            className="grid grid-cols-[auto,1fr,auto] gap-2 items-center border border-neutral-700 rounded-md p-2 bg-neutral-950/40"
+                            className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden flex flex-col"
                           >
-                            {/* Step number */}
-                            <div className="font-mono text-[0.8rem] text-neutral-300">
-                              {index + 1}
-                            </div>
+                            {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
+                            <div className="flex items-center justify-between px-2 py-1 bg-neutral-900/80">
+                              <div className="flex items-center gap-2">
+                                {/* Step badge (non-intrusive) */}
+                                <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100">
+                                  {index + 1}
+                                </div>
 
-                            {/* Main step config */}
-                            <div className="flex flex-col gap-1">
-                              {/* Wheel selector */}
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-neutral-400 text-[0.7rem]">Wheel</span>
-                                <select
-                                  className="rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-xs"
+                                {/* Wheel selector lives in the header for quick scanning */}
+                                <WheelSelect
+                                  wheels={wheels}
                                   value={step.wheelId}
-                                  onChange={e => {
-                                    const newWheel = wheels.find(w => w.id === e.target.value);
+                                  onChange={id => {
+                                    const newWheel = wheels.find(w => w.id === id);
                                     if (!newWheel) return;
+                                    // When switching to a honing wheel, force the base to front
                                     updateStep(step.id, {
                                       wheelId: newWheel.id,
                                       base: newWheel.isHoning ? 'front' : step.base,
                                     });
                                   }}
+                                />
+
+                                {/* Grind direction toggle – EL/ET, interactive in edit mode for non-honing */}
+                                <GrindDirToggle
+                                  base={step.base}
+                                  isHoning={isHoning}
+                                  canToggle={!isHoning} // edit mode: toggle allowed for non-honing wheels
+                                  onToggle={() =>
+                                    updateStep(step.id, {
+                                      base: step.base === 'rear' ? 'front' : 'rear',
+                                    })
+                                  }
+                                />
+                              </div>
+
+                              {/* Header right side: D editor + delete */}
+                              <div className="flex items-center gap-3">
+                                {/* Diameter editor */}
+                                <label className="flex items-center gap-1 text-[0.7rem] text-neutral-300">
+                                  <span>D =</span>
+                                  <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    className="w-[56px] rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-[0.7rem] font-mono"
+                                    value={
+                                      wheel.DText !== undefined
+                                        ? wheel.DText
+                                        : Number.isNaN(wheel.D)
+                                        ? ''
+                                        : String(wheel.D)
+                                    }
+                                    onFocus={e => e.target.select()}
+                                    onChange={e => {
+                                      const text = e.target.value;
+
+                                      // Mirror Wheel Manager behaviour: keep DText + numeric D in sync
+                                      const patch: Partial<Wheel> = { DText: text };
+
+                                      const trimmed = text.trim();
+                                      if (trimmed === '') {
+                                        // Empty → clear numeric D as well
+                                        patch.D = NaN as unknown as number;
+                                        updateWheel(wheel.id, patch);
+                                        return;
+                                      }
+
+                                      const normalised = trimmed.replace(',', '.');
+                                      const val = Number(normalised);
+
+                                      if (!Number.isNaN(val)) {
+                                        // Round to 2 dp for the math side
+                                        patch.D = Math.round(val * 100) / 100;
+                                      }
+                                      // If invalid number (e.g. "2."), we only update DText and keep last good D
+                                      updateWheel(wheel.id, patch);
+                                    }}
+                                  />
+                                  <span>mm</span>
+                                </label>
+
+                                {/* Delete step */}
+                                <button
+                                  type="button"
+                                  className="text-red-400 text-[0.7rem] border border-red-400 rounded px-1.5 py-0.5 hover:bg-red-900/30 active:scale-95 transition-transform"
+                                  onClick={() =>
+                                    setSessionSteps(prev => prev.filter(s => s.id !== step.id))
+                                  }
+                                  title="Delete step"
                                 >
-                                  {wheels.map(w => (
-                                    <option key={w.id} value={w.id}>
-                                      {w.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              {/* Diameter editor for this wheel */}
-                              <div className="flex items-center gap-2 text-[0.7rem] text-neutral-500">
-                                <span className="text-neutral-400">D</span>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  inputMode="decimal"
-                                  className="w-20 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right"
-                                  value={Number.isNaN(wheel.D) ? '' : wheel.D}
-                                  onChange={e => {
-                                    const val = Number(e.target.value);
-                                    if (Number.isNaN(val)) return;
-                                    updateWheel(wheel.id, { D: val });
-                                  }}
-                                />
-                                <span className="text-neutral-400">
-                                  mm {wheel.isHoning ? '(honing)' : ''}
-                                </span>
-                              </div>
-
-                              {/* Base selection */}
-                              <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-neutral-400 text-[0.7rem]">Base</span>
-                                {isHoning ? (
-                                  <span className="text-[0.7rem] text-emerald-300">
-                                    Honing wheel: front base (edge trailing)
-                                  </span>
-                                ) : (
-                                  <>
-                                    <label className="flex items-center gap-1">
-                                      <input
-                                        type="radio"
-                                        checked={step.base === 'rear'}
-                                        onChange={() => updateStep(step.id, { base: 'rear' })}
-                                      />
-                                      <span>Rear (edge leading)</span>
-                                    </label>
-                                    <label className="flex items-center gap-1">
-                                      <input
-                                        type="radio"
-                                        checked={step.base === 'front'}
-                                        onChange={() => updateStep(step.id, { base: 'front' })}
-                                      />
-                                      <span>Front (edge trailing)</span>
-                                    </label>
-                                  </>
-                                )}
-                              </div>
-
-                              {/* Angle offset */}
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-neutral-400 text-[0.7rem]">Angle offset Δβ</span>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
-                                  value={step.angleOffset === 0 ? '' : step.angleOffset}
-                                  placeholder="0"
-                                  onFocus={e => {
-                                    if (e.target.value !== '') {
-                                      e.target.select();
-                                    }
-                                  }}
-                                  onChange={e => {
-                                    const text = e.target.value;
-                                    if (text.trim() === '') {
-                                      updateStep(step.id, { angleOffset: 0 });
-                                      return;
-                                    }
-                                    const val = Number(text);
-                                    if (!Number.isNaN(val)) {
-                                      updateStep(step.id, { angleOffset: val });
-                                    }
-                                  }}
-                                />
-                                <span className="text-neutral-400 text-[0.7rem]">°</span>
-                                <span className="text-neutral-500 text-[0.7rem]">
-                                  (applied on top of global β and micro bump)
-                                </span>
+                                  <svg viewBox="0 0 24 24" className="w-3 h-3" aria-hidden="true">
+                                    {/* Bin body */}
+                                    <path
+                                      d="M9 9h6l-.5 9h-5z"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                    {/* Lid */}
+                                    <path
+                                      d="M8 7h8"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                    />
+                                    {/* Handle */}
+                                    <path
+                                      d="M10 7l.5-2h3l.5 2"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                </button>
                               </div>
                             </div>
 
-                            {/* Actions – delete top, sort bottom */}
-                            <div className="flex flex-col items-end h-full">
-                              {/* Delete button (top aligned, icon only) */}
-                              <button
-                                type="button"
-                                className="text-red-400 text-[0.7rem] border border-red-400 rounded px-1.5 py-0.5 hover:bg-red-900/30
-                                          active:scale-95 transition-transform"
-                                onClick={() =>
-                                  setSessionSteps(prev => prev.filter(s => s.id !== step.id))
-                                }
-                                title="Delete step"
-                              >
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  className="w-3 h-3"
-                                  aria-hidden="true"
-                                >
-                                  {/* Bin body */}
-                                  <path
-                                    d="M9 9h6l-.5 9h-5z"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
+                            {/* === Body: angle offset + sort controls anchored at bottom === */}
+                            <div className="px-2 py-2 flex items-stretch gap-2">
+                              {/* Left: angle offset Δβ */}
+                              <div className="flex-1 flex flex-col gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-neutral-400 text-[0.7rem]">
+                                    Angle offset Δβ
+                                  </span>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
+                                    value={step.angleOffset === 0 ? '' : step.angleOffset}
+                                    placeholder="0"
+                                    onFocus={e => {
+                                      // Select only if non-empty for quick overwrite
+                                      if (e.target.value !== '') {
+                                        e.target.select();
+                                      }
+                                    }}
+                                    onChange={e => {
+                                      const text = e.target.value;
+                                      if (text.trim() === '') {
+                                        // Empty input = treat as 0 (no offset)
+                                        updateStep(step.id, { angleOffset: 0 });
+                                        return;
+                                      }
+                                      const val = Number(text);
+                                      if (!Number.isNaN(val)) {
+                                        updateStep(step.id, { angleOffset: val });
+                                      }
+                                    }}
                                   />
-                                  {/* Lid */}
-                                  <path
-                                    d="M8 7h8"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                  />
-                                  {/* Handle */}
-                                  <path
-                                    d="M10 7l.5-2h3l.5 2"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                              </button>
+                                  <span className="text-neutral-400 text-[0.7rem]">°</span>
+                                </div>
+                              </div>
 
-                              {/* Spacer pushes sort controls to the bottom */}
-                              <div className="flex-grow" />
-
-                              {/* Sort buttons (bottom aligned) */}
-                              <div className="flex flex-col gap-2 items-end">
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
-                                            disabled:opacity-40 active:scale-95 transition-transform"
-                                  onClick={() => moveStep(index, -1)}
-                                  disabled={index === 0}
-                                  title="Move up"
-                                >
-                                  ↑
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs
-                                            disabled:opacity-40 active:scale-95 transition-transform"
-                                  onClick={() => moveStep(index, 1)}
-                                  disabled={index === sessionSteps.length - 1}
-                                  title="Move down"
-                                >
-                                  ↓
-                                </button>
+                              {/* Right: sort controls, anchored to the bottom */}
+                              <div className="flex flex-col justify-end items-end gap-2">
+                                <div className="flex flex-col gap-1 items-end">
+                                  <button
+                                    type="button"
+                                    className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform"
+                                    onClick={() => moveStep(index, -1)}
+                                    disabled={index === 0}
+                                    title="Move up"
+                                  >
+                                    ↑
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform"
+                                    onClick={() => moveStep(index, 1)}
+                                    disabled={index === sessionSteps.length - 1}
+                                    title="Move down"
+                                  >
+                                    ↓
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1206,48 +1416,73 @@ const clearSteps = () => {
                   </div>
                 ) : (
                   <div className="grid gap-2 md:grid-cols-2">
-                    {wheelResults.map(r => (
+                    {wheelResults.map((r, index) => (
                       <div
                         key={r.step?.id ?? r.wheel.id}
-                        className="border border-neutral-700 rounded px-2 py-2 flex flex-col gap-2 bg-neutral-950/40"
+                        className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden"
                       >
-                        {/* Header: name + orientation, read-only */}
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2">
-                              <div className="text-xs font-semibold text-neutral-100 min-w-[8rem]">
-                                {r.wheel.name}
+                        {/* ===== Header bar (OAT-style) ===== */}
+                        <div className="flex items-center justify-between px-2 py-1 bg-neutral-900/80">
+                          <div className="flex items-center gap-2">
+                            {/* Step badge (non-intrusive) */}
+                            {r.step && (
+                              <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100">
+                                {index + 1}
                               </div>
-                              <span className="text-[0.7rem] text-neutral-400">
-                                {r.orientationLabel}
-                              </span>
+                            )}
+
+                            {/* Wheel name */}
+                            <div className="text-xs font-semibold text-neutral-100">
+                              {r.wheel.name}
                             </div>
-                            <div className="text-[0.7rem] text-neutral-500">
-                              D = {Number.isFinite(r.wheel.D) ? r.wheel.D.toFixed(2) : '—'} mm
-                              {r.wheel.isHoning ? ' (honing)' : ''}
-                            </div>
+
+                            {/* Grind direction indicator – read-only in view mode */}
+                            {r.step && (
+                              <GrindDirToggle
+                                base={r.step.base}
+                                isHoning={r.wheel.isHoning}
+                                canToggle={false} // view mode: indicator only
+                                onToggle={() => {
+                                  // no-op; guarded by canToggle=false
+                                }}
+                              />
+                            )}
+                          </div>
+
+                          {/* Right side: placeholder for pencil icon future feature */}
+                          <div className="flex items-center gap-2">
+                            {/* empty for now */}
                           </div>
                         </div>
 
-                        {/* Math block */}
-                        <div className="grid grid-cols-2 gap-2 text-[0.75rem]">
-                          <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
-                            <div className="text-neutral-300">
-                              Wheel → USB top (rear reference)
-                            </div>
-                            <div className="font-mono text-sm">
-                              hᵣ = {r.hrWheel.toFixed(2)} mm
-                            </div>
+                        {/* ===== Body ===== */}
+                        <div className="px-2 py-2 flex flex-col gap-2">
+                          <div className="text-[0.7rem] text-neutral-500">
+                            D = {Number.isFinite(r.wheel.D) ? r.wheel.D.toFixed(2) : '—'} mm
+                            {r.wheel.isHoning ? ' (honing)' : ''}
                           </div>
-                          <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
-                            <div className="text-neutral-300">
-                              Datum → USB top (selected base)
+
+                          {/* Math block */}
+                          <div className="grid grid-cols-2 gap-2 text-[0.75rem]">
+                            <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
+                              <div className="text-neutral-300">
+                                Wheel → USB top (rear reference)
+                              </div>
+                              <div className="font-mono text-sm">
+                                hᵣ = {r.hrWheel.toFixed(2)} mm
+                              </div>
                             </div>
-                            <div className="font-mono text-sm">
-                              hₙ = {r.hnBase.toFixed(2)} mm
-                            </div>
-                            <div className="text-neutral-400 text-[0.7rem]">
-                              βₑₑₚ = {r.betaEffDeg.toFixed(2)}°
+
+                            <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
+                              <div className="text-neutral-300">
+                                Datum → USB top (selected base)
+                              </div>
+                              <div className="font-mono text-sm">
+                                hₙ = {r.hnBase.toFixed(2)} mm
+                              </div>
+                              <div className="text-neutral-400 text-[0.7rem]">
+                                βₑₑₚ = {r.betaEffDeg.toFixed(2)}°
+                              </div>
                             </div>
                           </div>
                         </div>
