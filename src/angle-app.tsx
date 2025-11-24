@@ -46,6 +46,12 @@ function _load<T>(k: string, def: T): T {
   }
 }
 
+function blurOnEnter(e: React.KeyboardEvent<HTMLInputElement>) {
+  if (e.key === 'Enter') {
+    (e.currentTarget as HTMLInputElement).blur();
+  }
+}
+
 // =============== Core Types ===============
 
 type BaseSide = 'rear' | 'front';
@@ -122,26 +128,125 @@ const DEFAULT_CONSTANTS: MachineConstants = {
 };
 
 const DEFAULT_WHEELS: Wheel[] = [
+  // ===== 250 mm class – T-8 / T-7 =====
+
   {
-    id: `wheel-sg-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-    name: 'SG-250',
+    id: `wheel-sg250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'SG-250 Original Grindstone',
     D: 250.0,
     angleOffset: 0,
     baseForHn: 'rear',
     isHoning: false,
   },
   {
-    id: `wheel-df-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-    name: 'DF-250',
+    id: `wheel-sb250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'SB-250 Blackstone Silicon',
     D: 250.0,
     angleOffset: 0,
     baseForHn: 'rear',
     isHoning: false,
   },
   {
-    id: `wheel-la-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-    name: 'LA-220 (leather)',
-    D: 215.0,
+    id: `wheel-sj250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'SJ-250 Japanese Waterstone',
+    D: 250.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+  {
+    id: `wheel-dc250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'DC-250 Diamond Wheel Coarse (360)',
+    D: 250.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+  {
+    id: `wheel-df250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'DF-250 Diamond Wheel Fine (600)',
+    D: 250.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+  {
+    id: `wheel-de250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'DE-250 Diamond Wheel Extra Fine (1200)',
+    D: 250.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+
+  // Honing – T-8 / T-7
+
+  {
+    id: `wheel-la220-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'LA-220 Leather Honing Wheel',
+    D: 215.0, // you can change to your measured value (e.g. 215) if you prefer
+    angleOffset: 0,
+    baseForHn: 'front',
+    isHoning: true,
+  },
+  {
+    id: `wheel-cw220-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'CW-220 Composite Honing Wheel',
+    D: 220.0,
+    angleOffset: 0,
+    baseForHn: 'front',
+    isHoning: true,
+  },
+
+  // ===== 200 mm class – T-4 / T-3 =====
+
+  {
+    id: `wheel-sg200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'SG-200 Original Grindstone',
+    D: 200.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+  {
+    id: `wheel-sj200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'SJ-200 Japanese Waterstone',
+    D: 200.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+  {
+    id: `wheel-dc200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'DC-200 Diamond Wheel Coarse (360)',
+    D: 200.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+  {
+    id: `wheel-df200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'DF-200 Diamond Wheel Fine (600)',
+    D: 200.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+  {
+    id: `wheel-de200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'DE-200 Diamond Wheel Extra Fine (1200)',
+    D: 200.0,
+    angleOffset: 0,
+    baseForHn: 'rear',
+    isHoning: false,
+  },
+
+  // Honing – T-4 / T-3
+
+  {
+    id: `wheel-la145-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: 'LA-145 Leather Honing Wheel',
+    D: 145.0,
     angleOffset: 0,
     baseForHn: 'front',
     isHoning: true,
@@ -454,7 +559,7 @@ function GrindDirToggle({
   canToggle: boolean; // edit-mode control
   onToggle: () => void;
 }) {
-  const label = base === 'rear' ? 'EL' : 'ET'; // Edge Leading / Edge Trailing
+  const label = base === 'rear' ? 'R' : 'F'; // Rear / Front
 
   const effectiveLocked = isHoning || !canToggle;
 
@@ -511,6 +616,8 @@ function WheelSelect({
 }) {
   const [open, setOpen] = React.useState(false);
 
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
+
   const selected = wheels.find(w => w.id === value) || null;
 
   const handleSelect = (id: string) => {
@@ -518,12 +625,32 @@ function WheelSelect({
     setOpen(false);
   };
 
+    React.useEffect(() => {
+    if (!open) return;
+
+    const handlePointer = (event: MouseEvent | TouchEvent) => {
+      const el = rootRef.current;
+      if (!el) return;
+      if (!el.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointer);
+    document.addEventListener('touchstart', handlePointer);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointer);
+      document.removeEventListener('touchstart', handlePointer);
+    };
+  }, [open]);
+
   return (
-    <div className="relative inline-block text-xs">
+    <div ref={rootRef} className="relative inline-block text-xs">
       {/* Shell / trigger */}
       <button
         type="button"
-        className="inline-flex items-center justify-between gap-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 min-w-[9rem] hover:bg-neutral-900"
+        className="inline-flex items-center justify-between gap-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 min-w-[6rem] hover:bg-neutral-900"
         onClick={() => setOpen(o => !o)}
       >
         <span className="truncate text-left">
@@ -596,6 +723,8 @@ function PresetSelect({
 }) {
   const [open, setOpen] = React.useState(false);
 
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
+
   const selected = presets.find(p => p.id === value) || null;
 
   const handleSelect = (id: string) => {
@@ -603,8 +732,29 @@ function PresetSelect({
     setOpen(false);
   };
 
+  React.useEffect(() => {
+    if (!open) return;
+
+    const handlePointer = (event: MouseEvent | TouchEvent) => {
+      const el = rootRef.current;
+      if (!el) return;
+      if (!el.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointer);
+    document.addEventListener('touchstart', handlePointer);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointer);
+      document.removeEventListener('touchstart', handlePointer);
+    };
+  }, [open]);
+
   return (
-    <div className="relative inline-block text-xs">
+    <div ref={rootRef} className="relative inline-block text-xs">
+
       {/* Trigger */}
       <button
         type="button"
@@ -686,6 +836,9 @@ function App() {
     _load('t_sessionPresets', [])
   );
   const [selectedPresetId, setSelectedPresetId] = React.useState<string>('');
+  const [isPresetDialogOpen, setIsPresetDialogOpen] = React.useState(false);
+  const [presetNameDraft, setPresetNameDraft] = React.useState('');
+  const [isPresetManagerOpen, setIsPresetManagerOpen] = React.useState(false);
 
   const [view, setView] = React.useState<
   'calculator' | 'wheels' | 'settings'
@@ -947,12 +1100,9 @@ const moveStep = (index: number, delta: number) => {
 };
 
 const handleSavePreset = () => {
-  if (sessionSteps.length === 0) return;
-
-  const nameRaw = window.prompt('Preset name', '');
-  if (!nameRaw) return;
-  const name = nameRaw.trim();
+  const name = presetNameDraft.trim();
   if (!name) return;
+  if (sessionSteps.length === 0) return;
 
   // Build preset steps from current session steps
   const presetSteps: PresetStepRef[] = sessionSteps
@@ -981,6 +1131,10 @@ const handleSavePreset = () => {
 
   setSessionPresets(prev => [...prev, newPreset]);
   setSelectedPresetId(newPreset.id);
+
+  // Close dialog + clear draft
+  setIsPresetDialogOpen(false);
+  setPresetNameDraft('');
 };
 
 const handleLoadPreset = (presetId: string) => {
@@ -1082,6 +1236,7 @@ const clearSteps = () => {
                   type="number"
                   className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
                   value={global.projection}
+                  onKeyDown={blurOnEnter}
                   onChange={e =>
                     setGlobal(g => ({ ...g, projection: _nz(e.target.value, g.projection) }))
                   }
@@ -1093,6 +1248,7 @@ const clearSteps = () => {
                   type="number"
                   className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
                   value={global.targetAngle}
+                  onKeyDown={blurOnEnter}
                   onChange={e =>
                     setGlobal(g => ({ ...g, targetAngle: _nz(e.target.value, g.targetAngle) }))
                   }
@@ -1104,6 +1260,7 @@ const clearSteps = () => {
                   type="number"
                   className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
                   value={global.usbDiameter}
+                  onKeyDown={blurOnEnter}
                   onChange={e =>
                     setGlobal(g => ({ ...g, usbDiameter: _nz(e.target.value, g.usbDiameter) }))
                   }
@@ -1115,6 +1272,7 @@ const clearSteps = () => {
                   type="number"
                   className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
                   value={global.jig.Dj}
+                  onKeyDown={blurOnEnter}
                   onChange={e =>
                     setGlobal(g => ({ ...g, jig: { ...g.jig, Dj: _nz(e.target.value, g.jig.Dj) } }))
                   }
@@ -1129,43 +1287,59 @@ const clearSteps = () => {
               <h2 className="text-sm font-semibold text-neutral-200">Progression</h2>
 
               <div className="flex items-center gap-2">
+                {/* Group: preset controls + hamburger */}
+                <div className="flex items-center gap-2">
+                  {/* VIEW MODE — Load preset UI */}
+                  {!isWheelConfigOpen && (
+                    <PresetSelect
+                      presets={sessionPresets}
+                      value={selectedPresetId || ''}
+                      onChange={id => {
+                        setSelectedPresetId(id);
+                        if (id) {
+                          handleLoadPreset(id); // auto-load on selection
+                        }
+                      }}
+                    />
+                  )}
 
-                {/* VIEW MODE — Load preset UI */}
-                {!isWheelConfigOpen && (
-                  <PresetSelect
-                    presets={sessionPresets}
-                    value={selectedPresetId || ''}
-                    onChange={id => {
-                      setSelectedPresetId(id);
-                      if (id) {
-                        handleLoadPreset(id); // auto-load on selection
-                      }
-                    }}
-                  />
-                )}
+                  {/* EDIT MODE — Save preset + Clear */}
+                  {isWheelConfigOpen && (
+                    <>
+                      <button
+                        type="button"
+                        className="px-3 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-transform"
+                        onClick={() => {
+                          if (sessionSteps.length === 0) return;
+                          setPresetNameDraft('');
+                          setIsPresetDialogOpen(true);
+                        }}
+                        disabled={sessionSteps.length === 0}
+                      >
+                        Save preset
+                      </button>
 
-                {/* EDIT MODE — Save preset + Clear */}
-                {isWheelConfigOpen && (
-                  <>
-                    <button
-                      type="button"
-                      className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40"
-                      onClick={handleSavePreset}
-                      disabled={sessionSteps.length === 0}
-                    >
-                      Save preset
-                    </button>
+                      <button
+                        type="button"
+                        className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-900 text-xs text-neutral-300 disabled:opacity-40"
+                        onClick={clearSteps}
+                        disabled={sessionSteps.length === 0}
+                      >
+                        Clear
+                      </button>
+                    </>
+                  )}
 
-                    <button
-                      type="button"
-                      className="px-2 py-1 rounded border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-xs text-neutral-300 disabled:opacity-40"
-                      onClick={clearSteps}
-                      disabled={sessionSteps.length === 0}
-                    >
-                      Clear
-                    </button>
-                  </>
-                )}
+                  {/* New: hamburger / manage presets button */}
+                  <button
+                    type="button"
+                    className="w-8 h-8 flex items-center justify-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
+                    title="Manage presets"
+                    onClick={() => setIsPresetManagerOpen(true)}
+                  >
+                    ⋮
+                  </button>
+                </div>
 
                 {/* Always present: Edit / Back toggle */}
                 <button
@@ -1207,8 +1381,8 @@ const clearSteps = () => {
                             className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden flex flex-col"
                           >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
-                            <div className="flex items-center justify-between px-2 py-1 bg-neutral-900/80">
-                              <div className="flex items-center gap-2">
+                           <div className="flex flex-wrap items-center justify-between gap-y-1 px-2 py-1 bg-neutral-900/80">
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                 {/* Step badge (non-intrusive) */}
                                 <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100">
                                   {index + 1}
@@ -1258,6 +1432,7 @@ const clearSteps = () => {
                                         ? ''
                                         : String(wheel.D)
                                     }
+                                    onKeyDown={blurOnEnter}
                                     onFocus={e => e.target.select()}
                                     onChange={e => {
                                       const text = e.target.value;
@@ -1337,7 +1512,8 @@ const clearSteps = () => {
                                   <input
                                     type="number"
                                     step="0.1"
-                                    className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
+                                    className="w-10 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
+                                    onKeyDown={blurOnEnter}
                                     value={step.angleOffset === 0 ? '' : step.angleOffset}
                                     placeholder="0"
                                     onFocus={e => {
@@ -1534,6 +1710,7 @@ const clearSteps = () => {
                   focusWheelIdRef.current = null;
                 }
               }}
+              onKeyDown={blurOnEnter}
               onFocus={e => e.target.select()}
               onChange={e => updateWheel(w.id, { name: e.target.value })}
             />
@@ -1553,6 +1730,7 @@ const clearSteps = () => {
                 ? ''
                 : String(w.D)
             }
+            onKeyDown={blurOnEnter}
             onFocus={e => e.target.select()}
             onChange={e => {
               const text = e.target.value;
@@ -1639,6 +1817,7 @@ const clearSteps = () => {
   </section>
 )}
 
+      {/* Settings view */}
       {view === 'settings' && (
         <>
           <div className="flex gap-2 mb-2 text-xs">
@@ -1668,9 +1847,10 @@ const clearSteps = () => {
             </button>
           </div>
 
+          {/* Machine constants view */}
           {settingsView === 'machine' && (
             <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-2 max-w-xl">
-              <h2 className="text-sm font-semibold text-neutral-200">Machine constants (rear/front)</h2>
+              <h2 className="text-sm font-semibold text-neutral-200">Machine constants</h2>
               <p className="text-xs text-neutral-300 mb-2">
                 Rear and front base geometry for the active machine. Calibration will update these
                 values; you can also tweak them manually.
@@ -1678,12 +1858,13 @@ const clearSteps = () => {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex flex-col gap-1">
                   <span className="text-neutral-400 text-xs">Rear base</span>
-                  <label className="flex items-center gap-1">
+                  <label className="flex items-center gap-2">
                     <span className="w-10 text-neutral-300 text-xs">hc</span>
                     <input
                       type="number"
-                      className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                      className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right"
                       value={constants.rear.hc}
+                      onKeyDown={blurOnEnter}
                       onChange={e =>
                         setConstants(c => ({
                           ...c,
@@ -1692,12 +1873,14 @@ const clearSteps = () => {
                       }
                     />
                   </label>
-                  <label className="flex items-center gap-1">
+
+                  <label className="flex items-center gap-2">
                     <span className="w-10 text-neutral-300 text-xs">o</span>
                     <input
                       type="number"
-                      className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                      className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right"
                       value={constants.rear.o}
+                      onKeyDown={blurOnEnter}
                       onChange={e =>
                         setConstants(c => ({
                           ...c,
@@ -1709,12 +1892,13 @@ const clearSteps = () => {
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="text-neutral-400 text-xs">Front base</span>
-                  <label className="flex items-center gap-1">
+                  <label className="flex items-center gap-2">
                     <span className="w-10 text-neutral-300 text-xs">hc</span>
                     <input
                       type="number"
-                      className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                      className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right"
                       value={constants.front.hc}
+                      onKeyDown={blurOnEnter}
                       onChange={e =>
                         setConstants(c => ({
                           ...c,
@@ -1723,12 +1907,14 @@ const clearSteps = () => {
                       }
                     />
                   </label>
-                  <label className="flex items-center gap-1">
+
+                  <label className="flex items-center gap-2">
                     <span className="w-10 text-neutral-300 text-xs">o</span>
                     <input
                       type="number"
-                      className="flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                      className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right"
                       value={constants.front.o}
+                      onKeyDown={blurOnEnter}
                       onChange={e =>
                         setConstants(c => ({
                           ...c,
@@ -1742,6 +1928,7 @@ const clearSteps = () => {
             </section>
           )}
 
+          {/* Calibration wizard view */}
           {settingsView === 'calibration' && (
             <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl">
               <h2 className="text-sm font-semibold text-neutral-200">Calibration wizard (single base)</h2>
@@ -1977,6 +2164,96 @@ const clearSteps = () => {
             </section>
           )}
         </>
+      )}
+            {/* ====== PRESET MANAGER MODAL (shell) ====== */}
+      {isPresetManagerOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
+          <div className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl">
+            <h3 className="text-sm font-semibold text-neutral-100">Manage presets</h3>
+            <p className="mt-1 text-[0.75rem] text-neutral-400">
+              This is a placeholder for preset rename/delete. We&apos;ll wire it up next.
+            </p>
+
+            <div className="mt-3 max-h-64 overflow-y-auto text-xs">
+              {sessionPresets.length === 0 ? (
+                <div className="text-neutral-500">No presets saved yet.</div>
+              ) : (
+                <ul className="flex flex-col gap-1">
+                  {sessionPresets.map(preset => (
+                    <li
+                      key={preset.id}
+                      className="flex items-center justify-between gap-2 rounded border border-neutral-700 bg-neutral-900 px-2 py-1"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-neutral-100">{preset.name}</span>
+                        <span className="text-[0.65rem] text-neutral-500">
+                          {preset.steps.length} step{preset.steps.length === 1 ? '' : 's'}
+                          {selectedPresetId === preset.id && ' · active'}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                className="px-3 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-200 active:scale-95 transition-transform"
+                onClick={() => setIsPresetManagerOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====== SAVE PRESET MODAL ====== */}
+      {isPresetDialogOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
+          <div className="w-full max-w-sm rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl">
+            <h3 className="text-sm font-semibold text-neutral-100">Save preset</h3>
+            <p className="mt-1 text-[0.75rem] text-neutral-400">
+              Enter a name for this progression.
+            </p>
+
+            <div className="mt-3">
+              <input
+                type="text"
+                className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                placeholder="Preset name…"
+                value={presetNameDraft}
+                onKeyDown={blurOnEnter}
+                onChange={e => setPresetNameDraft(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300"
+                onClick={() => {
+                  setIsPresetDialogOpen(false);
+                  setPresetNameDraft('');
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="px-3 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-xs text-emerald-100 hover:bg-emerald-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
+                onClick={handleSavePreset}
+                disabled={!presetNameDraft.trim() || sessionSteps.length === 0}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
