@@ -561,6 +561,7 @@ function GrindDirToggle({
 }) {
   const label = base === 'rear' ? 'R' : 'F'; // Rear / Front
 
+  // Click lock: honing OR view-mode (canToggle=false)
   const effectiveLocked = isHoning || !canToggle;
 
   const title = isHoning
@@ -578,15 +579,15 @@ function GrindDirToggle({
 
   let stateClasses: string;
 
-  if (effectiveLocked) {
-    // Greyed out (view mode or honing)
+  // 🔹 Styling: ONLY honing is grey. Non-honing is coloured, even if locked.
+  if (isHoning) {
     stateClasses =
       'border-neutral-700 bg-neutral-900 text-neutral-500 opacity-60 cursor-not-allowed';
   } else if (base === 'rear') {
-    // EL
+    // Edge leading
     stateClasses = 'border-emerald-500 bg-emerald-900/40 text-emerald-200';
   } else {
-    // ET
+    // Edge trailing
     stateClasses = 'border-sky-500 bg-sky-900/40 text-sky-200';
   }
 
@@ -595,7 +596,7 @@ function GrindDirToggle({
       type="button"
       title={title}
       onClick={() => {
-        if (effectiveLocked) return;
+        if (effectiveLocked) return; // still locked in view mode / honing
         onToggle();
       }}
       className={baseClasses + ' ' + stateClasses}
@@ -650,7 +651,7 @@ function WheelSelect({
       {/* Shell / trigger */}
       <button
         type="button"
-        className="inline-flex items-center justify-between gap-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 min-w-[6rem] hover:bg-neutral-900"
+        className="inline-flex items-center justify-between gap-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 w-[7rem] max-w-[7rem] hover:bg-neutral-900"
         onClick={() => setOpen(o => !o)}
       >
         <span className="truncate text-left">
@@ -1382,11 +1383,24 @@ const clearSteps = () => {
                           >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
                            <div className="flex flex-wrap items-center justify-between gap-y-1 px-2 py-1 bg-neutral-900/80">
-                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
                                 {/* Step badge (non-intrusive) */}
                                 <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100">
                                   {index + 1}
                                 </div>
+
+                                {/* Grind direction toggle – EL/ET, interactive in edit mode for non-honing */}
+                                <GrindDirToggle
+                                  base={step.base}
+                                  isHoning={isHoning}
+                                  canToggle={!isHoning} // edit mode: toggle allowed for non-honing wheels
+                                  onToggle={() =>
+                                    updateStep(step.id, {
+                                      base: step.base === 'rear' ? 'front' : 'rear',
+                                    })
+                                  }
+                                />
+                              </div>
 
                                 {/* Wheel selector lives in the header for quick scanning */}
                                 <WheelSelect
@@ -1403,21 +1417,8 @@ const clearSteps = () => {
                                   }}
                                 />
 
-                                {/* Grind direction toggle – EL/ET, interactive in edit mode for non-honing */}
-                                <GrindDirToggle
-                                  base={step.base}
-                                  isHoning={isHoning}
-                                  canToggle={!isHoning} // edit mode: toggle allowed for non-honing wheels
-                                  onToggle={() =>
-                                    updateStep(step.id, {
-                                      base: step.base === 'rear' ? 'front' : 'rear',
-                                    })
-                                  }
-                                />
-                              </div>
-
                               {/* Header right side: D editor + delete */}
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
                                 {/* Diameter editor */}
                                 <label className="flex items-center gap-1 text-[0.7rem] text-neutral-300">
                                   <span>D =</span>
@@ -1591,53 +1592,48 @@ const clearSteps = () => {
                     steps for this calculator.
                   </div>
                 ) : (
-                  <div className="grid gap-2 md:grid-cols-2">
+                  <div className="grid gap-1 md:grid-cols-2">
                     {wheelResults.map((r, index) => (
                       <div
                         key={r.step?.id ?? r.wheel.id}
                         className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden"
                       >
-                        {/* ===== Header bar (OAT-style) ===== */}
+                        {/* ===== Header bar ===== */}
                         <div className="flex items-center justify-between px-2 py-1 bg-neutral-900/80">
-                          <div className="flex items-center gap-2">
-                            {/* Step badge (non-intrusive) */}
+                          <div className="flex items-center gap-1">
+                            {/* Step badge */}
                             {r.step && (
                               <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100">
                                 {index + 1}
                               </div>
                             )}
 
-                            {/* Wheel name */}
-                            <div className="text-xs font-semibold text-neutral-100">
-                              {r.wheel.name}
-                            </div>
-
                             {/* Grind direction indicator – read-only in view mode */}
                             {r.step && (
                               <GrindDirToggle
                                 base={r.step.base}
                                 isHoning={r.wheel.isHoning}
-                                canToggle={false} // view mode: indicator only
-                                onToggle={() => {
-                                  // no-op; guarded by canToggle=false
-                                }}
+                                canToggle={false}
+                                onToggle={() => {}}
                               />
                             )}
+
+                            {/* Wheel name */}
+                            <div className="text-xs font-semibold text-neutral-100">
+                              {r.wheel.name}
+                            </div>
                           </div>
 
-                          {/* Right side: placeholder for pencil icon future feature */}
-                          <div className="flex items-center gap-2">
-                            {/* empty for now */}
+                          {/* Right side: diameter display */}
+                          <div className="flex items-center gap-1">
+                            <span className="font-mono text-[0.7rem] text-neutral-200">
+                              D={Number.isFinite(r.wheel.D) ? r.wheel.D.toFixed(2) : '—'}mm
+                            </span>
                           </div>
                         </div>
 
                         {/* ===== Body ===== */}
                         <div className="px-2 py-2 flex flex-col gap-2">
-                          <div className="text-[0.7rem] text-neutral-500">
-                            D = {Number.isFinite(r.wheel.D) ? r.wheel.D.toFixed(2) : '—'} mm
-                            {r.wheel.isHoning ? ' (honing)' : ''}
-                          </div>
-
                           {/* Math block */}
                           <div className="grid grid-cols-2 gap-2 text-[0.75rem]">
                             <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
@@ -2165,7 +2161,7 @@ const clearSteps = () => {
           )}
         </>
       )}
-            {/* ====== PRESET MANAGER MODAL (shell) ====== */}
+      {/* ====== PRESET MANAGER MODAL (shell) ====== */}
       {isPresetManagerOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
           <div className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl">
