@@ -1200,7 +1200,7 @@ const clearSteps = () => {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
-      <h1 className="text-lg font-semibold">Wet Grinder Angle Setter (Early Limited Version)</h1>
+      <h1 className="text-lg font-semibold">UWGAS Dev build</h1>
 
 <div className="flex gap-2 text-sm mb-2">
   <button
