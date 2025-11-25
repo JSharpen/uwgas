@@ -1387,7 +1387,7 @@ const clearSteps = () => {
 
                   {/* Steps list */}
                   {sessionSteps.length > 0 && (
-                    <div className="flex items-center gap-x-1 gap-y-1">
+                    <div className="flex flex-col gap-1">
                       {sessionSteps.map((step, index) => {
                         const wheel = wheels.find(w => w.id === step.wheelId);
                         if (!wheel) return null;
