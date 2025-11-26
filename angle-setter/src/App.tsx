@@ -8,12 +8,10 @@
 // (wizard, presets, dual calibration, etc.) can be layered back
 // on top of this stable foundation.
 
-//================Imports=================
 
+//================Imports=================
 import * as React from 'react';
 import { IconKebab, IconTrash } from './icons';
-
-
 
 // =============== Helpers ===============
 
@@ -842,7 +840,7 @@ function PresetSelect({
   );
 }
 
-// =============== App ===============
+// ============================================================================== App =======================================
 
 function App() {
   const [global, setGlobal] = React.useState<GlobalState>(() =>
@@ -1188,21 +1186,20 @@ const handleLoadPreset = (presetId: string) => {
   setSessionSteps(resolvedSteps);
 
   // Remember that this preset is now the active one
-lastLoadedPresetIdRef.current = preset.id;
-lastLoadedStepsRef.current = JSON.stringify(
-  resolvedSteps.map(s => ({
-    wheelId: s.wheelId,
-    base: s.base,
-    angleOffset: s.angleOffset,
-  }))
-);
-setSelectedPresetId(preset.id);
+  lastLoadedPresetIdRef.current = preset.id;
+  lastLoadedStepsRef.current = JSON.stringify(
+    resolvedSteps.map(s => ({
+      wheelId: s.wheelId,
+      base: s.base,
+      angleOffset: s.angleOffset,
+    }))
+  );
+  setSelectedPresetId(preset.id);
 };
 
-
-const clearSteps = () => {
-  setSessionSteps([]);
-};
+  const clearSteps = () => {
+    setSessionSteps([]);
+  };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
@@ -2248,3 +2245,5 @@ const clearSteps = () => {
     </div>
   );
 }
+
+export default App;
