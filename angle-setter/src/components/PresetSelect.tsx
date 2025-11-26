@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { SessionPreset } from '../types/core';
+import type{ SessionPreset } from '../types/core';
 
 type PresetSelectProps = {
   presets: SessionPreset[];

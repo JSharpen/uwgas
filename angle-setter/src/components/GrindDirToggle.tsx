@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { BaseSide } from '../types/core';
+import type{ BaseSide } from '../types/core';
 
 function GrindDirToggle({
   base,

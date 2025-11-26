@@ -1,5 +1,4 @@
-import { MachineConstants, GlobalState, Wheel } from '../types/core';
-
+import type { MachineConstants, GlobalState, Wheel } from '../types/core';
 export const DEFAULT_GLOBAL: GlobalState = {
   projection: 127.39,
   usbDiameter: 11.98,

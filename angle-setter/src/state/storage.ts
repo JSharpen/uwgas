@@ -1,4 +1,11 @@
-import { AppPersistedState, GlobalState, MachineConstants, SessionPreset, SessionStep, Wheel } from '../types/core';
+import type {
+  AppPersistedState,
+  GlobalState,
+  MachineConstants,
+  SessionPreset,
+  SessionStep,
+  Wheel,
+} from '../types/core';
 import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS } from './defaults';
 
 export const PERSIST_VERSION = 1;
