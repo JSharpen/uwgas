@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 
 // Tormek USB Height Multi‑wheel Calculator – Rebuilt Baseline
 // -----------------------------------------------------------
@@ -12,553 +12,37 @@
 //================Imports=================
 import * as React from 'react';
 import { IconKebab, IconTrash } from './icons';
+import type {
+  BaseSide,
+  CalibrationDiagnostics,
+  CalibrationMeasurement,
+  GlobalState,
+  MachineConfig,
+  MachineConstants,
+  PresetStepRef,
+  SessionPreset,
+  SessionStep,
+  Wheel,
+} from './types/core';
+import { _nz } from './utils/numbers';
+import { blurOnEnter } from './utils/dom';
+import { _load, _save } from './state/storage';
+import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS } from './state/defaults';
+import {
+  calibrateBase,
+  computeWheelResults,
+  estimateMaxAngleErrorDeg,
+} from './math/tormek';
 
 // =============== Helpers ===============
 
-function _nz(v: any, fallback = 0): number {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function deg2rad(d: number): number {
-  return (d * Math.PI) / 180;
-}
-
-function rad2deg(r: number): number {
-  return (r * 180) / Math.PI;
-}
-
-function _save(k: string, v: any) {
-  try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(k, JSON.stringify(v));
-    }
-  } catch {
-    // ignore
-  }
-}
-
-function _load<T>(k: string, def: T): T {
-  try {
-    if (typeof localStorage === 'undefined') return def;
-    const raw = localStorage.getItem(k);
-    if (!raw) return def;
-    const parsed = JSON.parse(raw);
-    return parsed as T;
-  } catch {
-    return def;
-  }
-}
-
-function blurOnEnter(e: React.KeyboardEvent<HTMLInputElement>) {
-  if (e.key === 'Enter') {
-    (e.currentTarget as HTMLInputElement).blur();
-  }
-}
+// helpers moved to utils/state modules
 
 // =============== Core Types ===============
 
-type BaseSide = 'rear' | 'front';
-
-type Wheel = {
-  id: string;
-  name: string;
-  D: number; // effective diameter (numeric, used for math)
-  DText?: string; // text version for editing
-  angleOffset: number; // Δβ at wheel level (default)
-  baseForHn: BaseSide; // default base for this wheel
-  isHoning: boolean;
-};
-
-type SessionStep = {
-  id: string;
-  wheelId: string;
-  base: BaseSide;
-  angleOffset: number; // Δβ at step level
-};
-
-type PresetStepRef = {
-  wheelId: string;
-  wheelName: string;
-  base: BaseSide;
-  angleOffset: number;
-};
-
-type SessionPreset = {
-  id: string;
-  name: string;
-  notes?: string;
-  createdAt: string;
-  version: 1;
-  steps: PresetStepRef[];
-};
-
-type MachineConstants = {
-  rear: { hc: number; o: number };
-  front: { hc: number; o: number };
-};
-
-type MachineConfig = {
-  id: string;
-  name: string;
-  constants: MachineConstants;
-  usbDiameter: number;   // Ds for this machine
-  jigDiameter: number;   // Dj for this machine
-};
-
-type GlobalState = {
-  projection: number; // A
-  usbDiameter: number; // Ds
-  targetAngle: number; // β per side
-  jig: { Dj: number }; // jig diameter
-  microBump: { enabled: boolean; bumpDeg: number };
-};
-
-
 // =============== Defaults ===============
 
-const DEFAULT_GLOBAL: GlobalState = {
-  projection: 127.39,
-  usbDiameter: 11.98,
-  targetAngle: 16,
-  jig: { Dj: 12 },
-  microBump: { enabled: false, bumpDeg: 0 },
-};
-
-const DEFAULT_CONSTANTS: MachineConstants = {
-  // These are "reasonable" T8‑like defaults and can be edited in UI
-  rear: { hc: 29.0, o: 50.0 },
-  front: { hc: 51.3, o: 131.7 },
-};
-
-const DEFAULT_WHEELS: Wheel[] = [
-  // ===== 250 mm class – T-8 / T-7 =====
-
-  {
-    id: `wheel-sg250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'SG-250 Original Grindstone',
-    D: 250.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-sb250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'SB-250 Blackstone Silicon',
-    D: 250.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-sj250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'SJ-250 Japanese Waterstone',
-    D: 250.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-dc250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DC-250 Diamond Wheel Coarse (360)',
-    D: 250.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-df250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DF-250 Diamond Wheel Fine (600)',
-    D: 250.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-de250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DE-250 Diamond Wheel Extra Fine (1200)',
-    D: 250.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-
-  // Honing – T-8 / T-7
-
-  {
-    id: `wheel-la220-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'LA-220 Leather Honing Wheel',
-    D: 215.0, // you can change to your measured value (e.g. 215) if you prefer
-    angleOffset: 0,
-    baseForHn: 'front',
-    isHoning: true,
-  },
-  {
-    id: `wheel-cw220-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'CW-220 Composite Honing Wheel',
-    D: 220.0,
-    angleOffset: 0,
-    baseForHn: 'front',
-    isHoning: true,
-  },
-
-  // ===== 200 mm class – T-4 / T-3 =====
-
-  {
-    id: `wheel-sg200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'SG-200 Original Grindstone',
-    D: 200.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-sj200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'SJ-200 Japanese Waterstone',
-    D: 200.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-dc200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DC-200 Diamond Wheel Coarse (360)',
-    D: 200.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-df200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DF-200 Diamond Wheel Fine (600)',
-    D: 200.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-de200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DE-200 Diamond Wheel Extra Fine (1200)',
-    D: 200.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-
-  // Honing – T-4 / T-3
-
-  {
-    id: `wheel-la145-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'LA-145 Leather Honing Wheel',
-    D: 145.0,
-    angleOffset: 0,
-    baseForHn: 'front',
-    isHoning: true,
-  },
-];
-
 // =============== Ton/Dutchman Math Core ===============
-
-type TonInput = {
-  base: BaseSide; // which base we reference hn to
-  D: number; // wheel diameter (dw)
-  A: number; // projection (A)
-  betaDeg: number; // target β (per side)
-  Dj: number; // jig diameter
-  Ds: number; // USB diameter
-  constants: MachineConstants;
-  microBumpDeg?: number; // optional additional angle bump
-  angleOffsetDeg?: number; // per‑wheel or per‑step Δβ
-};
-
-type TonOutput = {
-  hr: number; // wheel → USB top (rear reference)
-  hn: number; // datum → USB top (chosen base)
-  betaEffDeg: number; // effective grinding angle
-};
-
-function computeTonHeights(input: TonInput): TonOutput {
-  const {
-    base,
-    D,
-    A,
-    betaDeg,
-    Dj,
-    Ds,
-    constants,
-    microBumpDeg = 0,
-    angleOffsetDeg = 0,
-  } = input;
-
-  const R = D / 2; // wheel radius
-
-  // jg: apex → jig centre along the tangent line
-  const jg = A - Ds / 2;
-
-  // CJ: jig centre → USB centre (perpendicular)
-  // = jig radius + USB radius
-  const CJ = Dj / 2 + Ds / 2;
-
-  // CG: apex → USB centre
-  const CG = Math.sqrt(jg * jg + CJ * CJ);
-
-  // φ: angle between tangent and CG
-  const phi = Math.atan(CJ / jg);
-  // Total effective β
-  const betaTotalDeg = betaDeg + microBumpDeg + angleOffsetDeg;
-  const betaRad = deg2rad(betaTotalDeg);
-
-  // Ton F9: CA = distance wheel centre ↔ USB centre
-  const CA = Math.sqrt(CG * CG + R * R + 2 * CG * R * Math.sin(betaRad - phi));
-
-  // hr: wheel → USB top, always referenced to rear wheel centre
-  const hr = (CA - R) + Ds / 2;
-
-  // Base offsets
-  const baseConst = base === 'rear' ? constants.rear : constants.front;
-  const O = baseConst.o;
-  const hc = baseConst.hc;
-
-  // Vertical coordinate of USB centre relative to axle
-  const y = Math.sqrt(Math.max(CA * CA - O * O, 0));
-
-  const hn = y - hc + Ds / 2;
-
-  // Inverse: effective β from geometry (for diagnostics)
-  const arg = (CA * CA - CG * CG - R * R) / (2 * CG * R);
-  const clamped = Math.max(-1, Math.min(1, arg));
-  const betaEffRad = Math.asin(clamped) + phi;
-  const betaEffDeg = rad2deg(betaEffRad);
-
-  return { hr, hn, betaEffDeg };
-}
-
-// =============== Session + Results Model ===============
-
-type WheelResult = {
-  wheel: Wheel;
-  baseForHn: BaseSide;
-  orientationLabel: string;
-  betaEffDeg: number;
-  hrWheel: number;
-  hnBase: number;
-  step?: SessionStep;
-};
-
-function computeWheelResults(
-  wheels: Wheel[],
-  sessionSteps: SessionStep[] | null,
-  global: GlobalState,
-  machine: MachineConfig
-): WheelResult[] {
-  const A = _nz(global.projection);
-  const Ds = _nz(machine.usbDiameter);
-  const Dj = _nz(machine.jigDiameter);
-  const beta = _nz(global.targetAngle);
-  const mb = global.microBump?.enabled ? _nz(global.microBump.bumpDeg) : 0;
-  const items: { step?: SessionStep; wheel: Wheel }[] = [];
-
-  if (sessionSteps && sessionSteps.length) {
-    for (const step of sessionSteps) {
-      const w = wheels.find(wh => wh.id === step.wheelId);
-      if (!w) continue;
-      items.push({ step, wheel: w });
-    }
-  } else {
-    // No progression → no wheel results
-    return [];
-  }
-
-  return items.map(({ step, wheel }) => {
-    const baseForHn: BaseSide = wheel.isHoning
-      ? 'front'
-      : step?.base ?? wheel.baseForHn;
-
-    const common: TonInput = {
-      base: baseForHn,
-      D: _nz(wheel.D),
-      A,
-      betaDeg: beta,
-      Dj,
-      Ds,
-      constants: machine.constants,
-      microBumpDeg: mb,
-      angleOffsetDeg: _nz(step?.angleOffset ?? wheel.angleOffset),
-    };
-
-    const hrRear = computeTonHeights({ ...common, base: 'rear' });
-    const hBase = computeTonHeights(common);
-
-    const orientationLabel = baseForHn === 'rear'
-      ? 'Edge leading (rear base)'
-      : 'Edge trailing (front base)';
-
-    return {
-      wheel,
-      baseForHn,
-      orientationLabel,
-      betaEffDeg: hBase.betaEffDeg,
-      hrWheel: hrRear.hr,
-      hnBase: hBase.hn,
-      step,
-    };
-  });
-}
-
-// =============== Calibration Math (Single-base, wheel-less) ===============
-
-type CalibrationMeasurement = {
-  hn: string;  // datum → USB TOP (mm) as entered
-  CAo: string; // outer-to-outer span |O______O| between axle and USB (mm) as entered
-};
-
-type CalibrationDiagnostics = {
-  residuals: number[];
-  maxAbsResidualMm: number;
-};
-
-type CalibrationResult = {
-  hc: number;
-  o: number;
-  diagnostics: CalibrationDiagnostics;
-};
-
-/**
- * Calibrate one base (rear or front) from 3–5 measurements.
- * Uses only axle↔USB geometry, no wheel, no angle.
- */
-function calibrateBase(
-  rows: CalibrationMeasurement[],
-  Da: number,
-  Ds: number
-): CalibrationResult | null {
-  const Ra = Da / 2;
-  const Rs = Ds / 2;
-
-  // Build numeric arrays, only keeping rows with both values present
-  const CA: number[] = [];
-  const hn: number[] = [];
-
-  for (const row of rows) {
-    const hn_i = _nz(row.hn, NaN);
-    const CAo_i = _nz(row.CAo, NaN);
-    if (!Number.isFinite(hn_i) || !Number.isFinite(CAo_i)) continue;
-    const CA_i = CAo_i - Ra - Rs; // centre-to-centre distance axle ↔ USB (outer-to-outer span |O______O|)
-    CA.push(CA_i);
-    hn.push(hn_i);
-  }
-
-  const N = CA.length;
-  if (N < 2) return null;
-
-  // 1) Estimate t = hc - Ds/2 using pairwise linear equations
-  const hn1 = hn[0];
-  const CA1 = CA[0];
-  const tValues: number[] = [];
-
-  for (let i = 1; i < N; i++) {
-    const hni = hn[i];
-    const CAi = CA[i];
-    if (Math.abs(hni - hn1) < 1e-9) continue; // avoid divide-by-zero
-
-    const num = (CA1 * CA1 - CAi * CAi) - (hn1 * hn1 - hni * hni);
-    const den = 2 * (hn1 - hni);
-    tValues.push(num / den);
-  }
-
-  if (!tValues.length) return null;
-
-  const t =
-    tValues.reduce((sum, v) => sum + v, 0) / tValues.length;
-
-  // 2) Recover hc
-  const hc = t + Rs; // Rs = Ds/2
-
-  // 3) Estimate O using all points
-  const O2Values: number[] = [];
-  for (let i = 0; i < N; i++) {
-    const y = hn[i] + t;
-    const O2_i = CA[i] * CA[i] - y * y;
-    if (O2_i > 0) O2Values.push(O2_i);
-  }
-  if (!O2Values.length) return null;
-
-  const O2mean =
-    O2Values.reduce((sum, v) => sum + v, 0) / O2Values.length;
-  const o = Math.sqrt(O2mean);
-
-  // 4) Diagnostics: residuals in hn (mm)
-  const residuals: number[] = [];
-  for (let i = 0; i < N; i++) {
-    const y = Math.sqrt(Math.max(CA[i] * CA[i] - o * o, 0));
-    const predHn = y - hc + Rs;
-    residuals.push(hn[i] - predHn); // measured - predicted
-  }
-  const maxAbsResidualMm = residuals.reduce(
-    (m, r) => Math.max(m, Math.abs(r)),
-    0
-  );
-
-  return { hc, o, diagnostics: { residuals, maxAbsResidualMm } };
-}
-
-/**
- * Estimate worst-case angle error (deg) implied by a height residual, over
- * the user's wheels, for a given base. Uses numeric ∂hn/∂β via Ton core.
- */
-function estimateMaxAngleErrorDeg(
-  diagnostics: CalibrationDiagnostics,
-  base: BaseSide,
-  global: GlobalState,
-  machineLike: MachineConfig,
-  wheels: Wheel[]
-): number | null {
-  const maxRes = diagnostics.maxAbsResidualMm;
-  if (!Number.isFinite(maxRes) || maxRes <= 0) return null;
-
-  const A = _nz(global.projection);
-  const beta = _nz(global.targetAngle);
-  const Dj = machineLike.jigDiameter;
-  const Ds = machineLike.usbDiameter;
-
-  const candidateDs =
-    wheels.length > 0 ? wheels.map(w => _nz(w.D)) : [250, 215, 200];
-
-  let maxAngle = 0;
-
-  for (const D of candidateDs) {
-    if (!Number.isFinite(D) || D <= 0) continue;
-
-    const delta = 0.05; // small angle step in degrees
-    const baseInput: TonInput = {
-      base,
-      D,
-      A,
-      betaDeg: beta,
-      Dj,
-      Ds,
-      constants: machineLike.constants,
-    };
-
-    const hnPlus = computeTonHeights({
-      ...baseInput,
-      betaDeg: beta + delta,
-    }).hn;
-    const hnMinus = computeTonHeights({
-      ...baseInput,
-      betaDeg: beta - delta,
-    }).hn;
-
-    const dHn_dBeta = (hnPlus - hnMinus) / (2 * delta);
-    if (Math.abs(dHn_dBeta) < 1e-6) continue;
-
-    const angleErr = Math.abs(maxRes / dHn_dBeta);
-    if (angleErr > maxAngle) maxAngle = angleErr;
-  }
-
-  if (maxAngle === 0) return null;
-  return maxAngle;
-}
 
 function GrindDirToggle({
   base,
@@ -628,6 +112,9 @@ function WheelSelect({
   onChange: (id: string) => void;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [isMenuVisible, setIsMenuVisible] = React.useState(false);
+  const [isMenuClosing, setIsMenuClosing] = React.useState(false);
+  const menuCloseTimerRef = React.useRef<number | null>(null);
 
   const rootRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -635,17 +122,42 @@ function WheelSelect({
 
   const handleSelect = (id: string) => {
     onChange(id);
-    setOpen(false);
+    closeMenu();
   };
 
+  const openMenu = React.useCallback(() => {
+    if (menuCloseTimerRef.current) {
+      window.clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+    setIsMenuVisible(true);
+    setIsMenuClosing(false);
+    setOpen(true);
+  }, []);
+
+  const closeMenu = React.useCallback(() => {
+    if (!isMenuVisible && !open) return;
+    if (menuCloseTimerRef.current) {
+      window.clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+    setOpen(false);
+    setIsMenuClosing(true);
+    menuCloseTimerRef.current = window.setTimeout(() => {
+      setIsMenuVisible(false);
+      setIsMenuClosing(false);
+      menuCloseTimerRef.current = null;
+    }, 160);
+  }, [isMenuVisible, open]);
+
     React.useEffect(() => {
-    if (!open) return;
+    if (!isMenuVisible) return;
 
     const handlePointer = (event: MouseEvent | TouchEvent) => {
       const el = rootRef.current;
       if (!el) return;
       if (!el.contains(event.target as Node)) {
-        setOpen(false);
+        closeMenu();
       }
     };
 
@@ -656,7 +168,15 @@ function WheelSelect({
       document.removeEventListener('mousedown', handlePointer);
       document.removeEventListener('touchstart', handlePointer);
     };
-  }, [open]);
+  }, [closeMenu, isMenuVisible]);
+
+  React.useEffect(() => {
+    return () => {
+      if (menuCloseTimerRef.current) {
+        window.clearTimeout(menuCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div ref={rootRef} className="relative text-xs min-w-[7rem] max-w-[9rem]">
@@ -665,11 +185,17 @@ function WheelSelect({
         type="button"
         className={
            'inline-flex w-full items-center justify-between gap-1 rounded border px-2 py-1 text-xs ' +
-          (open
+          (isMenuVisible
             ? 'border-sky-400 bg-neutral-900 shadow-md'
             : 'border-neutral-700 bg-neutral-950 hover:bg-neutral-900')
         }
-        onClick={() => setOpen(o => !o)}
+        onClick={() => {
+          if (isMenuVisible && !isMenuClosing) {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        }}
       >
         <span className="truncate text-left">
           {selected ? selected.name : 'Select wheel'}
@@ -677,7 +203,7 @@ function WheelSelect({
         <svg
           viewBox="0 0 24 24"
           className={
-            'w-3 h-3 transition-transform ' + (open ? 'rotate-180' : 'rotate-0')
+            'w-3 h-3 transition-transform ' + (isMenuVisible ? 'rotate-180' : 'rotate-0')
           }
           aria-hidden="true"
         >
@@ -693,8 +219,15 @@ function WheelSelect({
       </button>
 
       {/* Menu */}
-      {open && (
-        <div className="absolute left-0 mt-1 z-20 w-44 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg">
+      {isMenuVisible && (
+        <div
+          className="absolute left-0 mt-1 z-20 w-44 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          style={{
+            animation: `${isMenuClosing ? 'dropdownOut 100ms ease-in forwards' : 'dropdownIn 100ms ease-out forwards'}`,
+            transformOrigin: 'top left',
+            overflow: 'hidden',
+          }}
+        >
           {wheels.length === 0 && (
             <div className="px-2 py-1 text-[0.7rem] text-neutral-500">
               No wheels defined
@@ -740,6 +273,9 @@ function PresetSelect({
   onChange: (id: string) => void;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [isMenuVisible, setIsMenuVisible] = React.useState(false);
+  const [isMenuClosing, setIsMenuClosing] = React.useState(false);
+  const menuCloseTimerRef = React.useRef<number | null>(null);
 
   const rootRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -747,17 +283,42 @@ function PresetSelect({
 
   const handleSelect = (id: string) => {
     onChange(id);  // parent will load the preset
-    setOpen(false);
+    closeMenu();
   };
 
+  const openMenu = React.useCallback(() => {
+    if (menuCloseTimerRef.current) {
+      window.clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+    setIsMenuVisible(true);
+    setIsMenuClosing(false);
+    setOpen(true);
+  }, []);
+
+  const closeMenu = React.useCallback(() => {
+    if (!isMenuVisible && !open) return;
+    if (menuCloseTimerRef.current) {
+      window.clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+    setOpen(false);
+    setIsMenuClosing(true);
+    menuCloseTimerRef.current = window.setTimeout(() => {
+      setIsMenuVisible(false);
+      setIsMenuClosing(false);
+      menuCloseTimerRef.current = null;
+    }, 160);
+  }, [isMenuVisible, open]);
+
   React.useEffect(() => {
-    if (!open) return;
+    if (!isMenuVisible) return;
 
     const handlePointer = (event: MouseEvent | TouchEvent) => {
       const el = rootRef.current;
       if (!el) return;
       if (!el.contains(event.target as Node)) {
-        setOpen(false);
+        closeMenu();
       }
     };
 
@@ -768,7 +329,15 @@ function PresetSelect({
       document.removeEventListener('mousedown', handlePointer);
       document.removeEventListener('touchstart', handlePointer);
     };
-  }, [open]);
+  }, [closeMenu, isMenuVisible]);
+
+  React.useEffect(() => {
+    return () => {
+      if (menuCloseTimerRef.current) {
+        window.clearTimeout(menuCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div ref={rootRef} className="relative inline-block text-xs">
@@ -778,11 +347,17 @@ function PresetSelect({
         type="button"
         className={
           'inline-flex items-center justify-between gap-1 rounded border px-2 py-1.5 min-w-[8rem] text-xs ' +
-          (open
+          (isMenuVisible
             ? 'border-sky-400 bg-neutral-900 shadow-md'
             : 'border-neutral-700 bg-neutral-950 hover:bg-neutral-900')
         }
-        onClick={() => setOpen(o => !o)}
+        onClick={() => {
+          if (isMenuVisible && !isMenuClosing) {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        }}
       >
         <span className="truncate text-left">
           {selected ? selected.name : 'Presets…'}
@@ -790,7 +365,7 @@ function PresetSelect({
         <svg
           viewBox="0 0 24 24"
           className={
-            'w-3 h-3 transition-transform ' + (open ? 'rotate-180' : 'rotate-0')
+            'w-3 h-3 transition-transform ' + (isMenuVisible ? 'rotate-180' : 'rotate-0')
           }
           aria-hidden="true"
         >
@@ -806,8 +381,15 @@ function PresetSelect({
       </button>
 
       {/* Menu */}
-      {open && (
-        <div className="absolute right-0 mt-1 z-20 w-48 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg">
+      {isMenuVisible && (
+        <div
+          className="absolute right-0 mt-1 z-20 w-48 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          style={{
+            animation: `${isMenuClosing ? 'dropdownOut 100ms ease-in forwards' : 'dropdownIn 100ms ease-out forwards'}`,
+            transformOrigin: 'top right',
+            overflow: 'hidden',
+          }}
+        >
           {presets.length === 0 && (
             <div className="px-2 py-1 text-[0.7rem] text-neutral-500">
               No presets saved
@@ -855,13 +437,18 @@ function App() {
   const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
     _load('t_sessionSteps', [])
   );
-    const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(() =>
+  const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(() =>
     _load('t_sessionPresets', [])
   );
   const [selectedPresetId, setSelectedPresetId] = React.useState<string>('');
   const [isPresetDialogOpen, setIsPresetDialogOpen] = React.useState(false);
   const [presetNameDraft, setPresetNameDraft] = React.useState('');
   const [isPresetManagerOpen, setIsPresetManagerOpen] = React.useState(false);
+  const [isProgressionMenuOpen, setIsProgressionMenuOpen] = React.useState(false);
+  const [isProgressionMenuVisible, setIsProgressionMenuVisible] = React.useState(false);
+  const [isProgressionMenuClosing, setIsProgressionMenuClosing] = React.useState(false);
+  const progressionMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const progressionMenuCloseTimerRef = React.useRef<number | null>(null);
 
   const [view, setView] = React.useState<
   'calculator' | 'wheels' | 'settings'
@@ -869,6 +456,31 @@ function App() {
   const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
 
   const [isWheelConfigOpen, setIsWheelConfigOpen] = React.useState(false);
+
+  const openProgressionMenu = React.useCallback(() => {
+    if (progressionMenuCloseTimerRef.current) {
+      window.clearTimeout(progressionMenuCloseTimerRef.current);
+      progressionMenuCloseTimerRef.current = null;
+    }
+    setIsProgressionMenuVisible(true);
+    setIsProgressionMenuClosing(false);
+    setIsProgressionMenuOpen(true);
+  }, []);
+
+  const closeProgressionMenu = React.useCallback(() => {
+    if (!isProgressionMenuVisible && !isProgressionMenuOpen) return;
+    if (progressionMenuCloseTimerRef.current) {
+      window.clearTimeout(progressionMenuCloseTimerRef.current);
+      progressionMenuCloseTimerRef.current = null;
+    }
+    setIsProgressionMenuOpen(false);
+    setIsProgressionMenuClosing(true);
+    progressionMenuCloseTimerRef.current = window.setTimeout(() => {
+      setIsProgressionMenuVisible(false);
+      setIsProgressionMenuClosing(false);
+      progressionMenuCloseTimerRef.current = null;
+    }, 160);
+  }, [isProgressionMenuOpen, isProgressionMenuVisible]);
 
 
     // Track which wheel should auto-focus in the Wheel Manager
@@ -938,6 +550,31 @@ const lastLoadedStepsRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     _save('t_sessionPresets', sessionPresets);
   }, [sessionPresets]);
+
+  React.useEffect(() => {
+    return () => {
+      if (progressionMenuCloseTimerRef.current) {
+        window.clearTimeout(progressionMenuCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!isProgressionMenuVisible) return;
+    const handlePointer = (event: MouseEvent | TouchEvent) => {
+      const el = progressionMenuRef.current;
+      if (el && !el.contains(event.target as Node)) {
+        closeProgressionMenu();
+      }
+    };
+    document.addEventListener('mousedown', handlePointer);
+    document.addEventListener('touchstart', handlePointer);
+    return () => {
+      document.removeEventListener('mousedown', handlePointer);
+      document.removeEventListener('touchstart', handlePointer);
+    };
+  }, [closeProgressionMenu, isProgressionMenuVisible]);
+
 
   // Keep preset dropdown in sync when the progression is edited
   React.useEffect(() => {
@@ -1202,7 +839,7 @@ const handleLoadPreset = (presetId: string) => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
+    <div className="min-h-dvh bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
       <h1 className="text-lg font-semibold">UWGAS Dev build</h1>
 
 <div className="flex gap-2 text-sm mb-2">
@@ -1363,14 +1000,66 @@ const handleLoadPreset = (presetId: string) => {
                 </div>
 
                 {/*Kebab menu Progression*/}
-                <button
-                  type="button"
-                  className="w-8 h-8 flex items-center justify-center rounded bg-transparent hover:bg-neutral-700/20 text-xs text-neutral-300"
-                  title="Manage presets"
-                  onClick={() => setIsPresetManagerOpen(true)}
-                >
-                  <IconKebab className="w-4 h-4" />
-                </button>
+                <div ref={progressionMenuRef} className="relative">
+                  <button
+                    type="button"
+                    className="w-8 h-8 flex items-center justify-center rounded bg-transparent hover:bg-neutral-700/20 text-xs text-neutral-300"
+                    title="Progression menu"
+                    onClick={() => {
+                      if (isProgressionMenuVisible && !isProgressionMenuClosing) {
+                        closeProgressionMenu();
+                      } else {
+                        openProgressionMenu();
+                      }
+                    }}
+                  >
+                    <IconKebab className="w-4 h-4" />
+                  </button>
+
+                  {isProgressionMenuVisible && (
+                    <div
+                      className="absolute right-0 mt-1 w-52 rounded border border-neutral-700 bg-neutral-950 shadow-lg text-xs z-30"
+                      style={{
+                        animation: `${isProgressionMenuClosing ? 'menuFadeSlideOut 100ms ease-in forwards' : 'menuFadeSlideIn 100ms ease-out forwards'}`,
+                        transformOrigin: 'top right',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-neutral-900"
+                        onClick={() => {
+                          setIsPresetManagerOpen(true);
+                          closeProgressionMenu();
+                        }}
+                      >
+                        Manage presets
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-neutral-900 disabled:opacity-40"
+                        disabled={sessionSteps.length === 0}
+                        onClick={() => {
+                          setPresetNameDraft('');
+                          setIsPresetDialogOpen(true);
+                          closeProgressionMenu();
+                        }}
+                      >
+                        Save as preset
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-neutral-900 disabled:opacity-40"
+                        disabled={sessionSteps.length === 0}
+                        onClick={() => {
+                          clearSteps();
+                          closeProgressionMenu();
+                        }}
+                      >
+                        Clear progression
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             {/* TOGGLE: math vs progression cards */}
