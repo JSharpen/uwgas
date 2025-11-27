@@ -112,6 +112,9 @@ function WheelSelect({
   onChange: (id: string) => void;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [isMenuVisible, setIsMenuVisible] = React.useState(false);
+  const [isMenuClosing, setIsMenuClosing] = React.useState(false);
+  const menuCloseTimerRef = React.useRef<number | null>(null);
 
   const rootRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -119,17 +122,42 @@ function WheelSelect({
 
   const handleSelect = (id: string) => {
     onChange(id);
-    setOpen(false);
+    closeMenu();
   };
 
+  const openMenu = React.useCallback(() => {
+    if (menuCloseTimerRef.current) {
+      window.clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+    setIsMenuVisible(true);
+    setIsMenuClosing(false);
+    setOpen(true);
+  }, []);
+
+  const closeMenu = React.useCallback(() => {
+    if (!isMenuVisible && !open) return;
+    if (menuCloseTimerRef.current) {
+      window.clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+    setOpen(false);
+    setIsMenuClosing(true);
+    menuCloseTimerRef.current = window.setTimeout(() => {
+      setIsMenuVisible(false);
+      setIsMenuClosing(false);
+      menuCloseTimerRef.current = null;
+    }, 160);
+  }, [isMenuVisible, open]);
+
     React.useEffect(() => {
-    if (!open) return;
+    if (!isMenuVisible) return;
 
     const handlePointer = (event: MouseEvent | TouchEvent) => {
       const el = rootRef.current;
       if (!el) return;
       if (!el.contains(event.target as Node)) {
-        setOpen(false);
+        closeMenu();
       }
     };
 
@@ -140,7 +168,15 @@ function WheelSelect({
       document.removeEventListener('mousedown', handlePointer);
       document.removeEventListener('touchstart', handlePointer);
     };
-  }, [open]);
+  }, [closeMenu, isMenuVisible]);
+
+  React.useEffect(() => {
+    return () => {
+      if (menuCloseTimerRef.current) {
+        window.clearTimeout(menuCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div ref={rootRef} className="relative text-xs min-w-[7rem] max-w-[9rem]">
@@ -149,11 +185,17 @@ function WheelSelect({
         type="button"
         className={
            'inline-flex w-full items-center justify-between gap-1 rounded border px-2 py-1 text-xs ' +
-          (open
+          (isMenuVisible
             ? 'border-sky-400 bg-neutral-900 shadow-md'
             : 'border-neutral-700 bg-neutral-950 hover:bg-neutral-900')
         }
-        onClick={() => setOpen(o => !o)}
+        onClick={() => {
+          if (isMenuVisible && !isMenuClosing) {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        }}
       >
         <span className="truncate text-left">
           {selected ? selected.name : 'Select wheel'}
@@ -161,7 +203,7 @@ function WheelSelect({
         <svg
           viewBox="0 0 24 24"
           className={
-            'w-3 h-3 transition-transform ' + (open ? 'rotate-180' : 'rotate-0')
+            'w-3 h-3 transition-transform ' + (isMenuVisible ? 'rotate-180' : 'rotate-0')
           }
           aria-hidden="true"
         >
@@ -177,8 +219,15 @@ function WheelSelect({
       </button>
 
       {/* Menu */}
-      {open && (
-        <div className="absolute left-0 mt-1 z-20 w-44 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg">
+      {isMenuVisible && (
+        <div
+          className="absolute left-0 mt-1 z-20 w-44 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          style={{
+            animation: `${isMenuClosing ? 'dropdownOut 100ms ease-in forwards' : 'dropdownIn 100ms ease-out forwards'}`,
+            transformOrigin: 'top left',
+            overflow: 'hidden',
+          }}
+        >
           {wheels.length === 0 && (
             <div className="px-2 py-1 text-[0.7rem] text-neutral-500">
               No wheels defined
@@ -224,6 +273,9 @@ function PresetSelect({
   onChange: (id: string) => void;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [isMenuVisible, setIsMenuVisible] = React.useState(false);
+  const [isMenuClosing, setIsMenuClosing] = React.useState(false);
+  const menuCloseTimerRef = React.useRef<number | null>(null);
 
   const rootRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -231,17 +283,42 @@ function PresetSelect({
 
   const handleSelect = (id: string) => {
     onChange(id);  // parent will load the preset
-    setOpen(false);
+    closeMenu();
   };
 
+  const openMenu = React.useCallback(() => {
+    if (menuCloseTimerRef.current) {
+      window.clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+    setIsMenuVisible(true);
+    setIsMenuClosing(false);
+    setOpen(true);
+  }, []);
+
+  const closeMenu = React.useCallback(() => {
+    if (!isMenuVisible && !open) return;
+    if (menuCloseTimerRef.current) {
+      window.clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+    setOpen(false);
+    setIsMenuClosing(true);
+    menuCloseTimerRef.current = window.setTimeout(() => {
+      setIsMenuVisible(false);
+      setIsMenuClosing(false);
+      menuCloseTimerRef.current = null;
+    }, 160);
+  }, [isMenuVisible, open]);
+
   React.useEffect(() => {
-    if (!open) return;
+    if (!isMenuVisible) return;
 
     const handlePointer = (event: MouseEvent | TouchEvent) => {
       const el = rootRef.current;
       if (!el) return;
       if (!el.contains(event.target as Node)) {
-        setOpen(false);
+        closeMenu();
       }
     };
 
@@ -252,7 +329,15 @@ function PresetSelect({
       document.removeEventListener('mousedown', handlePointer);
       document.removeEventListener('touchstart', handlePointer);
     };
-  }, [open]);
+  }, [closeMenu, isMenuVisible]);
+
+  React.useEffect(() => {
+    return () => {
+      if (menuCloseTimerRef.current) {
+        window.clearTimeout(menuCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div ref={rootRef} className="relative inline-block text-xs">
@@ -262,11 +347,17 @@ function PresetSelect({
         type="button"
         className={
           'inline-flex items-center justify-between gap-1 rounded border px-2 py-1.5 min-w-[8rem] text-xs ' +
-          (open
+          (isMenuVisible
             ? 'border-sky-400 bg-neutral-900 shadow-md'
             : 'border-neutral-700 bg-neutral-950 hover:bg-neutral-900')
         }
-        onClick={() => setOpen(o => !o)}
+        onClick={() => {
+          if (isMenuVisible && !isMenuClosing) {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        }}
       >
         <span className="truncate text-left">
           {selected ? selected.name : 'Presets…'}
@@ -274,7 +365,7 @@ function PresetSelect({
         <svg
           viewBox="0 0 24 24"
           className={
-            'w-3 h-3 transition-transform ' + (open ? 'rotate-180' : 'rotate-0')
+            'w-3 h-3 transition-transform ' + (isMenuVisible ? 'rotate-180' : 'rotate-0')
           }
           aria-hidden="true"
         >
@@ -290,8 +381,15 @@ function PresetSelect({
       </button>
 
       {/* Menu */}
-      {open && (
-        <div className="absolute right-0 mt-1 z-20 w-48 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg">
+      {isMenuVisible && (
+        <div
+          className="absolute right-0 mt-1 z-20 w-48 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          style={{
+            animation: `${isMenuClosing ? 'dropdownOut 100ms ease-in forwards' : 'dropdownIn 100ms ease-out forwards'}`,
+            transformOrigin: 'top right',
+            overflow: 'hidden',
+          }}
+        >
           {presets.length === 0 && (
             <div className="px-2 py-1 text-[0.7rem] text-neutral-500">
               No presets saved
@@ -339,13 +437,18 @@ function App() {
   const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
     _load('t_sessionSteps', [])
   );
-    const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(() =>
+  const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(() =>
     _load('t_sessionPresets', [])
   );
   const [selectedPresetId, setSelectedPresetId] = React.useState<string>('');
   const [isPresetDialogOpen, setIsPresetDialogOpen] = React.useState(false);
   const [presetNameDraft, setPresetNameDraft] = React.useState('');
   const [isPresetManagerOpen, setIsPresetManagerOpen] = React.useState(false);
+  const [isProgressionMenuOpen, setIsProgressionMenuOpen] = React.useState(false);
+  const [isProgressionMenuVisible, setIsProgressionMenuVisible] = React.useState(false);
+  const [isProgressionMenuClosing, setIsProgressionMenuClosing] = React.useState(false);
+  const progressionMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const progressionMenuCloseTimerRef = React.useRef<number | null>(null);
 
   const [view, setView] = React.useState<
   'calculator' | 'wheels' | 'settings'
@@ -353,6 +456,31 @@ function App() {
   const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
 
   const [isWheelConfigOpen, setIsWheelConfigOpen] = React.useState(false);
+
+  const openProgressionMenu = React.useCallback(() => {
+    if (progressionMenuCloseTimerRef.current) {
+      window.clearTimeout(progressionMenuCloseTimerRef.current);
+      progressionMenuCloseTimerRef.current = null;
+    }
+    setIsProgressionMenuVisible(true);
+    setIsProgressionMenuClosing(false);
+    setIsProgressionMenuOpen(true);
+  }, []);
+
+  const closeProgressionMenu = React.useCallback(() => {
+    if (!isProgressionMenuVisible && !isProgressionMenuOpen) return;
+    if (progressionMenuCloseTimerRef.current) {
+      window.clearTimeout(progressionMenuCloseTimerRef.current);
+      progressionMenuCloseTimerRef.current = null;
+    }
+    setIsProgressionMenuOpen(false);
+    setIsProgressionMenuClosing(true);
+    progressionMenuCloseTimerRef.current = window.setTimeout(() => {
+      setIsProgressionMenuVisible(false);
+      setIsProgressionMenuClosing(false);
+      progressionMenuCloseTimerRef.current = null;
+    }, 160);
+  }, [isProgressionMenuOpen, isProgressionMenuVisible]);
 
 
     // Track which wheel should auto-focus in the Wheel Manager
@@ -422,6 +550,31 @@ const lastLoadedStepsRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     _save('t_sessionPresets', sessionPresets);
   }, [sessionPresets]);
+
+  React.useEffect(() => {
+    return () => {
+      if (progressionMenuCloseTimerRef.current) {
+        window.clearTimeout(progressionMenuCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!isProgressionMenuVisible) return;
+    const handlePointer = (event: MouseEvent | TouchEvent) => {
+      const el = progressionMenuRef.current;
+      if (el && !el.contains(event.target as Node)) {
+        closeProgressionMenu();
+      }
+    };
+    document.addEventListener('mousedown', handlePointer);
+    document.addEventListener('touchstart', handlePointer);
+    return () => {
+      document.removeEventListener('mousedown', handlePointer);
+      document.removeEventListener('touchstart', handlePointer);
+    };
+  }, [closeProgressionMenu, isProgressionMenuVisible]);
+
 
   // Keep preset dropdown in sync when the progression is edited
   React.useEffect(() => {
@@ -686,7 +839,7 @@ const handleLoadPreset = (presetId: string) => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
+    <div className="min-h-dvh bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
       <h1 className="text-lg font-semibold">UWGAS Dev build</h1>
 
 <div className="flex gap-2 text-sm mb-2">
@@ -847,14 +1000,66 @@ const handleLoadPreset = (presetId: string) => {
                 </div>
 
                 {/*Kebab menu Progression*/}
-                <button
-                  type="button"
-                  className="w-8 h-8 flex items-center justify-center rounded bg-transparent hover:bg-neutral-700/20 text-xs text-neutral-300"
-                  title="Manage presets"
-                  onClick={() => setIsPresetManagerOpen(true)}
-                >
-                  <IconKebab className="w-4 h-4" />
-                </button>
+                <div ref={progressionMenuRef} className="relative">
+                  <button
+                    type="button"
+                    className="w-8 h-8 flex items-center justify-center rounded bg-transparent hover:bg-neutral-700/20 text-xs text-neutral-300"
+                    title="Progression menu"
+                    onClick={() => {
+                      if (isProgressionMenuVisible && !isProgressionMenuClosing) {
+                        closeProgressionMenu();
+                      } else {
+                        openProgressionMenu();
+                      }
+                    }}
+                  >
+                    <IconKebab className="w-4 h-4" />
+                  </button>
+
+                  {isProgressionMenuVisible && (
+                    <div
+                      className="absolute right-0 mt-1 w-52 rounded border border-neutral-700 bg-neutral-950 shadow-lg text-xs z-30"
+                      style={{
+                        animation: `${isProgressionMenuClosing ? 'menuFadeSlideOut 100ms ease-in forwards' : 'menuFadeSlideIn 100ms ease-out forwards'}`,
+                        transformOrigin: 'top right',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-neutral-900"
+                        onClick={() => {
+                          setIsPresetManagerOpen(true);
+                          closeProgressionMenu();
+                        }}
+                      >
+                        Manage presets
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-neutral-900 disabled:opacity-40"
+                        disabled={sessionSteps.length === 0}
+                        onClick={() => {
+                          setPresetNameDraft('');
+                          setIsPresetDialogOpen(true);
+                          closeProgressionMenu();
+                        }}
+                      >
+                        Save as preset
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-neutral-900 disabled:opacity-40"
+                        disabled={sessionSteps.length === 0}
+                        onClick={() => {
+                          clearSteps();
+                          closeProgressionMenu();
+                        }}
+                      >
+                        Clear progression
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             {/* TOGGLE: math vs progression cards */}
