@@ -5,7 +5,6 @@ import type{
   CalibrationResult,
   GlobalState,
   MachineConfig,
-  MachineConstants,
   TonInput,
   TonOutput,
   Wheel,

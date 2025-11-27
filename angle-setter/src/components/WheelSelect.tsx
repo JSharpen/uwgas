@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Wheel } from '../types/core';
+import type { Wheel } from '../types/core';
 
 type WheelSelectProps = {
   wheels: Wheel[];
