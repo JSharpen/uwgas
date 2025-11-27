@@ -167,7 +167,7 @@ export function useAppState(): AppState {
     }
 
     // If the current progression no longer matches the snapshot,
-    // the user has modified the config → clear the preset selection.
+    // the user has modified the config - clear the preset selection.
     if (currentSnapshot !== lastLoadedStepsRef.current) {
       lastLoadedStepsRef.current = null;
       setSelectedPresetId('');
@@ -244,3 +244,4 @@ export function useAppState(): AppState {
     ensureCalibRowsLength,
   };
 }
+
