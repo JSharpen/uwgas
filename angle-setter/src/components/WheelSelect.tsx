@@ -126,7 +126,7 @@ function WheelSelect({ wheels, value, onChange, showUnselected = true }: WheelSe
         }}
       >
         <span className="truncate text-left">
-          {selected ? selected.name : 'Select wheel'}
+          {selected ? selected.name : 'Select wheel...'}
         </span>
         <svg
           viewBox="0 0 24 24"
@@ -163,7 +163,7 @@ function WheelSelect({ wheels, value, onChange, showUnselected = true }: WheelSe
               className="w-full px-2 py-1 text-left text-[0.75rem] bg-neutral-950 text-neutral-300 hover:bg-neutral-900"
               onClick={() => handleSelect('')}
             >
-              Unselected
+              Select wheel...
             </button>
           )}
 

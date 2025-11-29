@@ -228,7 +228,7 @@ function WheelSelect({
         }}
       >
         <span className="truncate text-left">
-          {selected ? selected.name : 'Select wheel'}
+          {selected ? selected.name : 'Select wheel...'}
         </span>
         <svg
           viewBox="0 0 24 24"
@@ -268,7 +268,7 @@ function WheelSelect({
             className="w-full px-2 py-1 text-left text-[0.75rem] bg-neutral-950 text-neutral-300 hover:bg-neutral-900"
             onClick={() => handleSelect('')}
           >
-            Unselected
+            Select wheel...
           </button>
 
           {wheels.map(w => {
@@ -782,12 +782,11 @@ const lastLoadedStepsRef = React.useRef<string | null>(null);
   };
 const addStep = () => {
   if (wheels.length === 0) return;
-  const defaultWheel = wheels[0];
 
   const step: SessionStep = {
     id: `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    wheelId: defaultWheel.id,
-    base: defaultWheel.isHoning ? 'front' : defaultWheel.baseForHn,
+    wheelId: '', // start unselected
+    base: 'rear',
     angleOffset: 0,
   };
 
@@ -1147,9 +1146,16 @@ const handleLoadPreset = (presetId: string) => {
                   {sessionSteps.length > 0 && (
                     <div className="flex flex-col gap-1">
                       {sessionSteps.map((step, index) => {
-                        const wheel = wheels.find(w => w.id === step.wheelId);
-                        if (!wheel) return null;
-
+                        const wheel =
+                          wheels.find(w => w.id === step.wheelId) || {
+                            id: '',
+                            name: 'Select wheel...',
+                            D: 0,
+                            DText: '',
+                            angleOffset: 0,
+                            baseForHn: 'rear',
+                            isHoning: false,
+                          };
                         const isHoning = wheel.isHoning;
 
                         return (
