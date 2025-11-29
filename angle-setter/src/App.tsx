@@ -251,11 +251,10 @@ function WheelSelect({
       {/* Menu */}
       {isMenuVisible && (
         <div
-          className="absolute left-0 mt-1 z-20 w-44 max-h-48 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          className="absolute left-0 mt-1 z-20 w-44 max-h-36 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
           style={{
             animation: `${isMenuClosing ? 'dropdownOut 140ms ease-in forwards' : 'dropdownIn 160ms ease-out forwards'}`,
             transformOrigin: 'top left',
-            overflow: 'hidden',
           }}
         >
           {wheels.length === 0 && (
@@ -451,11 +450,10 @@ function PresetSelect({
       {/* Menu */}
       {isMenuVisible && (
         <div
-          className="absolute right-0 mt-1 z-20 w-48 max-h-48 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          className="absolute right-0 mt-1 z-20 w-48 max-h-36 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
           style={{
             animation: `${isMenuClosing ? 'dropdownOut 140ms ease-in forwards' : 'dropdownIn 160ms ease-out forwards'}`,
             transformOrigin: 'top right',
-            overflow: 'hidden',
           }}
         >
           {presets.length === 0 && (
