@@ -2,22 +2,27 @@
 
 /* Your global tweaks */
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.4;
   font-weight: 400;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #0a0a0a; /* match your app background */
 }
 
 body {
   margin: 0;
+  min-height: 100dvh;        /* dynamic viewport height for mobile */
+  background: #0a0a0a;
+  overscroll-behavior-y: none; /* optional: reduce bounce showing white */
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100%;
+  padding-bottom: env(safe-area-inset-bottom); /* keeps bottom UI clear of home indicator */
 }
+
 
 button {
   font-family: inherit;

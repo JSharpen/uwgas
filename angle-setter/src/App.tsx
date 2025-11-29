@@ -115,8 +115,9 @@ function WheelSelect({
   const [isMenuVisible, setIsMenuVisible] = React.useState(false);
   const [isMenuClosing, setIsMenuClosing] = React.useState(false);
   const menuCloseTimerRef = React.useRef<number | null>(null);
-
   const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
+  const touchMovedRef = React.useRef(false);
 
   const selected = wheels.find(w => w.id === value) || null;
 
@@ -153,7 +154,32 @@ function WheelSelect({
     React.useEffect(() => {
     if (!isMenuVisible) return;
 
-    const handlePointer = (event: MouseEvent | TouchEvent) => {
+    const handlePointer = (event: MouseEvent) => {
+      const el = rootRef.current;
+      if (!el) return;
+      if (!el.contains(event.target as Node)) {
+        closeMenu();
+      }
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      const t = event.touches[0];
+      touchStartRef.current = { x: t.clientX, y: t.clientY };
+      touchMovedRef.current = false;
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const t = event.touches[0];
+      const dx = Math.abs(t.clientX - touchStartRef.current.x);
+      const dy = Math.abs(t.clientY - touchStartRef.current.y);
+      if (dx > 8 || dy > 8) {
+        touchMovedRef.current = true; // scrolling/dragging
+      }
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (touchMovedRef.current) return;
       const el = rootRef.current;
       if (!el) return;
       if (!el.contains(event.target as Node)) {
@@ -162,11 +188,15 @@ function WheelSelect({
     };
 
     document.addEventListener('mousedown', handlePointer);
-    document.addEventListener('touchstart', handlePointer);
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       document.removeEventListener('mousedown', handlePointer);
-      document.removeEventListener('touchstart', handlePointer);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [closeMenu, isMenuVisible]);
 
@@ -221,9 +251,9 @@ function WheelSelect({
       {/* Menu */}
       {isMenuVisible && (
         <div
-          className="absolute left-0 mt-1 z-20 w-44 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          className="absolute left-0 mt-1 z-20 w-44 max-h-48 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
           style={{
-            animation: `${isMenuClosing ? 'dropdownOut 100ms ease-in forwards' : 'dropdownIn 100ms ease-out forwards'}`,
+            animation: `${isMenuClosing ? 'dropdownOut 140ms ease-in forwards' : 'dropdownIn 160ms ease-out forwards'}`,
             transformOrigin: 'top left',
             overflow: 'hidden',
           }}
@@ -233,6 +263,15 @@ function WheelSelect({
               No wheels defined
             </div>
           )}
+
+          <button
+            type="button"
+            className="w-full px-2 py-1 text-left text-[0.75rem] bg-neutral-950 text-neutral-300 hover:bg-neutral-900"
+            onClick={() => handleSelect('')}
+          >
+            Unselected
+          </button>
+
           {wheels.map(w => {
             const isActive = w.id === value;
             return (
@@ -249,9 +288,7 @@ function WheelSelect({
               >
                 {w.name}
                 {w.isHoning && (
-                  <span className="ml-1 text-[0.65rem] text-emerald-300">
-                    · honing
-                  </span>
+                  <span className="ml-1 text-[0.65rem] text-emerald-300">• honing</span>
                 )}
               </button>
             );
@@ -278,6 +315,8 @@ function PresetSelect({
   const menuCloseTimerRef = React.useRef<number | null>(null);
 
   const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
+  const touchMovedRef = React.useRef(false);
 
   const selected = presets.find(p => p.id === value) || null;
 
@@ -314,7 +353,32 @@ function PresetSelect({
   React.useEffect(() => {
     if (!isMenuVisible) return;
 
-    const handlePointer = (event: MouseEvent | TouchEvent) => {
+    const handlePointer = (event: MouseEvent) => {
+      const el = rootRef.current;
+      if (!el) return;
+      if (!el.contains(event.target as Node)) {
+        closeMenu();
+      }
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      const t = event.touches[0];
+      touchStartRef.current = { x: t.clientX, y: t.clientY };
+      touchMovedRef.current = false;
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const t = event.touches[0];
+      const dx = Math.abs(t.clientX - touchStartRef.current.x);
+      const dy = Math.abs(t.clientY - touchStartRef.current.y);
+      if (dx > 8 || dy > 8) {
+        touchMovedRef.current = true; // scrolling/dragging
+      }
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (touchMovedRef.current) return;
       const el = rootRef.current;
       if (!el) return;
       if (!el.contains(event.target as Node)) {
@@ -323,11 +387,15 @@ function PresetSelect({
     };
 
     document.addEventListener('mousedown', handlePointer);
-    document.addEventListener('touchstart', handlePointer);
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       document.removeEventListener('mousedown', handlePointer);
-      document.removeEventListener('touchstart', handlePointer);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [closeMenu, isMenuVisible]);
 
@@ -383,9 +451,9 @@ function PresetSelect({
       {/* Menu */}
       {isMenuVisible && (
         <div
-          className="absolute right-0 mt-1 z-20 w-48 max-h-60 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          className="absolute right-0 mt-1 z-20 w-48 max-h-48 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
           style={{
-            animation: `${isMenuClosing ? 'dropdownOut 100ms ease-in forwards' : 'dropdownIn 100ms ease-out forwards'}`,
+            animation: `${isMenuClosing ? 'dropdownOut 140ms ease-in forwards' : 'dropdownIn 160ms ease-out forwards'}`,
             transformOrigin: 'top right',
             overflow: 'hidden',
           }}
@@ -1843,10 +1911,8 @@ const handleLoadPreset = (presetId: string) => {
       )}
       {/* ====== PRESET MANAGER MODAL (shell) ====== */}
       {isPresetManagerOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl">
-            <h3 className="text-sm font-semibold text-neutral-100">Manage presets</h3>
-            <p className="mt-1 text-[0.75rem] text-neutral-400">
+        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4">
+          <div className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto">            <p className="mt-1 text-[0.75rem] text-neutral-400">
               This is a placeholder for preset rename/delete. We&apos;ll wire it up next.
             </p>
 
@@ -1888,9 +1954,8 @@ const handleLoadPreset = (presetId: string) => {
 
       {/* ====== SAVE PRESET MODAL ====== */}
       {isPresetDialogOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-sm rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl">
-            <h3 className="text-sm font-semibold text-neutral-100">Save preset</h3>
+        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4">
+          <div className="w-full max-w-sm rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto">            <h3 className="text-sm font-semibold text-neutral-100">Save preset</h3>
             <p className="mt-1 text-[0.75rem] text-neutral-400">
               Enter a name for this progression.
             </p>
