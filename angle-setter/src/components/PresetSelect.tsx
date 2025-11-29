@@ -8,7 +8,6 @@ type PresetSelectProps = {
 };
 
 function PresetSelect({ presets, value, onChange }: PresetSelectProps) {
-  const [open, setOpen] = React.useState(false);
   const [isMenuVisible, setIsMenuVisible] = React.useState(false);
   const [isMenuClosing, setIsMenuClosing] = React.useState(false);
   const menuCloseTimerRef = React.useRef<number | null>(null);
@@ -23,30 +22,28 @@ function PresetSelect({ presets, value, onChange }: PresetSelectProps) {
     closeMenu();
   };
 
-  const openMenu = React.useCallback(() => {
-    if (menuCloseTimerRef.current) {
-      window.clearTimeout(menuCloseTimerRef.current);
-      menuCloseTimerRef.current = null;
-    }
+const openMenu = React.useCallback(() => {
+  if (menuCloseTimerRef.current) {
+    window.clearTimeout(menuCloseTimerRef.current);
+    menuCloseTimerRef.current = null;
+  }
     setIsMenuVisible(true);
     setIsMenuClosing(false);
-    setOpen(true);
   }, []);
 
   const closeMenu = React.useCallback(() => {
-    if (!isMenuVisible && !open) return;
+    if (!isMenuVisible) return;
     if (menuCloseTimerRef.current) {
       window.clearTimeout(menuCloseTimerRef.current);
       menuCloseTimerRef.current = null;
     }
-    setOpen(false);
     setIsMenuClosing(true);
     menuCloseTimerRef.current = window.setTimeout(() => {
       setIsMenuVisible(false);
       setIsMenuClosing(false);
       menuCloseTimerRef.current = null;
     }, 160);
-  }, [isMenuVisible, open]);
+  }, [isMenuVisible]);
 
   React.useEffect(() => {
     if (!isMenuVisible) return;
@@ -146,11 +143,10 @@ function PresetSelect({ presets, value, onChange }: PresetSelectProps) {
       {/* Menu */}
       {isMenuVisible && (
         <div
-          className="absolute right-0 mt-1 z-20 w-48 max-h-48 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          className="absolute right-0 mt-1 z-20 w-48 max-h-36 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
           style={{
             animation: `${isMenuClosing ? 'dropdownOut 140ms ease-in forwards' : 'dropdownIn 160ms ease-out forwards'}`,
             transformOrigin: 'top right',
-            overflow: 'hidden',
           }}
         >
           {presets.length === 0 && (

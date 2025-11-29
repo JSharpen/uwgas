@@ -5,9 +5,10 @@ type WheelSelectProps = {
   wheels: Wheel[];
   value: string;
   onChange: (id: string) => void;
+  showUnselected?: boolean;
 };
 
-function WheelSelect({ wheels, value, onChange }: WheelSelectProps) {
+function WheelSelect({ wheels, value, onChange, showUnselected = true }: WheelSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [isMenuVisible, setIsMenuVisible] = React.useState(false);
   const [isMenuClosing, setIsMenuClosing] = React.useState(false);
@@ -146,16 +147,26 @@ function WheelSelect({ wheels, value, onChange }: WheelSelectProps) {
       {/* Menu */}
       {isMenuVisible && (
         <div
-          className="absolute left-0 mt-1 z-20 w-44 max-h-48 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          className="absolute left-0 mt-1 z-20 w-44 max-h-36 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
           style={{
             animation: `${isMenuClosing ? 'dropdownOut 140ms ease-in forwards' : 'dropdownIn 160ms ease-out forwards'}`,
             transformOrigin: 'top left',
-            overflow: 'hidden',
           }}
         >
           {wheels.length === 0 && (
             <div className="px-2 py-1 text-[0.7rem] text-neutral-500">No wheels defined</div>
           )}
+
+          {showUnselected && (
+            <button
+              type="button"
+              className="w-full px-2 py-1 text-left text-[0.75rem] bg-neutral-950 text-neutral-300 hover:bg-neutral-900"
+              onClick={() => handleSelect('')}
+            >
+              Unselected
+            </button>
+          )}
+
           {wheels.map(w => {
             const isActive = w.id === value;
             return (
@@ -184,3 +195,4 @@ function WheelSelect({ wheels, value, onChange }: WheelSelectProps) {
 }
 
 export default WheelSelect;
+

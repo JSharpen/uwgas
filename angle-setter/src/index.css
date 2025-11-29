@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+html, body {
+  margin: 0;
+  min-height: 100dvh;
+  background: #0a0a0a; /* your app background */
+  padding-bottom: env(safe-area-inset-bottom); /* keeps bottom UI clear of home indicator */
+  overscroll-behavior-y: none; /* optional: reduce bounce showing white */
+}
+#root {
+  min-height: 100%;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Your global tweaks */
 :root {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -18,10 +30,6 @@ body {
   overscroll-behavior-y: none; /* optional: reduce bounce showing white */
 }
 
-#root {
-  min-height: 100%;
-  padding-bottom: env(safe-area-inset-bottom); /* keeps bottom UI clear of home indicator */
-}
 
 
 button {
@@ -42,10 +50,10 @@ button {
 /* Dropdown Animations */
 @keyframes dropdownIn {
   from { max-height: 0; opacity: 1; }
-  to   { max-height: 480px; opacity: 1; }
+  to   { max-height: 144px; opacity: 1; }
 }
 
 @keyframes dropdownOut {
-  from { max-height: 480px; opacity: 1; }
+  from { max-height: 144px; opacity: 1; }
   to   { max-height: 0; opacity: 1; }
 }
