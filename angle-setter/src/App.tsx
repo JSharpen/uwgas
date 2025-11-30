@@ -599,6 +599,7 @@ const lastLoadedStepsRef = React.useRef<string | null>(null);
     usbDiameter: global.usbDiameter,
     jigDiameter: global.jig.Dj,
   };
+  const angleSymbol = 'θ';
 
   // Persist basic state
   React.useEffect(() => {
@@ -1013,7 +1014,7 @@ const handleLoadPreset = (presetId: string) => {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-neutral-300">Target angle β (°/side)</span>
+                <span className="text-neutral-300">Target angle {angleSymbol} (deg/side)</span>
                 <input
                   type="number"
                   className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
@@ -1253,11 +1254,11 @@ const handleLoadPreset = (presetId: string) => {
                             
                             {/* === Body: angle offset + sort controls anchored at bottom === */}
                             <div className="px-2 py-2 flex items-stretch gap-2">
-                              {/* Left: angle offset Δβ */}
+                              {/* Left: angle offset */}
                               <div className="flex-1 flex flex-col gap-2">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <span className="text-neutral-400 text-[0.7rem]">
-                                    Angle offset Δβ
+                                    {angleSymbol} offset (deg)
                                   </span>
                                   <input
                                     type="number"
@@ -1408,7 +1409,7 @@ const handleLoadPreset = (presetId: string) => {
                                   hn = {r.hnBase.toFixed(2)} mm
                                 </div>
                                 <div className={`text-[0.7rem] ${betaLabelClass}`}>
-                                  Beta eff ={' '}
+                                  {angleSymbol} eff ={' '}
                                   <span className={betaValueClass}>
                                     {r.betaEffDeg.toFixed(2)} deg
                                   </span>
@@ -1416,7 +1417,7 @@ const handleLoadPreset = (presetId: string) => {
                                     <span className={betaValueClass}>
                                       {' '}
                                       ({offsetSign}
-                                      {angleOffset.toFixed(2)}°)
+                                      {angleOffset.toFixed(2)} deg)
                                     </span>
                                   )}
                                 </div>
@@ -1431,7 +1432,7 @@ const handleLoadPreset = (presetId: string) => {
                                   hr = {r.hrWheel.toFixed(2)} mm
                                 </div>
                                 <div className={`text-[0.7rem] ${betaLabelClass}`}>
-                                  Beta eff ={' '}
+                                  {angleSymbol} eff ={' '}
                                   <span className={betaValueClass}>
                                     {r.betaEffDeg.toFixed(2)} deg
                                   </span>
@@ -1439,7 +1440,7 @@ const handleLoadPreset = (presetId: string) => {
                                     <span className={betaValueClass}>
                                       {' '}
                                       ({offsetSign}
-                                      {angleOffset.toFixed(2)}°)
+                                      {angleOffset.toFixed(2)} deg)
                                     </span>
                                   )}
                                 </div>
@@ -2042,3 +2043,8 @@ const handleLoadPreset = (presetId: string) => {
 }
 
 export default App;
+
+
+
+
+
