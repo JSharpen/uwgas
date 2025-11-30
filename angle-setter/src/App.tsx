@@ -526,6 +526,7 @@ function App() {
   const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
 
   const [isWheelConfigOpen, setIsWheelConfigOpen] = React.useState(false);
+  const [isSetupPanelOpen, setIsSetupPanelOpen] = React.useState(false);
 
   const openProgressionMenu = React.useCallback(() => {
     if (progressionMenuCloseTimerRef.current) {
@@ -999,7 +1000,32 @@ const handleLoadPreset = (presetId: string) => {
         <>
           {/* Global controls */}
           <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/40 flex flex-col gap-2 max-w-xl">
-            <h2 className="text-sm font-semibold text-neutral-200">Global setup</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-neutral-200">Global setup</h2>
+              <button
+                type="button"
+                className="flex items-center gap-1 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800 transition-colors"
+                aria-expanded={isSetupPanelOpen}
+                onClick={() => setIsSetupPanelOpen(open => !open)}
+              >
+                <span>{isSetupPanelOpen ? 'Hide diameters' : 'Show diameters'}</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  className={'w-3 h-3 transition-transform ' + (isSetupPanelOpen ? 'rotate-180' : 'rotate-0')}
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M7 10l5 5 5-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+
             <div className="grid grid-cols-2 gap-2 text-sm">
               <label className="flex flex-col gap-1">
                 <span className="text-neutral-300">Projection A (mm)</span>
@@ -1025,30 +1051,48 @@ const handleLoadPreset = (presetId: string) => {
                   }
                 />
               </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-neutral-300">USB diameter Ds (mm)</span>
-                <input
-                  type="number"
-                  className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-                  value={global.usbDiameter}
-                  onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({ ...g, usbDiameter: _nz(e.target.value, g.usbDiameter) }))
-                  }
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-neutral-300">Jig diameter Dj (mm)</span>
-                <input
-                  type="number"
-                  className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-                  value={global.jig.Dj}
-                  onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({ ...g, jig: { ...g.jig, Dj: _nz(e.target.value, g.jig.Dj) } }))
-                  }
-                />
-              </label>
+            </div>
+
+            <div
+              className="overflow-hidden transition-all duration-200 ease-in-out"
+              style={{
+                maxHeight: isSetupPanelOpen ? 180 : 0,
+                opacity: isSetupPanelOpen ? 1 : 0,
+                pointerEvents: isSetupPanelOpen ? 'auto' : 'none',
+              }}
+            >
+              <div className="grid grid-cols-2 gap-2 text-sm pt-1">
+                <label className="flex flex-col gap-1">
+                  <span className="text-neutral-300">USB diameter Ds (mm)</span>
+                  <input
+                    type="number"
+                    className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                    value={global.usbDiameter}
+                    onKeyDown={blurOnEnter}
+                    onChange={e =>
+                      setGlobal(g => ({
+                        ...g,
+                        usbDiameter: _nz(e.target.value, g.usbDiameter),
+                      }))
+                    }
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-neutral-300">Jig diameter Dj (mm)</span>
+                  <input
+                    type="number"
+                    className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                    value={global.jig.Dj}
+                    onKeyDown={blurOnEnter}
+                    onChange={e =>
+                      setGlobal(g => ({
+                        ...g,
+                        jig: { ...g.jig, Dj: _nz(e.target.value, g.jig.Dj) },
+                      }))
+                    }
+                  />
+                </label>
+              </div>
             </div>
           </section>
 
