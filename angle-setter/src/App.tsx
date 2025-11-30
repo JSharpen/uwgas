@@ -209,7 +209,7 @@ function WheelSelect({
   }, []);
 
   return (
-    <div ref={rootRef} className="relative text-xs min-w-[7rem] max-w-[9rem]">
+    <div ref={rootRef} className="relative text-xs min-w-[9rem] max-w-[9rem]">
       {/* Shell / trigger */}
       <button
         type="button"
@@ -510,6 +510,10 @@ function App() {
   const [isPresetDialogOpen, setIsPresetDialogOpen] = React.useState(false);
   const [presetNameDraft, setPresetNameDraft] = React.useState('');
   const [isPresetManagerOpen, setIsPresetManagerOpen] = React.useState(false);
+  const [heightMode, setHeightMode] = React.useState<'hn' | 'hr'>(() => {
+    const val = _load<'hn' | 'hr'>('t_heightMode', 'hn');
+    return val === 'hr' ? 'hr' : 'hn';
+  });
   const [isProgressionMenuOpen, setIsProgressionMenuOpen] = React.useState(false);
   const [isProgressionMenuVisible, setIsProgressionMenuVisible] = React.useState(false);
   const [isProgressionMenuClosing, setIsProgressionMenuClosing] = React.useState(false);
@@ -616,6 +620,10 @@ const lastLoadedStepsRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     _save('t_sessionPresets', sessionPresets);
   }, [sessionPresets]);
+
+  React.useEffect(() => {
+    _save('t_heightMode', heightMode);
+  }, [heightMode]);
 
   React.useEffect(() => {
     return () => {
@@ -741,6 +749,10 @@ const lastLoadedStepsRef = React.useRef<string | null>(null);
   };
 
   const wheelResults = computeWheelResults(wheels, sessionSteps, global, activeMachine);
+  const presetNameTrimmed = presetNameDraft.trim();
+  const isPresetNameDuplicate =
+    presetNameTrimmed.length > 0 &&
+    sessionPresets.some(p => p.name.toLowerCase() === presetNameTrimmed.toLowerCase());
 
   const updateWheel = (id: string, patch: Partial<Wheel>) => {
     setWheels(prev => prev.map(w => (w.id === id ? { ...w, ...patch } : w)));
@@ -828,6 +840,10 @@ const handleSavePreset = () => {
   const name = presetNameDraft.trim();
   if (!name) return;
   if (sessionSteps.length === 0) return;
+  if (sessionPresets.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    window.alert('A preset with that name already exists. Choose a different name.');
+    return;
+  }
 
   // Build preset steps from current session steps
   const presetSteps: PresetStepRef[] = sessionSteps
@@ -902,6 +918,36 @@ const handleLoadPreset = (presetId: string) => {
   const clearSteps = () => {
     setSessionSteps([]);
   };
+
+  const progressionMenuItems = React.useMemo(
+    () => [
+      {
+        label: 'Manage presets',
+        disabled: false,
+        action: () => setIsPresetManagerOpen(true),
+      },
+      {
+        label: 'Save as preset',
+        disabled: sessionSteps.length === 0,
+        action: () => {
+          setPresetNameDraft('');
+          setIsPresetDialogOpen(true);
+        },
+      },
+      {
+        label: 'Clear progression',
+        disabled: sessionSteps.length === 0,
+        action: () => clearSteps(),
+      },
+      {
+        label:
+          heightMode === 'hn' ? 'Show hr only (rear ref)' : 'Show hn only (base ref)',
+        disabled: false,
+        action: () => setHeightMode(mode => (mode === 'hn' ? 'hr' : 'hn')),
+      },
+    ],
+    [sessionSteps.length, heightMode]
+  );
 
   return (
     <div className="min-h-dvh bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
@@ -1007,68 +1053,36 @@ const handleLoadPreset = (presetId: string) => {
 
           {/*Progression View*/}
           <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/20 flex flex-col gap-2">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-semibold text-neutral-200">Progression</h2>
 
-              <div className="flex items-center gap-2">
-                {/* Progression Header*/}
-                <div className="flex items-center gap-2">
-                  {/* VIEW MODE — Load preset UI */}
-                  {!isWheelConfigOpen && (
-                    <PresetSelect
-                      presets={sessionPresets}
-                      value={selectedPresetId || ''}
-                      onChange={id => {
-                        setSelectedPresetId(id);
-                        if (id) {
-                          handleLoadPreset(id); // auto-load on selection
-                        }
-                      }}
-                    />
-                  )}
+              <div className="flex items-center gap-3 ml-auto">
+                <PresetSelect
+                  presets={sessionPresets}
+                  value={selectedPresetId || ''}
+                  onChange={id => {
+                    setSelectedPresetId(id);
+                    if (id) {
+                      handleLoadPreset(id); // auto-load on selection
+                    }
+                  }}
+                />
 
-                  {/* Edit — Save preset + Clear Progression*/}
-                  {isWheelConfigOpen && (
-                    <>
-                      <button
-                        type="button"
-                        className="px-3 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-transform"
-                        onClick={() => {
-                          if (sessionSteps.length === 0) return;
-                          setPresetNameDraft('');
-                          setIsPresetDialogOpen(true);
-                        }}
-                        disabled={sessionSteps.length === 0}
-                      >
-                        Save preset
-                      </button>
-
-                      <button
-                        type="button"
-                        className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-900 text-xs text-neutral-300 disabled:opacity-40"
-                        onClick={clearSteps}
-                        disabled={sessionSteps.length === 0}
-                      >
-                        Clear
-                      </button>
-                    </>
-                  )}
-
-                  {/*Edit <-> Back toggle*/}
-                  <button
-                    type="button"
-                    className="w-12 px-2 py-1 text-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
-                    onClick={() => setIsWheelConfigOpen(open => !open)}
-                  >
-                    {isWheelConfigOpen ? 'Back' : 'Edit'}
-                  </button>
-                </div>
+                {/*Edit <-> Back toggle*/}
+                <button
+                  type="button"
+                  className="w-12 px-2 py-1 text-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
+                  onClick={() => setIsWheelConfigOpen(open => !open)}
+                >
+                  {isWheelConfigOpen ? 'Back' : 'Edit'}
+                </button>
 
                 {/*Kebab menu Progression*/}
                 <div ref={progressionMenuRef} className="relative">
                   <button
                     type="button"
-                    className="w-8 h-8 flex items-center justify-center rounded bg-transparent hover:bg-neutral-700/20 text-xs text-neutral-300"
+                    className="w-8 h-8 flex items-center justify-center rounded bg-transparent text-xs text-neutral-300 focus-visible:outline-none active:bg-transparent"
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
                     title="Progression menu"
                     onClick={() => {
                       if (isProgressionMenuVisible && !isProgressionMenuClosing) {
@@ -1089,39 +1103,21 @@ const handleLoadPreset = (presetId: string) => {
                         transformOrigin: 'top right',
                       }}
                     >
-                      <button
-                        type="button"
-                        className="w-full px-3 py-2 text-left hover:bg-neutral-900"
-                        onClick={() => {
-                          setIsPresetManagerOpen(true);
-                          closeProgressionMenu();
-                        }}
-                      >
-                        Manage presets
-                      </button>
-                      <button
-                        type="button"
-                        className="w-full px-3 py-2 text-left hover:bg-neutral-900 disabled:opacity-40"
-                        disabled={sessionSteps.length === 0}
-                        onClick={() => {
-                          setPresetNameDraft('');
-                          setIsPresetDialogOpen(true);
-                          closeProgressionMenu();
-                        }}
-                      >
-                        Save as preset
-                      </button>
-                      <button
-                        type="button"
-                        className="w-full px-3 py-2 text-left hover:bg-neutral-900 disabled:opacity-40"
-                        disabled={sessionSteps.length === 0}
-                        onClick={() => {
-                          clearSteps();
-                          closeProgressionMenu();
-                        }}
-                      >
-                        Clear progression
-                      </button>
+                      {progressionMenuItems.map(item => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          className="w-full px-3 py-2 text-left hover:bg-neutral-900 disabled:opacity-40"
+                          disabled={item.disabled}
+                          onClick={() => {
+                            if (item.disabled) return;
+                            item.action();
+                            closeProgressionMenu();
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -1164,7 +1160,7 @@ const handleLoadPreset = (presetId: string) => {
                             className="border border-neutral-700 rounded bg-neutral-950/40 flex flex-col"
                           >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
-                            <div className="flex flex-wrap items-center gap-y-1 px-2 py-1 bg-neutral-900/80">
+                            <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 bg-neutral-900/80 min-h-[44px]">
                               {/* LEFT: step badge + grind direction + wheel select */}
                               <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
                                 {/* Step badge */}
@@ -1200,14 +1196,15 @@ const handleLoadPreset = (presetId: string) => {
                               </div>
 
                               {/* RIGHT: D editor + delete */}
-                              <div className="flex items-center gap-1 flex-nowrap ml-auto">
+                              <div className="flex items-center gap-0.5 flex-nowrap ml-auto">
                                 {/* Diameter editor */}
-                                <label className="flex items-center gap-0.5 text-[0.7rem] text-neutral-300">
-                                  <span>D=</span>
+                                <label className="flex items-center gap-1 text-[0.7rem] text-neutral-300">
+                                  <span>D</span>
                                   <input
                                     type="text"
                                     inputMode="decimal"
-                                    className="w-[64px] rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right text-[0.8rem] font-mono mr-1"
+                                    className="w-[64px] rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right text-[0.8rem] font-mono mr-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={!wheel.id}
                                     value={
                                       wheel.DText !== undefined
                                         ? wheel.DText
@@ -1351,8 +1348,8 @@ const handleLoadPreset = (presetId: string) => {
                         className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden"
                       >
                         {/* ===== Header bar ===== */}
-                        <div className="flex flex-wrap items-center px-2 py-1 bg-neutral-900/70">
-                          <div className="flex items-center gap-x-1 gap-y-1">
+                        <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 bg-neutral-900/70 min-h-[44px]">
+                          <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
                             {/* Step badge */}
                             {r.step && (
                             <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100 -ml-1">
@@ -1371,7 +1368,7 @@ const handleLoadPreset = (presetId: string) => {
                             )}
 
                             {/* Wheel name */}
-                            <span className="text-[0.7rem] text-neutral-200 font-medium truncate">
+                            <span className="text-[0.7rem] text-neutral-200 font-medium truncate leading-none">
                               {r.wheel.name}
                             </span>
                           </div>
@@ -1386,29 +1383,37 @@ const handleLoadPreset = (presetId: string) => {
 
                         {/* ===== Wheel Card Body ===== */}
                         <div className="px-2 py-2 flex flex-col gap-2">
-                          {/* Calculated Values */}
-                          <div className="grid grid-cols-2 gap-2 text-[0.75rem]">
-                            <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
-                              <div className="text-neutral-300">
-                                Wheel → USB top (rear reference)
+                          {heightMode === 'hn' ? (
+                            <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
+                              <div className="flex items-center justify-between text-[0.75rem] text-neutral-300">
+                                <span>
+                                  {r.step?.base === 'front'
+                                    ? 'Front base USB height'
+                                    : 'Rear base USB height'}
+                                </span>
+                                <span className="text-neutral-500 text-[0.7rem]">hn</span>
                               </div>
-                              <div className="font-mono text-sm">
-                                hᵣ = {r.hrWheel.toFixed(2)} mm
-                              </div>
-                            </div>
-
-                            <div className="border border-neutral-700 rounded p-1 flex flex-col gap-0.5">
-                              <div className="text-neutral-300">
-                                Datum → USB top (selected base)
-                              </div>
-                              <div className="font-mono text-sm">
-                                hₙ = {r.hnBase.toFixed(2)} mm
+                              <div className="font-mono text-sm text-neutral-100">
+                                hn = {r.hnBase.toFixed(2)} mm
                               </div>
                               <div className="text-neutral-400 text-[0.7rem]">
-                                βₑₑₚ = {r.betaEffDeg.toFixed(2)}°
+                                Beta eff = {r.betaEffDeg.toFixed(2)} deg
                               </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
+                              <div className="flex items-center justify-between text-[0.75rem] text-neutral-300">
+                                <span>Wheel to USB top (rear reference)</span>
+                                <span className="text-neutral-500 text-[0.7rem]">hr</span>
+                              </div>
+                              <div className="font-mono text-sm text-neutral-100">
+                                hr = {r.hrWheel.toFixed(2)} mm
+                              </div>
+                              <div className="text-neutral-400 text-[0.7rem]">
+                                Beta eff = {r.betaEffDeg.toFixed(2)} deg
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1992,7 +1997,7 @@ const handleLoadPreset = (presetId: string) => {
                 type="button"
                 className="px-3 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-xs text-emerald-100 hover:bg-emerald-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
                 onClick={handleSavePreset}
-                disabled={!presetNameDraft.trim() || sessionSteps.length === 0}
+                disabled={!presetNameTrimmed || sessionSteps.length === 0 || isPresetNameDuplicate}
               >
                 Save
               </button>
