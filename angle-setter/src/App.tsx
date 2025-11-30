@@ -1014,7 +1014,7 @@ const handleLoadPreset = (presetId: string) => {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-neutral-300">Target angle {angleSymbol} (deg/side)</span>
+                <span className="text-neutral-300">Target angle {angleSymbol}° (/side)</span>
                 <input
                   type="number"
                   className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
