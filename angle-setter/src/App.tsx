@@ -1004,11 +1004,11 @@ const handleLoadPreset = (presetId: string) => {
               <h2 className="text-sm font-semibold text-neutral-200">Global setup</h2>
               <button
                 type="button"
-                className="flex items-center gap-1 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800 transition-colors"
+                className="w-7 h-7 inline-flex items-center justify-center rounded border border-neutral-700 bg-neutral-900 text-neutral-200 hover:bg-neutral-800 transition-colors"
+                aria-label={isSetupPanelOpen ? 'Hide setup panel' : 'Show setup panel'}
                 aria-expanded={isSetupPanelOpen}
                 onClick={() => setIsSetupPanelOpen(open => !open)}
               >
-                <span>{isSetupPanelOpen ? 'Hide diameters' : 'Show diameters'}</span>
                 <svg
                   viewBox="0 0 24 24"
                   className={'w-3 h-3 transition-transform ' + (isSetupPanelOpen ? 'rotate-180' : 'rotate-0')}
