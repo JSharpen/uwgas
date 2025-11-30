@@ -1471,7 +1471,7 @@ const handleLoadPreset = (presetId: string) => {
                             ) : (
                               <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
                                 <div className="flex items-center text-[0.75rem] text-neutral-300">
-                                  <span>Wheel to USB height (hr)</span>
+                                  <span>{`Wheel <-> USB top`}</span>
                                 </div>
                                 <div className="font-mono text-sm text-neutral-100">
                                   hr = {r.hrWheel.toFixed(2)} mm
