@@ -1411,13 +1411,13 @@ const handleLoadPreset = (presetId: string) => {
                                 <div className={`text-[0.7rem] ${betaLabelClass}`}>
                                   {angleSymbol} eff ={' '}
                                   <span className={betaValueClass}>
-                                    {r.betaEffDeg.toFixed(2)} deg
+                                    {r.betaEffDeg.toFixed(2)}°
                                   </span>
                                   {hasOffset && (
                                     <span className={betaValueClass}>
                                       {' '}
                                       ({offsetSign}
-                                      {angleOffset.toFixed(2)} deg)
+                                      {angleOffset.toFixed(2)}°)
                                     </span>
                                   )}
                                 </div>
@@ -1434,13 +1434,13 @@ const handleLoadPreset = (presetId: string) => {
                                 <div className={`text-[0.7rem] ${betaLabelClass}`}>
                                   {angleSymbol} eff ={' '}
                                   <span className={betaValueClass}>
-                                    {r.betaEffDeg.toFixed(2)} deg
+                                    {r.betaEffDeg.toFixed(2)}°
                                   </span>
                                   {hasOffset && (
                                     <span className={betaValueClass}>
                                       {' '}
                                       ({offsetSign}
-                                      {angleOffset.toFixed(2)} deg)
+                                      {angleOffset.toFixed(2)}°)
                                     </span>
                                   )}
                                 </div>
