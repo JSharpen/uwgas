@@ -1447,8 +1447,8 @@ const handleLoadPreset = (presetId: string) => {
                                 <div className="flex items-center text-[0.75rem] text-neutral-300">
                                   <span>
                                     {r.step?.base === 'front'
-                                      ? 'Front base USB height'
-                                      : 'Rear base USB height'}
+                                      ? `Front Base <-> USB top`
+                                      : `Rear Base <-> USB top`}
                                   </span>
                                 </div>
                                 <div className="font-mono text-sm text-neutral-100">
