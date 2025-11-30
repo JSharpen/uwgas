@@ -1342,81 +1342,113 @@ const handleLoadPreset = (presetId: string) => {
                   </div>
                 ) : (
                   <div className="grid gap-1 md:grid-cols-2">
-                    {wheelResults.map((r, index) => (
-                      <div
-                        key={r.step?.id ?? r.wheel.id}
-                        className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden"
-                      >
-                        {/* ===== Header bar ===== */}
-                        <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 bg-neutral-900/70 min-h-[44px]">
-                          <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
-                            {/* Step badge */}
-                            {r.step && (
-                            <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100 -ml-1">
-                              {index + 1}
+                    {wheelResults.map((r, index) => {
+                      const angleOffset = r.step?.angleOffset ?? 0;
+                      const hasOffset = angleOffset !== 0;
+                      const betaValueClass = hasOffset
+                        ? angleOffset > 0
+                          ? 'text-emerald-300'
+                          : 'text-rose-300'
+                        : 'text-neutral-500';
+                      const betaLabelClass = hasOffset ? 'text-neutral-300' : 'text-neutral-500';
+                      const offsetSign = angleOffset > 0 ? '+' : '';
+
+                      return (
+                        <div
+                          key={r.step?.id ?? r.wheel.id}
+                          className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden"
+                        >
+                          {/* ===== Header bar ===== */}
+                          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 bg-neutral-900/70 min-h-[44px]">
+                            <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+                              {/* Step badge */}
+                              {r.step && (
+                              <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100 -ml-1">
+                                {index + 1}
+                              </div>
+                              )}
+
+                              {/* Grind direction indicator - read-only in view mode */}
+                              {r.step && (
+                                <GrindDirToggle
+                                  base={r.step.base}
+                                  isHoning={r.wheel.isHoning}
+                                  canToggle={false}
+                                  onToggle={() => {}}
+                                />
+                              )}
+
+                              {/* Wheel name */}
+                              <span className="text-[0.7rem] text-neutral-200 font-medium truncate leading-none">
+                                {r.wheel.name}
+                              </span>
                             </div>
-                            )}
 
-                            {/* Grind direction indicator – read-only in view mode */}
-                            {r.step && (
-                              <GrindDirToggle
-                                base={r.step.base}
-                                isHoning={r.wheel.isHoning}
-                                canToggle={false}
-                                onToggle={() => {}}
-                              />
-                            )}
-
-                            {/* Wheel name */}
-                            <span className="text-[0.7rem] text-neutral-200 font-medium truncate leading-none">
-                              {r.wheel.name}
-                            </span>
+                            {/* Right side: diameter display */}
+                            <div className="flex items-center gap-1 flex-nowrap ml-auto text-[0.7rem] text-neutral-300 font-mono whitespace-nowrap">
+                              <span>D=</span>
+                              <span>{r.wheel.D?.toFixed(2)}</span>
+                              <span>mm</span>
+                            </div>
                           </div>
 
-                          {/* Right side: diameter display */}
-                          <div className="flex items-center gap-1 flex-nowrap ml-auto text-[0.7rem] text-neutral-300 font-mono whitespace-nowrap">
-                            <span>D=</span>
-                            <span>{r.wheel.D?.toFixed(2)}</span>
-                            <span>mm</span>
+                          {/* ===== Wheel Card Body ===== */}
+                          <div className="px-2 py-2 flex flex-col gap-2">
+                            {heightMode === 'hn' ? (
+                              <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
+                                <div className="flex items-center justify-between text-[0.75rem] text-neutral-300">
+                                  <span>
+                                    {r.step?.base === 'front'
+                                      ? 'Front base USB height'
+                                      : 'Rear base USB height'}
+                                  </span>
+                                  <span className="text-neutral-500 text-[0.7rem]">hn</span>
+                                </div>
+                                <div className="font-mono text-sm text-neutral-100">
+                                  hn = {r.hnBase.toFixed(2)} mm
+                                </div>
+                                <div className={`text-[0.7rem] ${betaLabelClass}`}>
+                                  Beta eff ={' '}
+                                  <span className={betaValueClass}>
+                                    {r.betaEffDeg.toFixed(2)} deg
+                                  </span>
+                                  {hasOffset && (
+                                    <span className={betaValueClass}>
+                                      {' '}
+                                      ({offsetSign}
+                                      {angleOffset.toFixed(2)}°)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
+                                <div className="flex items-center justify-between text-[0.75rem] text-neutral-300">
+                                  <span>Wheel to USB height (hr)</span>
+                                  <span className="text-neutral-500 text-[0.7rem]">hr</span>
+                                </div>
+                                <div className="font-mono text-sm text-neutral-100">
+                                  hr = {r.hrWheel.toFixed(2)} mm
+                                </div>
+                                <div className={`text-[0.7rem] ${betaLabelClass}`}>
+                                  Beta eff ={' '}
+                                  <span className={betaValueClass}>
+                                    {r.betaEffDeg.toFixed(2)} deg
+                                  </span>
+                                  {hasOffset && (
+                                    <span className={betaValueClass}>
+                                      {' '}
+                                      ({offsetSign}
+                                      {angleOffset.toFixed(2)}°)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
-
-                        {/* ===== Wheel Card Body ===== */}
-                        <div className="px-2 py-2 flex flex-col gap-2">
-                          {heightMode === 'hn' ? (
-                            <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
-                              <div className="flex items-center justify-between text-[0.75rem] text-neutral-300">
-                                <span>
-                                  {r.step?.base === 'front'
-                                    ? 'Front base USB height'
-                                    : 'Rear base USB height'}
-                                </span>
-                                <span className="text-neutral-500 text-[0.7rem]">hn</span>
-                              </div>
-                              <div className="font-mono text-sm text-neutral-100">
-                                hn = {r.hnBase.toFixed(2)} mm
-                              </div>
-                              <div className="text-neutral-400 text-[0.7rem]">
-                                Beta eff = {r.betaEffDeg.toFixed(2)} deg
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
-                              <div className="flex items-center justify-between text-[0.75rem] text-neutral-300">
-                                <span>Wheel to USB top (rear reference)</span>
-                                <span className="text-neutral-500 text-[0.7rem]">hr</span>
-                              </div>
-                              <div className="font-mono text-sm text-neutral-100">
-                                hr = {r.hrWheel.toFixed(2)} mm
-                              </div>
-                              <div className="text-neutral-400 text-[0.7rem]">
-                                Beta eff = {r.betaEffDeg.toFixed(2)} deg
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )
               )}
