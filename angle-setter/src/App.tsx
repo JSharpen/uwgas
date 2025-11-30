@@ -1348,6 +1348,7 @@ const handleLoadPreset = (presetId: string) => {
                     {wheelResults.map((r, index) => {
                       const angleOffset = r.step?.angleOffset ?? 0;
                       const hasOffset = angleOffset !== 0;
+                      const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
                       const betaValueClass = hasOffset
                         ? angleOffset > 0
                           ? 'text-emerald-300'
@@ -1412,13 +1413,13 @@ const handleLoadPreset = (presetId: string) => {
                                 <div className={`text-[0.7rem] ${betaLabelClass}`}>
                                   {angleSymbol} eff ={' '}
                                   <span className={betaValueClass}>
-                                    {r.betaEffDeg.toFixed(2)}°
+                                    {formatDeg(r.betaEffDeg)}°
                                   </span>
                                   {hasOffset && (
                                     <span className={betaValueClass}>
                                       {' '}
                                       ({offsetSign}
-                                      {angleOffset.toFixed(2)}°)
+                                      {formatDeg(angleOffset)}°)
                                     </span>
                                   )}
                                 </div>
@@ -1434,13 +1435,13 @@ const handleLoadPreset = (presetId: string) => {
                                 <div className={`text-[0.7rem] ${betaLabelClass}`}>
                                   {angleSymbol} eff ={' '}
                                   <span className={betaValueClass}>
-                                    {r.betaEffDeg.toFixed(2)}°
+                                    {formatDeg(r.betaEffDeg)}°
                                   </span>
                                   {hasOffset && (
                                     <span className={betaValueClass}>
                                       {' '}
                                       ({offsetSign}
-                                      {angleOffset.toFixed(2)}°)
+                                      {formatDeg(angleOffset)}°)
                                     </span>
                                   )}
                                 </div>
