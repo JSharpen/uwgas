@@ -1342,7 +1342,9 @@ const handleLoadPreset = (presetId: string) => {
                     steps for this calculator.
                   </div>
                 ) : (
-                  <div className="grid gap-1 md:grid-cols-2">
+                  <>
+                    {/* Calc panel: progression results */}
+                    <div className="grid gap-1 md:grid-cols-2">
                     {wheelResults.map((r, index) => {
                       const angleOffset = r.step?.angleOffset ?? 0;
                       const hasOffset = angleOffset !== 0;
@@ -1397,13 +1399,12 @@ const handleLoadPreset = (presetId: string) => {
                           <div className="px-2 py-2 flex flex-col gap-2">
                             {heightMode === 'hn' ? (
                               <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
-                                <div className="flex items-center justify-between text-[0.75rem] text-neutral-300">
+                                <div className="flex items-center text-[0.75rem] text-neutral-300">
                                   <span>
                                     {r.step?.base === 'front'
                                       ? 'Front base USB height'
                                       : 'Rear base USB height'}
                                   </span>
-                                  <span className="text-neutral-500 text-[0.7rem]">hn</span>
                                 </div>
                                 <div className="font-mono text-sm text-neutral-100">
                                   hn = {r.hnBase.toFixed(2)} mm
@@ -1424,9 +1425,8 @@ const handleLoadPreset = (presetId: string) => {
                               </div>
                             ) : (
                               <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
-                                <div className="flex items-center justify-between text-[0.75rem] text-neutral-300">
+                                <div className="flex items-center text-[0.75rem] text-neutral-300">
                                   <span>Wheel to USB height (hr)</span>
-                                  <span className="text-neutral-500 text-[0.7rem]">hr</span>
                                 </div>
                                 <div className="font-mono text-sm text-neutral-100">
                                   hr = {r.hrWheel.toFixed(2)} mm
@@ -1450,7 +1450,8 @@ const handleLoadPreset = (presetId: string) => {
                         </div>
                       );
                     })}
-                  </div>
+                    </div>
+                  </>
                 )
               )}
             </div>
