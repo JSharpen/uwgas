@@ -2135,6 +2135,7 @@ const handleLoadPreset = (presetId: string) => {
             <div className="mt-3">
               <textarea
                 className="w-full min-h-[6rem] rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-100"
+                autoFocus
                 value={stepNotesDraft}
                 onChange={e => setStepNotesDraft(e.target.value)}
               />
