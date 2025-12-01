@@ -15,6 +15,7 @@ export type SessionStep = {
   wheelId: string;
   base: BaseSide;
   angleOffset: number; // β° at step level
+  notes: string;
 };
 
 export type PresetStepRef = {
@@ -22,6 +23,7 @@ export type PresetStepRef = {
   wheelName: string;
   base: BaseSide;
   angleOffset: number;
+  notes?: string;
 };
 
 export type SessionPreset = {

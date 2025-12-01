@@ -871,6 +871,7 @@ const handleSavePreset = () => {
         wheelName: wheel.name,
         base: step.base,
         angleOffset: step.angleOffset,
+        notes: step.notes,
       } as PresetStepRef;
     })
     .filter((x): x is PresetStepRef => x !== null);
@@ -1419,6 +1420,7 @@ const handleLoadPreset = (presetId: string) => {
                     {wheelResults.map((r, index) => {
                       const angleOffset = r.step?.angleOffset ?? 0;
                       const hasOffset = angleOffset !== 0;
+                      const notesText = r.step?.notes?.trim() ?? '';
                       const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
                       const betaValueClass = hasOffset
                         ? angleOffset > 0
@@ -1468,7 +1470,7 @@ const handleLoadPreset = (presetId: string) => {
                           </div>
 
                           {/* ===== Wheel Card Body ===== */}
-                          <div className="px-2 py-2 flex flex-col gap-2">
+                          <div className="px-2 py-2 flex flex-col md:flex-row gap-2">
                             {heightMode === 'hn' ? (
                               <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start">
                                 <div className="flex items-center text-[0.75rem] text-neutral-300">
@@ -1518,6 +1520,18 @@ const handleLoadPreset = (presetId: string) => {
                                 </div>
                               </div>
                             )}
+
+                            {/* Notes panel (view mode) */}
+                            <div className="flex-1 border border-neutral-700 rounded p-2 min-h-[40px] bg-neutral-950/20">
+                              <div className="text-[0.75rem] text-neutral-400 mb-1">Notes</div>
+                              {notesText ? (
+                                <div className="text-[0.8rem] text-neutral-100 whitespace-pre-wrap break-words">
+                                  {notesText}
+                                </div>
+                              ) : (
+                                <div className="text-[0.8rem] text-neutral-500">No notes</div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
