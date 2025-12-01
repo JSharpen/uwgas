@@ -518,6 +518,8 @@ function App() {
   const [isPresetDialogOpen, setIsPresetDialogOpen] = React.useState(false);
   const [presetNameDraft, setPresetNameDraft] = React.useState('');
   const [isPresetManagerOpen, setIsPresetManagerOpen] = React.useState(false);
+  const [presetRenameId, setPresetRenameId] = React.useState<string | null>(null);
+  const [presetRenameValue, setPresetRenameValue] = React.useState('');
   const [heightMode, setHeightMode] = React.useState<'hn' | 'hr'>(() => {
     const val = _load<'hn' | 'hr'>('t_heightMode', 'hn');
     return val === 'hr' ? 'hr' : 'hn';
@@ -639,6 +641,13 @@ const lastLoadedStepsRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     _save('t_heightMode', heightMode);
   }, [heightMode]);
+
+  React.useEffect(() => {
+    if (!isPresetManagerOpen) {
+      setPresetRenameId(null);
+      setPresetRenameValue('');
+    }
+  }, [isPresetManagerOpen]);
 
   React.useEffect(() => {
     return () => {
@@ -852,6 +861,53 @@ const moveStep = (index: number, delta: number) => {
   });
 };
 
+const handleBeginPresetRename = (preset: SessionPreset) => {
+  setPresetRenameId(preset.id);
+  setPresetRenameValue(preset.name);
+};
+
+const handleCancelPresetRename = () => {
+  setPresetRenameId(null);
+  setPresetRenameValue('');
+};
+
+const handleCommitPresetRename = () => {
+  if (!presetRenameId) return;
+  const nextName = presetRenameValue.trim();
+  if (!nextName) return;
+
+  const duplicate = sessionPresets.some(
+    p => p.id !== presetRenameId && p.name.toLowerCase() === nextName.toLowerCase()
+  );
+  if (duplicate) {
+    window.alert('A preset with that name already exists. Choose a different name.');
+    return;
+  }
+
+  setSessionPresets(prev =>
+    prev.map(p => (p.id === presetRenameId ? { ...p, name: nextName } : p))
+  );
+  setPresetRenameId(null);
+  setPresetRenameValue('');
+};
+
+const handleDeletePreset = (presetId: string) => {
+  const preset = sessionPresets.find(p => p.id === presetId);
+  const label = preset ? `Delete preset "${preset.name}"?` : 'Delete this preset?';
+  if (!window.confirm(label)) return;
+
+  setSessionPresets(prev => prev.filter(p => p.id !== presetId));
+  if (selectedPresetId === presetId) {
+    setSelectedPresetId('');
+    lastLoadedPresetIdRef.current = null;
+    lastLoadedStepsRef.current = null;
+  }
+  if (presetRenameId === presetId) {
+    setPresetRenameId(null);
+    setPresetRenameValue('');
+  }
+};
+
 const handleSavePreset = () => {
   const name = presetNameDraft.trim();
   if (!name) return;
@@ -960,7 +1016,7 @@ const handleLoadPreset = (presetId: string) => {
       },
       {
         label:
-          heightMode === 'hn' ? 'Show hr only (rear ref)' : 'Show hn only (base ref)',
+          heightMode === 'hn' ? 'Show wheel height' : 'Show datum height',
         disabled: false,
         action: () => setHeightMode(mode => (mode === 'hn' ? 'hr' : 'hn')),
       },
@@ -2040,41 +2096,135 @@ const handleLoadPreset = (presetId: string) => {
       {/* ====== PRESET MANAGER MODAL (shell) ====== */}
       {isPresetManagerOpen && (
         <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4">
-          <div className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto">            <p className="mt-1 text-[0.75rem] text-neutral-400">
-              This is a placeholder for preset rename/delete. We&apos;ll wire it up next.
-            </p>
+          <div className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-neutral-100">Manage presets</h3>
+                <p className="mt-1 text-[0.75rem] text-neutral-400">
+                  Rename, load, or delete saved progressions.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-200 active:scale-95 transition-transform"
+                onClick={() => setIsPresetManagerOpen(false)}
+              >
+                Close
+              </button>
+            </div>
 
             <div className="mt-3 max-h-64 overflow-y-auto text-xs">
               {sessionPresets.length === 0 ? (
                 <div className="text-neutral-500">No presets saved yet.</div>
               ) : (
-                <ul className="flex flex-col gap-1">
-                  {sessionPresets.map(preset => (
-                    <li
-                      key={preset.id}
-                      className="flex items-center justify-between gap-2 rounded border border-neutral-700 bg-neutral-900 px-2 py-1"
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-neutral-100">{preset.name}</span>
-                        <span className="text-[0.65rem] text-neutral-500">
-                          {preset.steps.length} step{preset.steps.length === 1 ? '' : 's'}
-                          {selectedPresetId === preset.id && ' · active'}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
+                <ul className="flex flex-col gap-2">
+                  {sessionPresets.map(preset => {
+                    const isEditing = presetRenameId === preset.id;
+                    const renameTrimmed = presetRenameValue.trim();
+                    const renameConflicts =
+                      isEditing &&
+                      sessionPresets.some(
+                        p =>
+                          p.id !== preset.id &&
+                          p.name.toLowerCase() === renameTrimmed.toLowerCase()
+                      );
+                    const renameDisabled =
+                      !isEditing || renameTrimmed.length === 0 || renameConflicts;
+
+                    return (
+                      <li
+                        key={preset.id}
+                        className="flex items-start justify-between gap-2 rounded border border-neutral-700 bg-neutral-900 px-2 py-2"
+                      >
+                        <div className="flex-1 flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                                value={presetRenameValue}
+                                onChange={e => setPresetRenameValue(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    handleCommitPresetRename();
+                                  }
+                                  if (e.key === 'Escape') {
+                                    handleCancelPresetRename();
+                                  }
+                                }}
+                                autoFocus
+                              />
+                            ) : (
+                              <span className="text-neutral-100">{preset.name}</span>
+                            )}
+                            {selectedPresetId === preset.id && (
+                              <span className="text-[0.65rem] text-emerald-300 border border-emerald-600/60 rounded px-1 py-[2px]">
+                                active
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[0.7rem] text-neutral-400">
+                            {preset.steps.length} step{preset.steps.length === 1 ? '' : 's'}
+                          </div>
+                          {isEditing && renameConflicts && (
+                            <div className="text-[0.65rem] text-amber-300">
+                              A preset with that name already exists.
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-1 self-start">
+                          {isEditing ? (
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                className="px-2 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-[0.7rem] text-emerald-100 hover:bg-emerald-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                                disabled={renameDisabled}
+                                onClick={handleCommitPresetRename}
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-200 active:scale-95"
+                                onClick={handleCancelPresetRename}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-1 justify-end">
+                              <button
+                                type="button"
+                                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-200 active:scale-95"
+                                onClick={() => {
+                                  handleLoadPreset(preset.id);
+                                  setIsPresetManagerOpen(false);
+                                }}
+                              >
+                                Load
+                              </button>
+                              <button
+                                type="button"
+                                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-200 active:scale-95"
+                                onClick={() => handleBeginPresetRename(preset)}
+                              >
+                                Rename
+                              </button>
+                              <button
+                                type="button"
+                                className="px-2 py-1 rounded border border-red-500/70 bg-red-900/40 text-[0.7rem] text-red-200 hover:bg-red-900 active:scale-95"
+                                onClick={() => handleDeletePreset(preset.id)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                type="button"
-                className="px-3 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-200 active:scale-95 transition-transform"
-                onClick={() => setIsPresetManagerOpen(false)}
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
