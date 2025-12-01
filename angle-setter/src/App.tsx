@@ -1218,7 +1218,7 @@ const handleLoadPreset = (presetId: string) => {
                         return (
                           <div
                             key={step.id}
-                            className="border border-neutral-700 rounded bg-neutral-950/40 flex flex-col"
+                            className="border border-neutral-700 rounded bg-neutral-950/40 flex flex-col min-h-[140px]"
                           >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
                             <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 bg-neutral-900/80 min-h-[44px]">
@@ -2138,6 +2138,17 @@ const handleLoadPreset = (presetId: string) => {
                 autoFocus
                 value={stepNotesDraft}
                 onChange={e => setStepNotesDraft(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const id = stepNotesStepIdRef.current;
+                    if (!id) return;
+                    setSessionSteps(prev =>
+                      prev.map(s => (s.id === id ? { ...s, notes: stepNotesDraft.trim() } : s))
+                    );
+                    setIsStepNotesOpen(false);
+                  }
+                }}
               />
             </div>
             <div className="mt-4 flex justify-end gap-2">
