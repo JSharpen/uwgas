@@ -1314,9 +1314,21 @@ const handleLoadPreset = (presetId: string) => {
                             
                             {/* === Body: angle offset + sort controls anchored at bottom === */}
                             <div className="px-2 py-2 flex items-stretch gap-2">
-                              {/* Left: angle offset */}
+                              {/* Left: notes trigger + angle offset */}
                               <div className="flex-1 flex flex-col gap-2">
-                                <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-200 hover:bg-neutral-800 self-start"
+                                  onClick={() => {
+                                    stepNotesStepIdRef.current = step.id;
+                                    setStepNotesDraft(step.notes || '');
+                                    setIsStepNotesOpen(true);
+                                  }}
+                                >
+                                  Notes
+                                </button>
+
+                                <div className="flex flex-wrap items-center gap-2 mt-auto">
                                   <span className="text-neutral-400 text-[0.7rem]">
                                     {angleSymbol} offset (deg)
                                   </span>
@@ -1348,18 +1360,6 @@ const handleLoadPreset = (presetId: string) => {
                                   />
                                   <span className="text-neutral-400 text-[0.7rem]">°</span>
                                 </div>
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-200 hover:bg-neutral-800"
-                                  onClick={() => {
-                                    stepNotesStepIdRef.current = step.id;
-                                    setStepNotesDraft(step.notes || '');
-                                    setIsStepNotesOpen(true);
-                                  }}
-                                >
-                                  Notes
-                                </button>
-
                               </div>
 
                               {/* Right: sort controls, anchored to the bottom */}
