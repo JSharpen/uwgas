@@ -578,6 +578,29 @@ function App() {
   // Track last loaded preset and its steps
 const lastLoadedPresetIdRef = React.useRef<string | null>(null);
 const lastLoadedStepsRef = React.useRef<string | null>(null);
+const [modalShift, setModalShift] = React.useState(0);
+
+// Nudge modals up on mobile when the virtual keyboard is visible
+React.useEffect(() => {
+  if (typeof window === 'undefined') return;
+  const vv = window.visualViewport;
+  if (!vv) return;
+
+  const updateShift = () => {
+    const shrink = Math.max(0, window.innerHeight - vv.height);
+    const isMobile = window.innerWidth < 768;
+    const next = isMobile ? Math.min(shrink, 180) : 0;
+    setModalShift(next);
+  };
+
+  updateShift();
+  vv.addEventListener('resize', updateShift);
+  window.addEventListener('orientationchange', updateShift);
+  return () => {
+    vv.removeEventListener('resize', updateShift);
+    window.removeEventListener('orientationchange', updateShift);
+  };
+}, []);
 
 
   // 🔒 Safety net: de-duplicate wheels by id (keep first, drop duplicates)
@@ -2232,8 +2255,12 @@ const handleLoadPreset = (presetId: string) => {
 
       {/* ====== SAVE PRESET MODAL ====== */}
       {isPresetDialogOpen && (
-        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4">
-          <div className="w-full max-w-sm rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto">            <h3 className="text-sm font-semibold text-neutral-100">Save preset</h3>
+        <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh]">
+          <div
+            className="w-full max-w-sm rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto"
+            style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
+          >
+            <h3 className="text-sm font-semibold text-neutral-100">Save preset</h3>
             <p className="mt-1 text-[0.75rem] text-neutral-400">
               Enter a name for this progression.
             </p>
@@ -2276,8 +2303,11 @@ const handleLoadPreset = (presetId: string) => {
       )}
       
       {isStepNotesOpen && (
-        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4">
-          <div className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh]">
+          <div
+            className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto"
+            style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
+          >
             <h3 className="text-sm font-semibold text-neutral-100">Step notes</h3>
             <p className="mt-1 text-[0.75rem] text-neutral-400">
               Notes for this step.
