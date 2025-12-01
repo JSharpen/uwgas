@@ -1523,7 +1523,6 @@ const handleLoadPreset = (presetId: string) => {
 
                             {/* Notes panel (view mode) */}
                             <div className="flex-1 border border-neutral-700 rounded p-2 min-h-[40px] bg-neutral-950/20">
-                              <div className="text-[0.75rem] text-neutral-400 mb-1">Notes</div>
                               {notesText ? (
                                 <div className="text-[0.8rem] text-neutral-100 whitespace-pre-wrap break-words">
                                   {notesText}
