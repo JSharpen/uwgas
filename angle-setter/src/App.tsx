@@ -491,6 +491,7 @@ function PresetSelect({
 // ============================================================================== App =======================================
 
 function App() {
+  // ======= Core state =======
   const [global, setGlobal] = React.useState<GlobalState>(() =>
     _load('t_global', DEFAULT_GLOBAL)
   );
@@ -506,6 +507,13 @@ function App() {
   const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(() =>
     _load('t_sessionPresets', [])
   );
+
+  // View state
+  const [view, setView] = React.useState<
+  'calculator' | 'wheels' | 'settings'
+>('calculator');
+  const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
+  // Preset dialog / manager state
   const [selectedPresetId, setSelectedPresetId] = React.useState<string>('');
   const [isPresetDialogOpen, setIsPresetDialogOpen] = React.useState(false);
   const [presetNameDraft, setPresetNameDraft] = React.useState('');
@@ -514,20 +522,25 @@ function App() {
     const val = _load<'hn' | 'hr'>('t_heightMode', 'hn');
     return val === 'hr' ? 'hr' : 'hn';
   });
+
+  // Step notes state
+  const [isStepNotesOpen, setIsStepNotesOpen] = React.useState(false);
+  const [stepNotesDraft, setStepNotesDraft] = React.useState('');
+  const stepNotesStepIdRef = React.useRef<string | null>(null);
+
+
+  // Wheel config panel state
+  const [isWheelConfigOpen, setIsWheelConfigOpen] = React.useState(false);
+  const [isSetupPanelOpen, setIsSetupPanelOpen] = React.useState(false);
+
+  // Progression menu state
   const [isProgressionMenuOpen, setIsProgressionMenuOpen] = React.useState(false);
   const [isProgressionMenuVisible, setIsProgressionMenuVisible] = React.useState(false);
   const [isProgressionMenuClosing, setIsProgressionMenuClosing] = React.useState(false);
   const progressionMenuRef = React.useRef<HTMLDivElement | null>(null);
   const progressionMenuCloseTimerRef = React.useRef<number | null>(null);
 
-  const [view, setView] = React.useState<
-  'calculator' | 'wheels' | 'settings'
->('calculator');
-  const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
-
-  const [isWheelConfigOpen, setIsWheelConfigOpen] = React.useState(false);
-  const [isSetupPanelOpen, setIsSetupPanelOpen] = React.useState(false);
-
+  // Progression menu open/close handlers
   const openProgressionMenu = React.useCallback(() => {
     if (progressionMenuCloseTimerRef.current) {
       window.clearTimeout(progressionMenuCloseTimerRef.current);
@@ -802,6 +815,7 @@ const addStep = () => {
     wheelId: '', // start unselected
     base: 'rear',
     angleOffset: 0,
+    notes: '',
   };
 
   setSessionSteps(prev => {
@@ -899,7 +913,9 @@ const handleLoadPreset = (presetId: string) => {
       wheelId: wheel.id,
       base: ref.base,
       angleOffset: ref.angleOffset,
+      notes: ref.notes ?? '',
     });
+
   }
 
   if (resolvedSteps.length === 0) return;
@@ -1100,7 +1116,6 @@ const handleLoadPreset = (presetId: string) => {
           <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/20 flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-semibold text-neutral-200">Progression</h2>
-
               <div className="flex items-center gap-3 ml-auto">
                 <PresetSelect
                   presets={sessionPresets}
@@ -1332,6 +1347,18 @@ const handleLoadPreset = (presetId: string) => {
                                   />
                                   <span className="text-neutral-400 text-[0.7rem]">°</span>
                                 </div>
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-200 hover:bg-neutral-800"
+                                  onClick={() => {
+                                    stepNotesStepIdRef.current = step.id;
+                                    setStepNotesDraft(step.notes || '');
+                                    setIsStepNotesOpen(true);
+                                  }}
+                                >
+                                  Notes
+                                </button>
+
                               </div>
 
                               {/* Right: sort controls, anchored to the bottom */}
@@ -2077,6 +2104,47 @@ const handleLoadPreset = (presetId: string) => {
                 className="px-3 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-xs text-emerald-100 hover:bg-emerald-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
                 onClick={handleSavePreset}
                 disabled={!presetNameTrimmed || sessionSteps.length === 0 || isPresetNameDuplicate}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {isStepNotesOpen && (
+        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4">
+          <div className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-sm font-semibold text-neutral-100">Step notes</h3>
+            <p className="mt-1 text-[0.75rem] text-neutral-400">
+              Notes for this step.
+            </p>
+            <div className="mt-3">
+              <textarea
+                className="w-full min-h-[6rem] rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-100"
+                value={stepNotesDraft}
+                onChange={e => setStepNotesDraft(e.target.value)}
+              />
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300"
+                onClick={() => setIsStepNotesOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-3 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-xs text-emerald-100 hover:bg-emerald-900 active:scale-95"
+                onClick={() => {
+                  const id = stepNotesStepIdRef.current;
+                  if (!id) return;
+                  setSessionSteps(prev =>
+                    prev.map(s => (s.id === id ? { ...s, notes: stepNotesDraft.trim() } : s))
+                  );
+                  setIsStepNotesOpen(false);
+                }}
               >
                 Save
               </button>
