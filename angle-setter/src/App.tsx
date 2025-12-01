@@ -1470,9 +1470,9 @@ const handleLoadPreset = (presetId: string) => {
                           </div>
 
                           {/* ===== Wheel Card Body ===== */}
-                          <div className="px-2 py-2 flex flex-col md:flex-row gap-2">
+                          <div className="px-2 py-2 flex flex-row flex-wrap items-stretch gap-2">
                             {heightMode === 'hn' ? (
-                              <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start">
+                              <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0">
                                 <div className="flex items-center text-[0.75rem] text-neutral-300">
                                   <span>
                                     {r.step?.base === 'front'
@@ -1498,7 +1498,7 @@ const handleLoadPreset = (presetId: string) => {
                                 </div>
                               </div>
                             ) : (
-                              <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start">
+                              <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0">
                                 <div className="flex items-center text-[0.75rem] text-neutral-300">
                                   <span>{`Wheel <-> USB top`}</span>
                                 </div>
