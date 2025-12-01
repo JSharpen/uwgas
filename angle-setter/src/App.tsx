@@ -810,8 +810,8 @@ React.useEffect(() => {
     const w: Wheel = {
       id,
       name: 'New wheel',
-      D: 250,
-      DText: '250',
+      D: NaN,
+      DText: '',
       angleOffset: 0,
       baseForHn: 'rear',
       isHoning: false,
