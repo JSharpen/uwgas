@@ -12,6 +12,7 @@
 //================Imports=================
 import * as React from 'react';
 import { IconKebab, IconTrash, IconSortAsc, IconSortDesc } from './icons';
+import MiniSelect from './components/MiniSelect';
 import type {
   BaseSide,
   CalibrationDiagnostics,
@@ -1779,32 +1780,36 @@ const handleLoadPreset = (presetId: string) => {
     </p>
 
     <div className="flex items-center gap-2 flex-wrap justify-end">
-      <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
-        <span>Group:</span>
-        <select
-          className="rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-100 px-2 py-1"
-          value={wheelGroup}
-          onChange={e => setWheelGroup(e.target.value as 'none' | 'grit')}
-        >
-          <option value="none">None</option>
-          <option value="grit">Grit</option>
-        </select>
-      </label>
-      <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
-        <span>Sort:</span>
-        <select
-          className="w-24 rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-100 px-2 py-1"
-          value={wheelSortField}
-          onChange={e => setWheelSortField(e.target.value as 'name' | 'diam')}
-        >
-          <option value="name">Name (A-Z)</option>
-          <option value="diam">Diameter</option>
-        </select>
-      </label>
-      <button
-        type="button"
-        className="w-8 h-8 inline-flex items-center justify-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
-        aria-label={`Toggle ${wheelSortField === 'name' ? 'name' : 'diameter'} sort ${wheelSortDir === 'asc' ? 'ascending' : 'descending'}`}
+        <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
+          <span>Group:</span>
+          <MiniSelect
+            value={wheelGroup}
+            onChange={val => setWheelGroup(val as 'none' | 'grit')}
+            options={[
+              { value: 'none', label: 'None' },
+              { value: 'grit', label: 'Grit' },
+            ]}
+            ariaLabel="Group wheels"
+            widthClass="min-w-[6rem]"
+          />
+        </label>
+        <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
+          <span>Sort:</span>
+          <MiniSelect
+            value={wheelSortField}
+            onChange={val => setWheelSortField(val as 'name' | 'diam')}
+            options={[
+              { value: 'name', label: 'Name' },
+              { value: 'diam', label: 'Diameter' },
+            ]}
+            ariaLabel="Sort wheels"
+            widthClass="min-w-[6.5rem]"
+          />
+        </label>
+        <button
+          type="button"
+          className="w-8 h-8 inline-flex items-center justify-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
+          aria-label={`Toggle ${wheelSortField === 'name' ? 'name' : 'diameter'} sort ${wheelSortDir === 'asc' ? 'ascending' : 'descending'}`}
         onClick={() => setWheelSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'))}
       >
         {wheelSortDir === 'asc' ? (
