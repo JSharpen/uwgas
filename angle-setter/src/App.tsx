@@ -488,6 +488,65 @@ function PresetSelect({
   );
 }
 
+function ExpandToggle({
+  expanded,
+  onToggle,
+  labelExpanded,
+  labelCollapsed,
+}: {
+  expanded: boolean;
+  onToggle: () => void;
+  labelExpanded: string;
+  labelCollapsed: string;
+}) {
+  return (
+    <button
+      type="button"
+      className="w-7 h-7 inline-flex items-center justify-center rounded border border-neutral-700 bg-neutral-900 text-neutral-200 hover:bg-neutral-800 transition-colors"
+      aria-label={expanded ? labelExpanded : labelCollapsed}
+      aria-expanded={expanded}
+      onClick={onToggle}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className={'w-3 h-3 transition-transform ' + (expanded ? 'rotate-180' : 'rotate-0')}
+        aria-hidden="true"
+      >
+        <path
+          d="M7 10l5 5 5-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
+function normalizeWheel(raw: any): Wheel {
+  const base: BaseSide = raw?.baseForHn === 'front' ? 'front' : 'rear';
+  const dVal = Number(raw?.D);
+  const angleOffset = typeof raw?.angleOffset === 'number' ? raw.angleOffset : 0;
+  const grit = typeof raw?.grit === 'string' ? raw.grit : '';
+  const dText = typeof raw?.DText === 'string' ? raw.DText : undefined;
+
+  return {
+    id:
+      typeof raw?.id === 'string' && raw.id
+        ? raw.id
+        : `wheel-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    name: typeof raw?.name === 'string' ? raw.name : '',
+    D: Number.isFinite(dVal) ? dVal : NaN,
+    DText: dText,
+    angleOffset,
+    baseForHn: base,
+    isHoning: Boolean(raw?.isHoning),
+    grit,
+  };
+}
+
 // ============================================================================== App =======================================
 
 function App() {
@@ -498,9 +557,16 @@ function App() {
   const [constants, setConstants] = React.useState<MachineConstants>(() =>
     _load('t_constants', DEFAULT_CONSTANTS)
   );
-  const [wheels, setWheels] = React.useState<Wheel[]>(() =>
-    _load('t_wheels', DEFAULT_WHEELS)
-  );
+  const [wheels, setWheels] = React.useState<Wheel[]>(() => {
+    const seen = new Set<string>();
+    return _load('t_wheels', DEFAULT_WHEELS)
+      .map(normalizeWheel)
+      .filter(w => {
+        if (seen.has(w.id)) return false;
+        seen.add(w.id);
+        return true;
+      });
+  });
   const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
     _load('t_sessionSteps', [])
   );
@@ -541,8 +607,11 @@ function App() {
     angleOffset: 0,
     baseForHn: 'rear',
     isHoning: false,
+    grit: '',
   });
   const [expandedWheelIds, setExpandedWheelIds] = React.useState<string[]>([]);
+  const [wheelSort, setWheelSort] = React.useState<'name' | 'diamAsc' | 'diamDesc'>('name');
+  const [wheelGroup, setWheelGroup] = React.useState<'none' | 'grit'>('none');
 
   // Progression menu state
   const [isProgressionMenuOpen, setIsProgressionMenuOpen] = React.useState(false);
@@ -614,16 +683,30 @@ React.useEffect(() => {
 
   // 🔒 Safety net: de-duplicate wheels by id (keep first, drop duplicates)
   React.useEffect(() => {
-    const seen = new Set<string>();
-    const deduped = wheels.filter(w => {
-      if (seen.has(w.id)) return false;
-      seen.add(w.id);
-      return true;
+    setWheels(prev => {
+      const seen = new Set<string>();
+      const next = prev.map(normalizeWheel).filter(w => {
+        if (seen.has(w.id)) return false;
+        seen.add(w.id);
+        return true;
+      });
+      const unchanged =
+        next.length === prev.length &&
+        next.every((w, i) => {
+          const p = prev[i];
+          return (
+            w.id === p.id &&
+            w.name === p.name &&
+            w.D === p.D &&
+            w.DText === p.DText &&
+            w.angleOffset === p.angleOffset &&
+            w.baseForHn === p.baseForHn &&
+            w.isHoning === p.isHoning &&
+            w.grit === p.grit
+          );
+        });
+      return unchanged ? prev : next;
     });
-
-    if (deduped.length !== wheels.length) {
-      setWheels(deduped);
-    }
   }, []); // run once on mount
 
   // Calibration wizard state (single-base)
@@ -809,6 +892,45 @@ React.useEffect(() => {
   const isPresetNameDuplicate =
     presetNameTrimmed.length > 0 &&
     sessionPresets.some(p => p.name.toLowerCase() === presetNameTrimmed.toLowerCase());
+  const sortedWheels = React.useMemo(() => {
+    const list = [...wheels];
+    switch (wheelSort) {
+      case 'name':
+        return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+      case 'diamAsc':
+        return list.sort((a, b) => {
+          const da = Number.isNaN(a.D) ? Number.POSITIVE_INFINITY : a.D;
+          const db = Number.isNaN(b.D) ? Number.POSITIVE_INFINITY : b.D;
+          return da - db;
+        });
+      case 'diamDesc':
+        return list.sort((a, b) => {
+          const da = Number.isNaN(a.D) ? Number.NEGATIVE_INFINITY : a.D;
+          const db = Number.isNaN(b.D) ? Number.NEGATIVE_INFINITY : b.D;
+          return db - da;
+        });
+      default:
+        return list;
+    }
+  }, [wheels, wheelSort]);
+
+  const groupedWheels = React.useMemo(() => {
+    if (wheelGroup === 'none') {
+      return [{ key: 'all', label: null as string | null, items: sortedWheels }];
+    }
+    const keyFn = (w: Wheel) => (w.grit?.trim() ? w.grit.trim() : 'Ungrouped');
+    const map = new Map<string, Wheel[]>();
+    for (const w of sortedWheels) {
+      const key = keyFn(w);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(w);
+    }
+    return Array.from(map.entries()).map(([key, items]) => ({
+      key,
+      label: key,
+      items,
+    }));
+  }, [sortedWheels, wheelGroup]);
   const newWheelNameTrimmed = newWheelDraft.name.trim();
   const isNewWheelDiameterValid = Number.isFinite(newWheelDraft.D);
   const isAddWheelSaveDisabled = !newWheelNameTrimmed || !isNewWheelDiameterValid;
@@ -831,6 +953,7 @@ React.useEffect(() => {
       angleOffset: 0,
       baseForHn: 'rear',
       isHoning: false,
+      grit: '',
     });
   };
 
@@ -851,6 +974,7 @@ React.useEffect(() => {
       angleOffset: newWheelDraft.angleOffset ?? 0,
       baseForHn: newWheelDraft.isHoning ? 'front' : newWheelDraft.baseForHn,
       isHoning: newWheelDraft.isHoning,
+      grit: newWheelDraft.grit?.trim() ?? '',
     };
 
     // Tell the Wheel Manager to auto-focus this wheel's name input
@@ -1138,28 +1262,12 @@ const handleLoadPreset = (presetId: string) => {
           <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/40 flex flex-col gap-2 max-w-xl">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-neutral-200">Global setup</h2>
-              <button
-                type="button"
-                className="w-7 h-7 inline-flex items-center justify-center rounded border border-neutral-700 bg-neutral-900 text-neutral-200 hover:bg-neutral-800 transition-colors"
-                aria-label={isSetupPanelOpen ? 'Hide setup panel' : 'Show setup panel'}
-                aria-expanded={isSetupPanelOpen}
-                onClick={() => setIsSetupPanelOpen(open => !open)}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  className={'w-3 h-3 transition-transform ' + (isSetupPanelOpen ? 'rotate-180' : 'rotate-0')}
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M7 10l5 5 5-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
+              <ExpandToggle
+                expanded={isSetupPanelOpen}
+                onToggle={() => setIsSetupPanelOpen(open => !open)}
+                labelExpanded="Hide setup panel"
+                labelCollapsed="Show setup panel"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -1665,15 +1773,40 @@ const handleLoadPreset = (presetId: string) => {
 
 {view === 'wheels' && (
   <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-3xl mx-auto">
-    <div className="flex justify-between items-center">
+    <div className="flex flex-wrap justify-between items-center gap-3">
       <h2 className="text-sm font-semibold text-neutral-200">Wheel Manager</h2>
-      <button
-        type="button"
-        className="px-2 py-1 text-xs rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800"
-        onClick={addWheel}
-      >
-        + Add Wheel
-      </button>
+      <div className="flex items-center gap-2 flex-wrap justify-end">
+        <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
+          <span>Group:</span>
+          <select
+            className="rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-100 px-2 py-1"
+            value={wheelGroup}
+            onChange={e => setWheelGroup(e.target.value as 'none' | 'grit')}
+          >
+            <option value="none">None</option>
+            <option value="grit">Grit</option>
+          </select>
+        </label>
+        <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
+          <span>Sort:</span>
+          <select
+            className="rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-100 px-2 py-1"
+            value={wheelSort}
+            onChange={e => setWheelSort(e.target.value as 'name' | 'diamAsc' | 'diamDesc')}
+          >
+            <option value="name">Name (A-Z)</option>
+            <option value="diamAsc">Diameter (smallest first)</option>
+            <option value="diamDesc">Diameter (largest first)</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          className="px-2 py-1 text-xs rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800"
+          onClick={addWheel}
+        >
+          + Add Wheel
+        </button>
+      </div>
     </div>
 
     <p className="text-xs text-neutral-300">
@@ -1681,161 +1814,193 @@ const handleLoadPreset = (presetId: string) => {
       the calculator view and saved to your browser.
     </p>
 
-    <div className="grid gap-2 md:grid-cols-2">
-      {wheels.map(w => {
-        const expanded = expandedWheelIds.includes(w.id);
-        const diameterDisplay =
-          w.DText !== undefined ? w.DText : Number.isNaN(w.D) ? '' : String(w.D);
-        const baseLabel = w.isHoning
-          ? 'Honing (front base)'
-          : w.baseForHn === 'rear'
-          ? 'Rear base'
-          : 'Front base';
-
-        return (
-          <div
-            key={w.id}
-            className="border border-neutral-700 rounded-md p-2 bg-neutral-950/40 flex flex-col gap-2"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex flex-col gap-1 min-w-0">
-                <div className="text-sm font-semibold text-neutral-100 truncate">
-                  {w.name || 'Untitled wheel'}
-                </div>
-                <div className="text-[0.75rem] text-neutral-400 flex flex-wrap gap-3">
-                  <span>D: {diameterDisplay || '-'} mm</span>
-                  <span>{baseLabel}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[0.7rem] text-neutral-500 hidden sm:inline">
-                  {expanded ? 'Expanded' : 'Compact'}
+    {wheels.length === 0 ? (
+      <div className="text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-3">
+        No wheels saved yet. Click <span className="font-semibold text-neutral-200">Add Wheel</span>{' '}
+        to create your first wheel.
+      </div>
+    ) : (
+      <div className="flex flex-col gap-4">
+        {groupedWheels.map(group => (
+          <div key={group.key} className="flex flex-col gap-2">
+            {group.label && (
+              <div className="flex items-center gap-2 text-[0.85rem] text-neutral-200">
+                <span className="font-semibold">{group.label}</span>
+                <span className="text-[0.7rem] text-neutral-500">
+                  {group.items.length} wheel{group.items.length === 1 ? '' : 's'}
                 </span>
-                <button
-                  type="button"
-                  className="px-2 py-1 text-[0.7rem] rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800"
-                  onClick={() => toggleWheelExpanded(w.id)}
-                >
-                  {expanded ? 'Hide details' : 'Show details'}
-                </button>
-              </div>
-            </div>
-
-            {expanded && (
-              <div className="flex flex-col gap-2 pt-1 border-t border-neutral-800 mt-1">
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-neutral-400">Wheel name</span>
-                  <input
-                    className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-                    value={w.name}
-                    ref={el => {
-                      if (el && focusWheelIdRef.current === w.id && view === 'wheels') {
-                        el.focus();
-                        el.select();
-                        focusWheelIdRef.current = null;
-                      }
-                    }}
-                    onKeyDown={blurOnEnter}
-                    onFocus={e => e.target.select()}
-                    onChange={e => updateWheel(w.id, { name: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-neutral-300">D</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-sm appearance-none"
-                    value={
-                      w.DText !== undefined
-                        ? w.DText
-                        : Number.isNaN(w.D)
-                        ? ''
-                        : String(w.D)
-                    }
-                    onKeyDown={blurOnEnter}
-                    onFocus={e => e.target.select()}
-                    onChange={e => {
-                      const text = e.target.value;
-                      const patch: Partial<Wheel> = { DText: text };
-
-                      const trimmed = text.trim();
-                      if (trimmed === '') {
-                        patch.D = NaN as unknown as number;
-                        updateWheel(w.id, patch);
-                        return;
-                      }
-
-                      const normalised = trimmed.replace(',', '.');
-                      const val = Number(normalised);
-
-                      if (!Number.isNaN(val)) {
-                        patch.D = Math.round(val * 100) / 100;
-                      }
-
-                      updateWheel(w.id, patch);
-                    }}
-                  />
-                  <span className="text-neutral-400 text-[0.65rem]">mm</span>
-                </div>
-
-                <div className="flex flex-col gap-1 text-sm">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={w.isHoning}
-                      onChange={e =>
-                        updateWheel(w.id, {
-                          isHoning: e.target.checked,
-                          baseForHn: e.target.checked ? 'front' : w.baseForHn,
-                        })
-                      }
-                    />
-                    <span className="text-neutral-300">Honing wheel? (Locks to Front base)</span>
-                  </label>
-
-                  {!w.isHoning && (
-                    <div className="flex items-center gap-3 text-xs text-neutral-300">
-                      <span>Default base for h?:</span>
-                      <label className="flex items-center gap-1">
-                        <input
-                          type="radio"
-                          checked={w.baseForHn === 'rear'}
-                          onChange={() => updateWheel(w.id, { baseForHn: 'rear' })}
-                        />
-                        <span>Rear (edge leading)</span>
-                      </label>
-                      <label className="flex items-center gap-1">
-                        <input
-                          type="radio"
-                          checked={w.baseForHn === 'front'}
-                          onChange={() => updateWheel(w.id, { baseForHn: 'front' })}
-                        />
-                        <span>Front (edge trailing)</span>
-                      </label>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    className="text-red-400 text-xs border border-red-400 rounded px-2 py-1 hover:bg-red-900/30"
-                    onClick={() => deleteWheel(w.id)}
-                  >
-                    Delete wheel
-                  </button>
-                </div>
               </div>
             )}
+
+            <div className="grid gap-2 md:grid-cols-2">
+              {group.items.map(w => {
+                const expanded = expandedWheelIds.includes(w.id);
+                const diameterDisplay =
+                  w.DText !== undefined ? w.DText : Number.isNaN(w.D) ? '' : String(w.D);
+                const baseLabel = w.isHoning
+                  ? 'Honing (front base)'
+                  : w.baseForHn === 'rear'
+                  ? 'Rear base'
+                  : 'Front base';
+
+                return (
+                  <div
+                    key={w.id}
+                    className="border border-neutral-700 rounded-md p-2 bg-neutral-950/40 flex flex-col gap-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <div className="text-sm font-semibold text-neutral-100 truncate">
+                          {w.name || 'Untitled wheel'}
+                        </div>
+                        <div className="text-[0.75rem] text-neutral-400 flex flex-wrap items-center gap-2">
+                          <span className="font-mono">D: {diameterDisplay || '-'} mm</span>
+                          <span>{baseLabel}</span>
+                          {w.grit ? (
+                            <span className="px-2 py-[2px] rounded border border-neutral-700 bg-neutral-900 text-neutral-200">
+                              Grit: {w.grit}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <ExpandToggle
+                          expanded={expanded}
+                          onToggle={() => toggleWheelExpanded(w.id)}
+                          labelExpanded="Hide wheel details"
+                          labelCollapsed="Show wheel details"
+                        />
+                      </div>
+                    </div>
+
+                    {expanded && (
+                      <div className="flex flex-col gap-2 pt-1 border-t border-neutral-800 mt-1">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-neutral-400">Wheel name</span>
+                          <input
+                            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                            value={w.name}
+                            ref={el => {
+                              if (el && focusWheelIdRef.current === w.id && view === 'wheels') {
+                                el.focus();
+                                el.select();
+                                focusWheelIdRef.current = null;
+                              }
+                            }}
+                            onKeyDown={blurOnEnter}
+                            onFocus={e => e.target.select()}
+                            onChange={e => updateWheel(w.id, { name: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-neutral-300">D</span>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-sm appearance-none"
+                            value={
+                              w.DText !== undefined
+                                ? w.DText
+                                : Number.isNaN(w.D)
+                                ? ''
+                                : String(w.D)
+                            }
+                            onKeyDown={blurOnEnter}
+                            onFocus={e => e.target.select()}
+                            onChange={e => {
+                              const text = e.target.value;
+                              const patch: Partial<Wheel> = { DText: text };
+
+                              const trimmed = text.trim();
+                              if (trimmed === '') {
+                                patch.D = NaN as unknown as number;
+                                updateWheel(w.id, patch);
+                                return;
+                              }
+
+                              const normalised = trimmed.replace(',', '.');
+                              const val = Number(normalised);
+
+                              if (!Number.isNaN(val)) {
+                                patch.D = Math.round(val * 100) / 100;
+                              }
+
+                              updateWheel(w.id, patch);
+                            }}
+                          />
+                          <span className="text-neutral-400 text-[0.65rem]">mm</span>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-neutral-400">Grit / abrasive</span>
+                          <input
+                            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+                            value={w.grit ?? ''}
+                            onChange={e => updateWheel(w.id, { grit: e.target.value })}
+                            onKeyDown={blurOnEnter}
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1 text-sm">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={w.isHoning}
+                              onChange={e =>
+                                updateWheel(w.id, {
+                                  isHoning: e.target.checked,
+                                  baseForHn: e.target.checked ? 'front' : w.baseForHn,
+                                })
+                              }
+                            />
+                            <span className="text-neutral-300">Honing wheel? (Locks to Front base)</span>
+                          </label>
+
+                          {!w.isHoning && (
+                            <div className="flex items-center gap-3 text-xs text-neutral-300">
+                              <span>Default base for h?:</span>
+                              <label className="flex items-center gap-1">
+                                <input
+                                  type="radio"
+                                  checked={w.baseForHn === 'rear'}
+                                  onChange={() => updateWheel(w.id, { baseForHn: 'rear' })}
+                                />
+                                <span>Rear (edge leading)</span>
+                              </label>
+                              <label className="flex items-center gap-1">
+                                <input
+                                  type="radio"
+                                  checked={w.baseForHn === 'front'}
+                                  onChange={() => updateWheel(w.id, { baseForHn: 'front' })}
+                                />
+                                <span>Front (edge trailing)</span>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            className="text-red-400 text-xs border border-red-400 rounded px-2 py-1 hover:bg-red-900/30"
+                            onClick={() => deleteWheel(w.id)}
+                          >
+                            Delete wheel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        );
-      })}
-    </div>
+        ))}
+      </div>
+    )}
   </section>
 )}
-
 {isAddWheelModalOpen && (
   <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh]">
     <div
@@ -1915,6 +2080,16 @@ const handleLoadPreset = (presetId: string) => {
             />
             <span className="text-neutral-400 text-[0.75rem]">mm</span>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-neutral-400">Grit / abrasive</span>
+          <input
+            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+            value={newWheelDraft.grit ?? ''}
+            onChange={e => setNewWheelDraft(prev => ({ ...prev, grit: e.target.value }))}
+            onKeyDown={blurOnEnter}
+          />
         </div>
 
         <div className="flex flex-col gap-2 text-sm">
@@ -2576,6 +2751,7 @@ const handleLoadPreset = (presetId: string) => {
 }
 
 export default App;
+
 
 
 

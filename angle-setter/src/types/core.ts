@@ -8,6 +8,7 @@ export type Wheel = {
   angleOffset: number; // β° at wheel level (default)
   baseForHn: BaseSide; // default base for this wheel
   isHoning: boolean;
+  grit?: string; // optional grit or abrasive label
 };
 
 export type SessionStep = {
