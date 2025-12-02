@@ -144,3 +144,37 @@ export function IconEdit({ className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+/** Generic sort ascending (small to large bars) */
+export function IconSortAsc({ className, ...rest }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      aria-hidden="true"
+      {...rest}
+    >
+      <path d="M8 6h8" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      <path d="M10 10h6" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      <path d="M12 14h4" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      <path d="M14 18h2" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Generic sort descending (large to small bars) */
+export function IconSortDesc({ className, ...rest }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      aria-hidden="true"
+      {...rest}
+    >
+      <path d="M14 6h2" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      <path d="M12 10h4" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      <path d="M10 14h6" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      <path d="M8 18h8" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+    </svg>
+  );
+}

@@ -11,7 +11,7 @@
 
 //================Imports=================
 import * as React from 'react';
-import { IconKebab, IconTrash } from './icons';
+import { IconKebab, IconTrash, IconSortAsc, IconSortDesc } from './icons';
 import type {
   BaseSide,
   CalibrationDiagnostics,
@@ -610,7 +610,8 @@ function App() {
     grit: '',
   });
   const [expandedWheelIds, setExpandedWheelIds] = React.useState<string[]>([]);
-  const [wheelSort, setWheelSort] = React.useState<'name' | 'diamAsc' | 'diamDesc'>('name');
+  const [wheelSortField, setWheelSortField] = React.useState<'name' | 'diam'>('name');
+  const [wheelSortDir, setWheelSortDir] = React.useState<'asc' | 'desc'>('asc');
   const [wheelGroup, setWheelGroup] = React.useState<'none' | 'grit'>('none');
 
   // Progression menu state
@@ -894,25 +895,17 @@ React.useEffect(() => {
     sessionPresets.some(p => p.name.toLowerCase() === presetNameTrimmed.toLowerCase());
   const sortedWheels = React.useMemo(() => {
     const list = [...wheels];
-    switch (wheelSort) {
-      case 'name':
-        return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-      case 'diamAsc':
-        return list.sort((a, b) => {
-          const da = Number.isNaN(a.D) ? Number.POSITIVE_INFINITY : a.D;
-          const db = Number.isNaN(b.D) ? Number.POSITIVE_INFINITY : b.D;
-          return da - db;
-        });
-      case 'diamDesc':
-        return list.sort((a, b) => {
-          const da = Number.isNaN(a.D) ? Number.NEGATIVE_INFINITY : a.D;
-          const db = Number.isNaN(b.D) ? Number.NEGATIVE_INFINITY : b.D;
-          return db - da;
-        });
-      default:
-        return list;
-    }
-  }, [wheels, wheelSort]);
+    const dir = wheelSortDir === 'asc' ? 1 : -1;
+    const cmpName = (a: Wheel, b: Wheel) =>
+      dir * a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    const cmpDiam = (a: Wheel, b: Wheel) => {
+      const da = Number.isNaN(a.D) ? Number.POSITIVE_INFINITY : a.D;
+      const db = Number.isNaN(b.D) ? Number.POSITIVE_INFINITY : b.D;
+      if (da === db) return cmpName(a, b);
+      return dir * (da - db);
+    };
+    return list.sort(wheelSortField === 'name' ? cmpName : cmpDiam);
+  }, [wheels, wheelSortDir, wheelSortField]);
 
   const groupedWheels = React.useMemo(() => {
     if (wheelGroup === 'none') {
@@ -1770,38 +1763,15 @@ const handleLoadPreset = (presetId: string) => {
           </section>
         </>
       )}
-
+      
 {view === 'wheels' && (
   <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-3xl mx-auto">
-    <div className="flex flex-wrap justify-between items-center gap-3">
-      <h2 className="text-sm font-semibold text-neutral-200">Wheel Manager</h2>
-      <div className="flex items-center gap-2 flex-wrap justify-end">
-        <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
-          <span>Group:</span>
-          <select
-            className="rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-100 px-2 py-1"
-            value={wheelGroup}
-            onChange={e => setWheelGroup(e.target.value as 'none' | 'grit')}
-          >
-            <option value="none">None</option>
-            <option value="grit">Grit</option>
-          </select>
-        </label>
-        <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
-          <span>Sort:</span>
-          <select
-            className="rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-100 px-2 py-1"
-            value={wheelSort}
-            onChange={e => setWheelSort(e.target.value as 'name' | 'diamAsc' | 'diamDesc')}
-          >
-            <option value="name">Name (A-Z)</option>
-            <option value="diamAsc">Diameter (smallest first)</option>
-            <option value="diamDesc">Diameter (largest first)</option>
-          </select>
-        </label>
+    <div className="flex flex-col gap-2 border-b border-neutral-800 pb-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-neutral-200">Wheel Manager</h2>
         <button
           type="button"
-          className="px-2 py-1 text-xs rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800"
+          className="px-3 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-xs text-emerald-100 hover:bg-emerald-900 active:scale-95"
           onClick={addWheel}
         >
           + Add Wheel
@@ -1813,6 +1783,43 @@ const handleLoadPreset = (presetId: string) => {
       Configure your grinding and honing wheels here. These settings are shared with
       the calculator view and saved to your browser.
     </p>
+
+    <div className="flex items-center gap-2 flex-wrap justify-end">
+      <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
+        <span>Group:</span>
+        <select
+          className="rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-100 px-2 py-1"
+          value={wheelGroup}
+          onChange={e => setWheelGroup(e.target.value as 'none' | 'grit')}
+        >
+          <option value="none">None</option>
+          <option value="grit">Grit</option>
+        </select>
+      </label>
+      <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
+        <span>Sort:</span>
+        <select
+          className="w-24 rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-100 px-2 py-1"
+          value={wheelSortField}
+          onChange={e => setWheelSortField(e.target.value as 'name' | 'diam')}
+        >
+          <option value="name">Name (A-Z)</option>
+          <option value="diam">Diameter</option>
+        </select>
+      </label>
+      <button
+        type="button"
+        className="w-8 h-8 inline-flex items-center justify-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
+        aria-label={`Toggle ${wheelSortField === 'name' ? 'name' : 'diameter'} sort ${wheelSortDir === 'asc' ? 'ascending' : 'descending'}`}
+        onClick={() => setWheelSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'))}
+      >
+        {wheelSortDir === 'asc' ? (
+          <IconSortAsc className="w-4 h-4" />
+        ) : (
+          <IconSortDesc className="w-4 h-4" />
+        )}
+      </button>
+    </div>
 
     {wheels.length === 0 ? (
       <div className="text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-3">
