@@ -1,0 +1,117 @@
+/* Reusable primitives built on theme variables. Not yet wired into JSX. */
+
+.u-card {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  box-shadow: var(--shadow-elevated);
+}
+
+.u-panel {
+  background: var(--color-panel-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+}
+
+.u-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  line-height: 1.2;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 120ms ease;
+}
+
+.u-btn:hover {
+  background: #1a1a1a;
+}
+
+.u-btn:active {
+  transform: scale(0.98);
+}
+
+.u-btn:focus {
+  outline: none;
+}
+
+.u-btn:focus-visible {
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
+}
+
+.u-btn-primary {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent-strong) 60%, transparent);
+  color: #d1fae5; /* emerald-100-ish */
+}
+
+.u-btn-primary:hover {
+  background: color-mix(in srgb, var(--color-accent-strong) 75%, transparent);
+}
+
+.u-btn-danger {
+  border-color: var(--color-danger);
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--color-danger);
+}
+
+.u-input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.u-input:focus {
+  outline: none;
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
+}
+
+.u-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  line-height: 1.1;
+}
+
+.u-toggle {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  color: var(--color-text);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.u-toggle:hover {
+  background: #1f1f1f;
+}
+
+.u-toggle--active {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent-strong) 50%, transparent);
+  color: #d1fae5;
+}

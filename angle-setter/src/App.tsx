@@ -502,10 +502,11 @@ function ExpandToggle({
   return (
     <button
       type="button"
-      className="w-7 h-7 inline-flex items-center justify-center rounded border border-neutral-700 bg-neutral-900 text-neutral-200 hover:bg-neutral-800 transition-colors"
+      className={`btn-toggle ${expanded ? 'btn-toggle--open' : ''}`}
       aria-label={expanded ? labelExpanded : labelCollapsed}
       aria-expanded={expanded}
       onClick={onToggle}
+      aria-pressed={expanded}
     >
       <svg
         viewBox="0 0 24 24"
@@ -1290,14 +1291,7 @@ const handleLoadPreset = (presetId: string) => {
               </label>
             </div>
 
-            <div
-              className="overflow-hidden transition-all duration-200 ease-in-out"
-              style={{
-                maxHeight: isSetupPanelOpen ? 180 : 0,
-                opacity: isSetupPanelOpen ? 1 : 0,
-                pointerEvents: isSetupPanelOpen ? 'auto' : 'none',
-              }}
-            >
+            <div className={'collapsible ' + (isSetupPanelOpen ? 'collapsible--open' : '')}>
               <div className="grid grid-cols-2 gap-2 text-sm pt-1">
                 <label className="flex flex-col gap-1">
                   <span className="text-neutral-300">USB diameter Ds (mm)</span>
@@ -1880,8 +1874,13 @@ const handleLoadPreset = (presetId: string) => {
                       </div>
                     </div>
 
-                    {expanded && (
-                      <div className="flex flex-col gap-2 pt-1 border-t border-neutral-800 mt-1">
+                    <div
+                      className={
+                        'collapsible mt-1 border-t border-neutral-800 ' +
+                        (expanded ? 'collapsible--open' : '')
+                      }
+                    >
+                      <div className="flex flex-col gap-2 pt-1">
                         <div className="flex flex-col gap-1">
                           <span className="text-xs text-neutral-400">Wheel name</span>
                           <input
@@ -1997,7 +1996,7 @@ const handleLoadPreset = (presetId: string) => {
                           </button>
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 );
               })}
