@@ -17,6 +17,7 @@ import type {
   BaseSide,
   CalibrationDiagnostics,
   CalibrationMeasurement,
+  CalibrationSnapshot,
   GlobalState,
   MachineConfig,
   MachineConstants,
@@ -725,6 +726,9 @@ React.useEffect(() => {
     angleErrorDeg: number | null;
   } | null>(null);
   const [calibError, setCalibError] = React.useState<string | null>(null);
+  const [calibSnapshot, setCalibSnapshot] = React.useState<CalibrationSnapshot | null>(() =>
+    _load('t_calibSnapshot', null)
+  );
 
   const activeMachine: MachineConfig = {
     id: 'machine-1',
@@ -759,6 +763,10 @@ React.useEffect(() => {
   React.useEffect(() => {
     _save('t_heightMode', heightMode);
   }, [heightMode]);
+
+  React.useEffect(() => {
+    _save('t_calibSnapshot', calibSnapshot);
+  }, [calibSnapshot]);
 
   React.useEffect(() => {
     if (!isPresetManagerOpen) {
@@ -869,6 +877,16 @@ React.useEffect(() => {
       machineLike,
       wheels
     );
+
+    setCalibSnapshot({
+      base: calibBase,
+      diagnostics: result.diagnostics,
+      angleErrorDeg: angleErr,
+      count: result.diagnostics.residuals.length,
+      Da,
+      Ds,
+      createdAt: new Date().toISOString(),
+    });
 
     setCalibResult({
       hc: result.hc,
@@ -2284,29 +2302,21 @@ const handleLoadPreset = (presetId: string) => {
             <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl">
               <h2 className="text-sm font-semibold text-neutral-200">Calibration wizard (single base)</h2>
               <p className="text-xs text-neutral-300">
-                Measure from your chosen datum to USB top (hₙ) and from axle outer surface to USB outer surface as the full outer-to-outer span CAo at several heights. The wizard will solve hc and o for the selected base
-                and estimate the worst-case angle error over your wheels.
+                Use this wizard to solve hc and o for one base. Pick the base, confirm axle/USB diameters, then take 3–5 paired measurements at different heights: h (datum to USB top) and CAo (outer-to-outer span from axle to USB—keep calipers square). Enter the pairs below; CA is computed automatically and the wizard reports the solved constants plus an angle-error estimate for your wheels.
               </p>
 
               {/* Base selection */}
-              <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-3 text-xs">
                 <span className="text-neutral-300">Base to calibrate:</span>
-                <label className="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    checked={calibBase === 'rear'}
-                    onChange={() => setCalibBase('rear')}
-                  />
-                  <span>Rear (edge leading)</span>
-                </label>
-                <label className="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    checked={calibBase === 'front'}
-                    onChange={() => setCalibBase('front')}
-                  />
-                  <span>Front (edge trailing)</span>
-                </label>
+                <MiniSelect
+                  value={calibBase}
+                  options={[
+                    { value: 'rear', label: 'Rear (edge leading)' },
+                    { value: 'front', label: 'Front (edge trailing)' },
+                  ]}
+                  onChange={val => setCalibBase(val as BaseSide)}
+                  widthClass="w-48"
+                />
               </div>
 
               {/* Diameters */}
@@ -2340,59 +2350,24 @@ const handleLoadPreset = (presetId: string) => {
               {/* Measurement count */}
               <div className="flex flex-col gap-1 text-xs">
                 <span className="text-neutral-300">Number of measurements:</span>
-                <div className="flex flex-wrap gap-4">
-                  <label
-                    className="flex items-center gap-1"
-                    title="3 points: fast, but less robust to noise."
-                  >
-                    <input
-                      type="radio"
-                      checked={calibCount === 3}
-                      onChange={() => {
-                        setCalibCount(3);
-                        ensureCalibRowsLength(3);
-                      }}
-                    />
-                    <span>3</span>
-                  </label>
-                  <label
-                    className="flex items-center gap-1"
-                    title="4 points (recommended): good balance of effort and robustness."
-                  >
-                    <input
-                      type="radio"
-                      checked={calibCount === 4}
-                      onChange={() => {
-                        setCalibCount(4);
-                        ensureCalibRowsLength(4);
-                      }}
-                    />
-                    <span>4 (recommended)</span>
-                  </label>
-                  <label
-                    className="flex items-center gap-1"
-                    title="5 points: best redundancy, but more work. Use if you suspect noisy readings."
-                  >
-                    <input
-                      type="radio"
-                      checked={calibCount === 5}
-                      onChange={() => {
-                        setCalibCount(5);
-                        ensureCalibRowsLength(5);
-                      }}
-                    />
-                    <span>5</span>
-                  </label>
-                </div>
+                <MiniSelect
+                  value={String(calibCount)}
+                  options={[
+                    { value: '3', label: '3 (fast)' },
+                    { value: '4', label: '4 (recommended)' },
+                    { value: '5', label: '5 (most robust)' },
+                  ]}
+                  onChange={val => {
+                    const next = parseInt(val, 10) || 4;
+                    setCalibCount(next);
+                    ensureCalibRowsLength(next);
+                  }}
+                  widthClass="w-44"
+                />
               </div>
 
               {/* Measurement table */}
               <div className="flex flex-col gap-1 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-300">
-                    Measurements: for each height, record hₙ (datum → USB top) and CAo, the full outer-to-outer span between axle and USB (press calipers square: |O______O|, outer face of axle to outer face of USB). CA is then computed as CA = CAo − (Dₐ/2 + Dₛ/2).
-                  </span>
-                </div>
                 <div className="grid grid-cols-3 gap-1 font-mono text-[0.7rem] text-neutral-400">
                   <div>#</div>
                   <div>hₙ (mm)</div>

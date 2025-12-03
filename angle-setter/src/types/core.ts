@@ -109,3 +109,13 @@ export type CalibrationResult = {
   o: number;
   diagnostics: CalibrationDiagnostics;
 };
+
+export type CalibrationSnapshot = {
+  base: BaseSide;
+  diagnostics: CalibrationDiagnostics;
+  angleErrorDeg: number | null;
+  count: number;
+  Da: number;
+  Ds: number;
+  createdAt: string;
+};
