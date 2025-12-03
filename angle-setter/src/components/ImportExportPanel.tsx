@@ -6,23 +6,41 @@ type ImportExportPanelProps = {
 };
 
 function ImportExportPanel({ exportText, onImportText }: ImportExportPanelProps) {
-  const [importText, setImportText] = React.useState('');
   const [status, setStatus] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
-  const handleCopy = () => {
-    navigator.clipboard
-      .writeText(exportText)
-      .then(() => setStatus('Export copied to clipboard.'))
-      .catch(() => setStatus('Could not copy to clipboard.'));
+  const handleDownload = () => {
+    const blob = new Blob([exportText], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'uwgas-export.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatus('Downloaded export JSON.');
   };
 
-  const handleImport = () => {
-    const err = onImportText(importText);
-    if (err) {
-      setStatus(err);
-      return;
-    }
-    setStatus('Import applied.');
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      const raw = String(evt.target?.result ?? '');
+      const err = onImportText(raw);
+      if (err) {
+        setStatus(err);
+      } else {
+        setImportText(raw);
+        setStatus('Import applied from file.');
+      }
+    };
+    reader.onerror = () => setStatus('Import failed: could not read file.');
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -32,40 +50,36 @@ function ImportExportPanel({ exportText, onImportText }: ImportExportPanelProps)
         <button
           type="button"
           className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-200"
-          onClick={handleCopy}
+          onClick={handleUploadClick}
         >
-          Copy export
+          Upload JSON
         </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-        <div className="flex flex-col gap-2">
-          <span className="text-neutral-300">Export (read-only JSON):</span>
-          <textarea
-            className="w-full h-32 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 font-mono text-[0.75rem] text-neutral-200"
-            value={exportText}
-            readOnly
+      <div className="flex flex-col gap-2 text-xs">
+        <span className="text-neutral-300">Export (JSON file):</span>
+        <textarea
+          className="w-full h-28 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 font-mono text-[0.75rem] text-neutral-200"
+          value={exportText}
+          readOnly
+        />
+        <div className="flex items-center justify-between">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json"
+            className="hidden"
+            onChange={handleFileChange}
           />
+          <button
+            type="button"
+            className="px-2 py-1 rounded border border-emerald-500 bg-emerald-900/40 hover:bg-emerald-900 text-emerald-50"
+            onClick={handleDownload}
+          >
+            Download JSON
+          </button>
         </div>
-        <div className="flex flex-col gap-2">
-          <span className="text-neutral-300">Import (paste JSON):</span>
-          <textarea
-            className="w-full h-32 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 font-mono text-[0.75rem] text-neutral-200"
-            value={importText}
-            onChange={e => setImportText(e.target.value)}
-            placeholder="Paste exported JSON here"
-          />
-          <div className="flex justify-end">
-            <button
-              type="button"
-              className="px-2 py-1 rounded border border-emerald-500 bg-emerald-900/40 hover:bg-emerald-900 text-emerald-50"
-              onClick={handleImport}
-            >
-              Import state
-            </button>
-          </div>
-        </div>
+        {status && <div className="text-[0.75rem] text-amber-200">{status}</div>}
       </div>
-      {status && <div className="text-[0.75rem] text-amber-200">{status}</div>}
     </section>
   );
 }

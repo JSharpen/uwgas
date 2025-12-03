@@ -626,7 +626,9 @@ function App() {
   const [view, setView] = React.useState<
   'calculator' | 'wheels' | 'settings'
 >('calculator');
-  const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
+  const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration' | 'import'>(
+    'machine'
+  );
   // Preset dialog / manager state
   const [selectedPresetId, setSelectedPresetId] = React.useState<string>('');
   const [isPresetDialogOpen, setIsPresetDialogOpen] = React.useState(false);
@@ -2263,34 +2265,19 @@ const handleLoadPreset = (presetId: string) => {
       {/* Settings view */}
       {view === 'settings' && (
         <>
-          <div className="flex gap-2 mb-2 text-xs">
-            <button
-              type="button"
-              className={
-                'px-2 py-1 rounded border ' +
-                (settingsView === 'machine'
-                  ? 'border-emerald-500 bg-emerald-900/40'
-                  : 'border-neutral-700 bg-neutral-900')
-              }
-              onClick={() => setSettingsView('machine')}
-            >
-              Machine &amp; constants
-            </button>
-            <button
-              type="button"
-              className={
-                'px-2 py-1 rounded border ' +
-                (settingsView === 'calibration'
-                  ? 'border-emerald-500 bg-emerald-900/40'
-                  : 'border-neutral-700 bg-neutral-900')
-              }
-              onClick={() => setSettingsView('calibration')}
-            >
-              Calibration wizard
-            </button>
+          <div className="flex justify-end mb-3">
+            <MiniSelect
+              value={settingsView}
+              options={[
+                { value: 'machine', label: 'Machine & constants' },
+                { value: 'calibration', label: 'Calibration wizard' },
+                { value: 'import', label: 'Import / export' },
+              ]}
+              onChange={val => setSettingsView(val as typeof settingsView)}
+              widthClass="w-52"
+              menuWidthClass="w-56"
+            />
           </div>
-
-          <ImportExportPanel exportText={exportText} onImportText={handleImportText} />
 
           {/* Machine constants view */}
           {settingsView === 'machine' && (
@@ -2463,6 +2450,9 @@ const handleLoadPreset = (presetId: string) => {
                 setCalibAppliedIds(prev => ({ ...prev, [base]: snapshotId }))
               }
             />
+          )}
+          {settingsView === 'import' && (
+            <ImportExportPanel exportText={exportText} onImportText={handleImportText} />
           )}
         </>
       )}

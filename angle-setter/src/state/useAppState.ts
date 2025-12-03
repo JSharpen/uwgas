@@ -33,8 +33,8 @@ export type AppState = {
   setIsPresetManagerOpen: React.Dispatch<React.SetStateAction<boolean>>;
   view: 'calculator' | 'wheels' | 'settings';
   setView: React.Dispatch<React.SetStateAction<'calculator' | 'wheels' | 'settings'>>;
-  settingsView: 'machine' | 'calibration';
-  setSettingsView: React.Dispatch<React.SetStateAction<'machine' | 'calibration'>>;
+  settingsView: 'machine' | 'calibration' | 'import';
+  setSettingsView: React.Dispatch<React.SetStateAction<'machine' | 'calibration' | 'import'>>;
   isWheelConfigOpen: boolean;
   setIsWheelConfigOpen: React.Dispatch<React.SetStateAction<boolean>>;
   focusWheelIdRef: React.MutableRefObject<string | null>;
@@ -92,7 +92,9 @@ export function useAppState(): AppState {
   const [isPresetManagerOpen, setIsPresetManagerOpen] = React.useState(false);
 
   const [view, setView] = React.useState<'calculator' | 'wheels' | 'settings'>('calculator');
-  const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration'>('machine');
+  const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration' | 'import'>(
+    'machine'
+  );
 
   const [isWheelConfigOpen, setIsWheelConfigOpen] = React.useState(false);
 

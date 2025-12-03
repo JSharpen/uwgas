@@ -9,6 +9,7 @@ type MiniSelectProps = {
   ariaLabel?: string;
   align?: 'left' | 'right';
   widthClass?: string;
+  menuWidthClass?: string;
 };
 
 function MiniSelect({
@@ -18,6 +19,7 @@ function MiniSelect({
   ariaLabel,
   align = 'left',
   widthClass,
+  menuWidthClass,
 }: MiniSelectProps) {
   const [isMenuVisible, setIsMenuVisible] = React.useState(false);
   const [isMenuClosing, setIsMenuClosing] = React.useState(false);
@@ -116,7 +118,7 @@ function MiniSelect({
         <div
           className={`dropdown-menu ${alignClass} ${
             isMenuClosing ? 'dropdown-menu--closing' : 'dropdown-menu--opening'
-          } w-32`}
+          } ${menuWidthClass ?? 'w-32'}`}
         >
           {options.map(opt => {
             const isActive = opt.value === value;
