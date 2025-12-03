@@ -1,5 +1,6 @@
 import type {
   AppPersistedState,
+  CalibrationSnapshot,
   GlobalState,
   MachineConstants,
   SessionPreset,
@@ -8,7 +9,7 @@ import type {
 } from '../types/core';
 import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS } from './defaults';
 
-export const PERSIST_VERSION = 1;
+export const PERSIST_VERSION = 2;
 
 export function _save(k: string, v: any) {
   try {
@@ -40,6 +41,12 @@ export function readPersistedState(): AppPersistedState {
     wheels: _load<Wheel[]>('t_wheels', DEFAULT_WHEELS),
     sessionSteps: _load<SessionStep[]>('t_sessionSteps', []),
     sessionPresets: _load<SessionPreset[]>('t_sessionPresets', []),
+    heightMode: _load<'hn' | 'hr'>('t_heightMode', 'hn'),
+    calibSnapshots: _load<CalibrationSnapshot[]>('t_calibSnapshots', []),
+    calibAppliedIds: _load<{ rear: string; front: string }>('t_calibAppliedIds', {
+      rear: '',
+      front: '',
+    }),
   };
 }
 
@@ -49,6 +56,9 @@ export function writePersistedState(state: AppPersistedState) {
   _save('t_wheels', state.wheels);
   _save('t_sessionSteps', state.sessionSteps);
   _save('t_sessionPresets', state.sessionPresets);
+  if (state.heightMode) _save('t_heightMode', state.heightMode);
+  if (state.calibSnapshots) _save('t_calibSnapshots', state.calibSnapshots);
+  if (state.calibAppliedIds) _save('t_calibAppliedIds', state.calibAppliedIds);
 }
 
 export function exportStateToString(state: AppPersistedState): string {
@@ -80,6 +90,13 @@ export function parsePersistedState(raw: string): AppPersistedState | null {
       sessionPresets: Array.isArray((parsed as any).sessionPresets)
         ? (parsed as any).sessionPresets as SessionPreset[]
         : [],
+      heightMode: (parsed as any).heightMode === 'hr' ? 'hr' : 'hn',
+      calibSnapshots: Array.isArray((parsed as any).calibSnapshots)
+        ? (parsed as any).calibSnapshots as CalibrationSnapshot[]
+        : [],
+      calibAppliedIds: isObject((parsed as any).calibAppliedIds)
+        ? (parsed as any).calibAppliedIds as { rear: string; front: string }
+        : { rear: '', front: '' },
     };
 
     // Fallback defaults for missing keys

@@ -14,6 +14,7 @@ import * as React from 'react';
 import { IconKebab, IconTrash, IconSortAsc, IconSortDesc } from './icons';
 import MiniSelect from './components/MiniSelect';
 import CalibrationWizard from './components/CalibrationWizard';
+import ImportExportPanel from './components/ImportExportPanel';
 import type {
   BaseSide,
   CalibrationDiagnostics,
@@ -29,7 +30,7 @@ import type {
 } from './types/core';
 import { _nz } from './utils/numbers';
 import { blurOnEnter } from './utils/dom';
-import { _load, _save } from './state/storage';
+import { PERSIST_VERSION, _load, _save } from './state/storage';
 import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS } from './state/defaults';
 import {
   computeWheelResults,
@@ -549,6 +550,51 @@ function normalizeWheel(raw: any): Wheel {
   };
 }
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function normalizeCalibrationSnapshots(items: any[]): CalibrationSnapshot[] {
+  return items.map((snap, idx) => {
+    const base: BaseSide = snap?.base === 'front' ? 'front' : 'rear';
+    const hc = typeof snap?.hc === 'number' ? snap.hc : NaN;
+    const o = typeof snap?.o === 'number' ? snap.o : NaN;
+    const diagnostics =
+      snap?.diagnostics && Array.isArray(snap.diagnostics.residuals)
+        ? {
+            residuals: snap.diagnostics.residuals.map((r: any) => Number(r) || 0),
+            maxAbsResidualMm: Number(snap.diagnostics.maxAbsResidualMm) || 0,
+          }
+        : { residuals: [], maxAbsResidualMm: 0 };
+    const angleErrorDeg =
+      typeof snap?.angleErrorDeg === 'number' ? snap.angleErrorDeg : null;
+    const count = Number(snap?.count) || diagnostics.residuals.length || 0;
+    const Da = Number(snap?.Da) || 0;
+    const Ds = Number(snap?.Ds) || 0;
+    const createdAt =
+      typeof snap?.createdAt === 'string' ? snap.createdAt : new Date().toISOString();
+    const measurements = Array.isArray(snap?.measurements)
+      ? snap.measurements.map((m: any) => ({
+          hn: typeof m?.hn === 'string' ? m.hn : String(m?.hn ?? ''),
+          CAo: typeof m?.CAo === 'string' ? m.CAo : String(m?.CAo ?? ''),
+        }))
+      : [];
+    return {
+      id: snap?.id || `calib-${Date.now()}-${idx}`,
+      base,
+      hc,
+      o,
+      diagnostics,
+      angleErrorDeg,
+      count,
+      Da,
+      Ds,
+      createdAt,
+      measurements,
+    };
+  });
+}
+
 // ============================================================================== App =======================================
 
 function App() {
@@ -728,21 +774,8 @@ React.useEffect(() => {
   const [calibSnapshots, setCalibSnapshots] = React.useState<CalibrationSnapshot[]>(() => {
     const legacy = _load<CalibrationSnapshot | null>('t_calibSnapshot', null);
     const list = _load<CalibrationSnapshot[]>('t_calibSnapshots', []);
-    const ensureIds = (items: any[]) =>
-      items.map((snap, idx) => ({
-        ...snap,
-        id: snap?.id ?? `calib-${Date.now()}-${idx}`,
-        hc: typeof snap?.hc === 'number' ? snap.hc : NaN,
-        o: typeof snap?.o === 'number' ? snap.o : NaN,
-        measurements: Array.isArray(snap?.measurements) ? snap.measurements : [],
-      })) as CalibrationSnapshot[];
-    if (list && list.length) {
-      return ensureIds(list);
-    }
-    if (legacy) {
-      return ensureIds([legacy]);
-    }
-    return [];
+    const items = list && list.length ? list : legacy ? [legacy] : [];
+    return normalizeCalibrationSnapshots(items);
   });
   const [calibAppliedIds, setCalibAppliedIds] = React.useState<{ rear: string; front: string }>(
     () => _load('t_calibAppliedIds', { rear: '', front: '' })
@@ -867,6 +900,89 @@ React.useEffect(() => {
   }, [sessionSteps, selectedPresetId]);
 
   const wheelResults = computeWheelResults(wheels, sessionSteps, global, activeMachine);
+  const exportBundle = React.useMemo(
+    () => ({
+      version: PERSIST_VERSION,
+      global,
+      constants,
+      wheels,
+      sessionSteps,
+      sessionPresets,
+      heightMode,
+      calibSnapshots,
+      calibAppliedIds,
+    }),
+    [calibAppliedIds, calibSnapshots, constants, global, heightMode, sessionPresets, sessionSteps, wheels]
+  );
+  const exportText = React.useMemo(() => JSON.stringify(exportBundle, null, 2), [exportBundle]);
+  const handleImportText = React.useCallback(
+    (raw: string) => {
+      let parsed: any;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        return 'Import failed: invalid JSON.';
+      }
+      if (!isObject(parsed)) return 'Import failed: expected a JSON object.';
+
+      const nextGlobal = isObject(parsed.global)
+        ? { ...DEFAULT_GLOBAL, ...(parsed.global as Partial<GlobalState>) }
+        : DEFAULT_GLOBAL;
+
+      const nextConstants = isObject(parsed.constants)
+        ? {
+            rear: {
+              hc: _nz((parsed.constants as any).rear?.hc, DEFAULT_CONSTANTS.rear.hc),
+              o: _nz((parsed.constants as any).rear?.o, DEFAULT_CONSTANTS.rear.o),
+            },
+            front: {
+              hc: _nz((parsed.constants as any).front?.hc, DEFAULT_CONSTANTS.front.hc),
+              o: _nz((parsed.constants as any).front?.o, DEFAULT_CONSTANTS.front.o),
+            },
+          }
+        : DEFAULT_CONSTANTS;
+
+      const nextWheels = Array.isArray(parsed.wheels)
+        ? parsed.wheels.map(normalizeWheel)
+        : DEFAULT_WHEELS;
+
+      const nextSteps = Array.isArray(parsed.sessionSteps)
+        ? (parsed.sessionSteps as SessionStep[])
+        : [];
+
+      const nextPresets = Array.isArray(parsed.sessionPresets)
+        ? (parsed.sessionPresets as SessionPreset[])
+        : [];
+
+      const nextHeightMode = parsed.heightMode === 'hr' ? 'hr' : 'hn';
+
+      const nextSnapshots = normalizeCalibrationSnapshots(
+        Array.isArray(parsed.calibSnapshots) ? parsed.calibSnapshots : []
+      );
+
+      const appliedRaw = isObject(parsed.calibAppliedIds) ? (parsed.calibAppliedIds as any) : null;
+      const nextApplied = {
+        rear: typeof appliedRaw?.rear === 'string' ? appliedRaw.rear : '',
+        front: typeof appliedRaw?.front === 'string' ? appliedRaw.front : '',
+      };
+      const ensuredApplied = {
+        rear: nextSnapshots.some(s => s.id === nextApplied.rear) ? nextApplied.rear : '',
+        front: nextSnapshots.some(s => s.id === nextApplied.front) ? nextApplied.front : '',
+      };
+
+      setGlobal(nextGlobal);
+      setConstants(nextConstants);
+      setWheels(nextWheels);
+      setSessionSteps(nextSteps);
+      setSessionPresets(nextPresets);
+      setHeightMode(nextHeightMode);
+      setCalibSnapshots(nextSnapshots);
+      setCalibAppliedIds(ensuredApplied);
+
+      return null;
+    },
+    []
+  );
   const presetNameTrimmed = presetNameDraft.trim();
   const isPresetNameDuplicate =
     presetNameTrimmed.length > 0 &&
@@ -2173,6 +2289,8 @@ const handleLoadPreset = (presetId: string) => {
               Calibration wizard
             </button>
           </div>
+
+          <ImportExportPanel exportText={exportText} onImportText={handleImportText} />
 
           {/* Machine constants view */}
           {settingsView === 'machine' && (

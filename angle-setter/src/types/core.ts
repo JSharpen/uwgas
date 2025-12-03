@@ -64,6 +64,9 @@ export type AppPersistedState = {
   wheels: Wheel[];
   sessionSteps: SessionStep[];
   sessionPresets: SessionPreset[];
+  heightMode?: 'hn' | 'hr';
+  calibSnapshots?: CalibrationSnapshot[];
+  calibAppliedIds?: { rear: string; front: string };
 };
 
 export type TonInput = {
