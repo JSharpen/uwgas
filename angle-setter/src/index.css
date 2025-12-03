@@ -51,13 +51,13 @@ button {
 }
 /* Dropdown Animations */
 @keyframes dropdownIn {
-  from { max-height: 0; opacity: 1; }
-  to   { max-height: 144px; opacity: 1; }
+  from { max-height: 0; opacity: 0; transform: translateY(-4px); }
+  to   { max-height: 180px; opacity: 1; transform: translateY(0); }
 }
 
 @keyframes dropdownOut {
-  from { max-height: 144px; opacity: 1; }
-  to   { max-height: 0; opacity: 1; }
+  from { max-height: 180px; opacity: 1; transform: translateY(0); }
+  to   { max-height: 0; opacity: 0; transform: translateY(-4px); }
 }
 
 /* Collapsible panels (shared animation) */
