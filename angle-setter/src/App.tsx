@@ -726,9 +726,22 @@ React.useEffect(() => {
     angleErrorDeg: number | null;
   } | null>(null);
   const [calibError, setCalibError] = React.useState<string | null>(null);
-  const [calibSnapshot, setCalibSnapshot] = React.useState<CalibrationSnapshot | null>(() =>
-    _load('t_calibSnapshot', null)
-  );
+  const [calibSnapshots, setCalibSnapshots] = React.useState<CalibrationSnapshot[]>(() => {
+    const legacy = _load<CalibrationSnapshot | null>('t_calibSnapshot', null);
+    const list = _load<CalibrationSnapshot[]>('t_calibSnapshots', []);
+    const ensureIds = (items: any[]) =>
+      items.map((snap, idx) => ({
+        ...snap,
+        id: snap?.id ?? `calib-${Date.now()}-${idx}`,
+      })) as CalibrationSnapshot[];
+    if (list && list.length) {
+      return ensureIds(list);
+    }
+    if (legacy) {
+      return ensureIds([legacy]);
+    }
+    return [];
+  });
 
   const activeMachine: MachineConfig = {
     id: 'machine-1',
@@ -765,8 +778,8 @@ React.useEffect(() => {
   }, [heightMode]);
 
   React.useEffect(() => {
-    _save('t_calibSnapshot', calibSnapshot);
-  }, [calibSnapshot]);
+    _save('t_calibSnapshots', calibSnapshots);
+  }, [calibSnapshots]);
 
   React.useEffect(() => {
     if (!isPresetManagerOpen) {
@@ -878,7 +891,8 @@ React.useEffect(() => {
       wheels
     );
 
-    setCalibSnapshot({
+    const snapshot: CalibrationSnapshot = {
+      id: `calib-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       base: calibBase,
       diagnostics: result.diagnostics,
       angleErrorDeg: angleErr,
@@ -886,7 +900,9 @@ React.useEffect(() => {
       Da,
       Ds,
       createdAt: new Date().toISOString(),
-    });
+    };
+
+    setCalibSnapshots(prev => [snapshot, ...prev]);
 
     setCalibResult({
       hc: result.hc,

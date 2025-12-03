@@ -111,6 +111,7 @@ export type CalibrationResult = {
 };
 
 export type CalibrationSnapshot = {
+  id: string;
   base: BaseSide;
   diagnostics: CalibrationDiagnostics;
   angleErrorDeg: number | null;
