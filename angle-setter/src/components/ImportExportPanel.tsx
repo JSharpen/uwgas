@@ -34,7 +34,6 @@ function ImportExportPanel({ exportText, onImportText }: ImportExportPanelProps)
       if (err) {
         setStatus(err);
       } else {
-        setImportText(raw);
         setStatus('Import applied from file.');
       }
     };

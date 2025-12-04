@@ -11,20 +11,22 @@ import type {
   Wheel,
 } from '../types/core';
 import { calibrateBase, estimateMaxAngleErrorDeg } from '../math/tormek';
+import { _nz } from '../utils/numbers';
 
 type CalibrationResultState = {
   hc: number;
   o: number;
   diagnostics: CalibrationDiagnostics;
   angleErrorDeg: number | null;
+  rowResiduals: { row: number; residual: number }[];
 } | null;
 
 type CalibrationWizardProps = {
   global: GlobalState;
   activeMachine: MachineConfig;
   wheels: Wheel[];
-  calibBase: BaseSide;
-  setCalibBase: React.Dispatch<React.SetStateAction<BaseSide>>;
+  calibBase: BaseSide | '';
+  setCalibBase: React.Dispatch<React.SetStateAction<BaseSide | ''>>;
   calibDa: number;
   setCalibDa: React.Dispatch<React.SetStateAction<number>>;
   calibDs: number;
@@ -83,6 +85,11 @@ function CalibrationWizard({
     setCalibError(null);
     setCalibResult(null);
 
+    if (!calibBase) {
+      setCalibError('Select which base to calibrate.');
+      return;
+    }
+
     const Da = calibDa || 12;
     const Ds = calibDs || global.usbDiameter;
 
@@ -93,9 +100,21 @@ function CalibrationWizard({
       return;
     }
 
+    // Map residuals back to original row indices used
+    const rowResiduals: { row: number; residual: number }[] = [];
+    let usedIdx = 0;
+    rowsToUse.forEach((row, idx) => {
+      const hnVal = _nz(row.hn, NaN);
+      const CAoVal = _nz(row.CAo, NaN);
+      if (!Number.isFinite(hnVal) || !Number.isFinite(CAoVal)) return;
+      const residual = result.diagnostics.residuals[usedIdx];
+      rowResiduals.push({ row: idx + 1, residual });
+      usedIdx += 1;
+    });
+
     const proposedConstants: MachineConstants = {
       ...activeMachine.constants,
-      [calibBase]: {
+      [calibBase as BaseSide]: {
         hc: result.hc,
         o: result.o,
       },
@@ -108,7 +127,7 @@ function CalibrationWizard({
 
     const angleErr = estimateMaxAngleErrorDeg(
       result.diagnostics,
-      calibBase,
+      calibBase as BaseSide,
       global,
       machineLike,
       wheels
@@ -116,7 +135,7 @@ function CalibrationWizard({
 
     const snapshot: CalibrationSnapshot = {
       id: `calib-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      base: calibBase,
+      base: calibBase as BaseSide,
       hc: result.hc,
       o: result.o,
       measurements: rowsToUse,
@@ -136,6 +155,7 @@ function CalibrationWizard({
       o: result.o,
       diagnostics: result.diagnostics,
       angleErrorDeg: angleErr,
+      rowResiduals,
     });
   }, [
     activeMachine,
@@ -153,10 +173,12 @@ function CalibrationWizard({
 
   const handleApplyCalibration = React.useCallback(() => {
     if (!calibResult) return;
+    if (!calibBase) return;
+    if (calibResult.angleErrorDeg != null && calibResult.angleErrorDeg > 0.2) return;
     const fallback = calibSnapshots.find(s => s.base === calibBase)?.id || null;
     const snapshotId = lastSnapshotIdRef.current || fallback;
     if (!snapshotId) return;
-    onApplyCalibration(calibBase, snapshotId);
+    onApplyCalibration(calibBase as BaseSide, snapshotId);
   }, [calibBase, calibResult, calibSnapshots, onApplyCalibration]);
 
   return (
@@ -171,16 +193,40 @@ function CalibrationWizard({
       </p>
 
       {/* Base selection */}
-      <div className="flex items-center gap-3 text-xs">
+      <div className="flex items-center gap-3 text-xs justify-end text-left">
         <span className="text-neutral-300">Base to calibrate:</span>
         <MiniSelect
           value={calibBase}
           options={[
+            { value: '', label: 'Select base...' },
             { value: 'rear', label: 'Rear (edge leading)' },
             { value: 'front', label: 'Front (edge trailing)' },
           ]}
-          onChange={val => setCalibBase(val as BaseSide)}
-          widthClass="w-48"
+          onChange={val => setCalibBase(val as BaseSide | '')}
+          align="right"
+          widthClass="w-40"
+          menuWidthClass="w-40"
+        />
+      </div>
+
+      {/* Measurement count */}
+      <div className="flex items-center gap-3 text-xs justify-end text-left">
+        <span className="text-neutral-300 whitespace-nowrap">Measurements</span>
+        <MiniSelect
+          value={String(calibCount)}
+          options={[
+            { value: '3', label: '3 (fast)' },
+            { value: '4', label: '4 (recommended)' },
+            { value: '5', label: '5 (most robust)' },
+          ]}
+          onChange={val => {
+            const next = parseInt(val, 10) || 4;
+            setCalibCount(next);
+            ensureCalibRowsLength(next);
+          }}
+          align="right"
+          widthClass="w-40"
+          menuWidthClass="w-40"
         />
       </div>
 
@@ -212,40 +258,37 @@ function CalibrationWizard({
         </label>
       </div>
 
-      {/* Measurement count */}
-      <div className="flex flex-col gap-1 text-xs">
-        <span className="text-neutral-300">Number of measurements:</span>
-        <MiniSelect
-          value={String(calibCount)}
-          options={[
-            { value: '3', label: '3 (fast)' },
-            { value: '4', label: '4 (recommended)' },
-            { value: '5', label: '5 (most robust)' },
-          ]}
-          onChange={val => {
-            const next = parseInt(val, 10) || 4;
-            setCalibCount(next);
-            ensureCalibRowsLength(next);
-          }}
-          widthClass="w-44"
-        />
-      </div>
-
       {/* Measurement table */}
       <div className="flex flex-col gap-1 text-xs">
-        <div className="grid grid-cols-3 gap-1 font-mono text-[0.7rem] text-neutral-400">
+        <div className="grid grid-cols-[1.5rem_repeat(3,minmax(0,1fr))] gap-1 font-mono text-[0.7rem] text-neutral-400 text-left items-center">
           <div>#</div>
           <div>hₙ (mm)</div>
           <div>CAo (mm)</div>
+          <div>Residual</div>
         </div>
         {Array.from({ length: calibCount }, (_, i) => {
           const row = calibRows[i] ?? { hn: '', CAo: '' };
+          const residualEntry = calibResult?.rowResiduals.find(r => r.row === i + 1);
+          const abs = residualEntry ? Math.abs(residualEntry.residual) : null;
+          let resClass = 'text-neutral-400';
+          let badge = '';
+          if (abs != null) {
+            if (abs > 0.2) {
+              resClass = 'text-red-400';
+              badge = ' re-measure';
+            } else if (abs > 0.1) {
+              resClass = 'text-amber-300';
+              badge = ' check';
+            } else {
+              resClass = 'text-emerald-300';
+            }
+          }
           return (
-            <div key={i} className="grid grid-cols-3 gap-1 items-center text-[0.75rem]">
+            <div key={i} className="grid grid-cols-[1.5rem_repeat(3,minmax(0,1fr))] gap-1 items-center text-[0.75rem]">
               <div className="text-neutral-500">{i + 1}</div>
               <input
                 type="number"
-                className="rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5"
+                className="w-20 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right"
                 value={row.hn}
                 onChange={e =>
                   setCalibRows(prev => {
@@ -260,7 +303,7 @@ function CalibrationWizard({
               />
               <input
                 type="number"
-                className="rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5"
+                className="w-20 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right"
                 value={row.CAo}
                 onChange={e =>
                   setCalibRows(prev => {
@@ -273,6 +316,9 @@ function CalibrationWizard({
                   })
                 }
               />
+              <div className={`text-[0.7rem] ${resClass}`}>
+                {residualEntry ? `${residualEntry.residual.toFixed(3)} mm${badge}` : '—'}
+              </div>
             </div>
           );
         })}
@@ -285,20 +331,26 @@ function CalibrationWizard({
             type="button"
             className="px-2 py-1 rounded border border-emerald-500 bg-emerald-900/40 hover:bg-emerald-900 text-emerald-50"
             onClick={handleRunCalibration}
+            disabled={!calibBase}
           >
             Compute hc &amp; o
           </button>
           <button
             type="button"
             className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-neutral-100 disabled:opacity-40"
-            disabled={!calibResult}
+            disabled={
+              !calibResult ||
+              !calibBase ||
+              (calibResult.angleErrorDeg != null && calibResult.angleErrorDeg > 0.2)
+            }
             onClick={handleApplyCalibration}
           >
-            Apply to {calibBase === 'rear' ? 'rear base' : 'front base'}
+            Apply to{' '}
+            {calibBase === 'rear' ? 'rear base' : calibBase === 'front' ? 'front base' : 'base'}
           </button>
         </div>
 
-        {calibError && <div className="text-red-400 text-xs">{calibError}</div>}
+        {calibError && <div className="text-red-400 text-xs">Error: {calibError}</div>}
 
         {calibResult && (
           <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">

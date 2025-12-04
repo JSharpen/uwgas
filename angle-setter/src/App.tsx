@@ -15,6 +15,7 @@ import { IconKebab, IconTrash, IconSortAsc, IconSortDesc } from './icons';
 import MiniSelect from './components/MiniSelect';
 import CalibrationWizard from './components/CalibrationWizard';
 import ImportExportPanel from './components/ImportExportPanel';
+import ProgressionView from './components/ProgressionView';
 import type {
   BaseSide,
   CalibrationDiagnostics,
@@ -34,6 +35,7 @@ import { PERSIST_VERSION, _load, _save } from './state/storage';
 import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS } from './state/defaults';
 import {
   computeWheelResults,
+  computeTonHeights,
 } from './math/tormek';
 
 // =============== Helpers ===============
@@ -761,7 +763,7 @@ React.useEffect(() => {
   }, []); // run once on mount
 
   // Calibration wizard state (single-base)
-  const [calibBase, setCalibBase] = React.useState<BaseSide>('rear');
+  const [calibBase, setCalibBase] = React.useState<BaseSide | ''>('');
   const [calibDa, setCalibDa] = React.useState<number>(12); // axle diameter
   const [calibDs, setCalibDs] = React.useState<number>(DEFAULT_GLOBAL.usbDiameter);
   const [calibCount, setCalibCount] = React.useState<number>(4); // 3/4/5, default 4 (recommended)
@@ -771,6 +773,7 @@ React.useEffect(() => {
     o: number;
     diagnostics: CalibrationDiagnostics;
     angleErrorDeg: number | null;
+    rowResiduals: { row: number; residual: number }[];
   } | null>(null);
   const [calibError, setCalibError] = React.useState<string | null>(null);
   const [calibSnapshots, setCalibSnapshots] = React.useState<CalibrationSnapshot[]>(() => {
@@ -803,7 +806,75 @@ React.useEffect(() => {
     usbDiameter: global.usbDiameter,
     jigDiameter: global.jig.Dj,
   };
-  const angleSymbol = 'θ';
+  const targetAngleSymbol = 'θ';
+  const effectiveAngleSymbol = 'γ';
+  const wheelResults = computeWheelResults(wheels, sessionSteps, global, activeMachine);
+
+
+  const appliedCalibrationByBase = React.useMemo(
+    () => ({
+      rear: calibSnapshots.find(s => s.id === calibAppliedIds.rear) || null,
+      front: calibSnapshots.find(s => s.id === calibAppliedIds.front) || null,
+    }),
+    [calibAppliedIds.front, calibAppliedIds.rear, calibSnapshots]
+  );
+
+  // Estimated angle error (deg) per result, using calibration residuals for that base and wheel D
+  const estimatedAngleErrorByResultId = React.useMemo(() => {
+    const map: Record<string, number | null> = {};
+    const A = _nz(global.projection);
+    const beta = _nz(global.targetAngle);
+    const Dj = activeMachine.jigDiameter;
+    const Ds = activeMachine.usbDiameter;
+    const delta = 0.05;
+
+    for (const r of wheelResults) {
+      const key = r.step?.id ?? r.wheel.id;
+      const base: BaseSide = r.step?.base === 'front' ? 'front' : 'rear';
+      const snap = base === 'front' ? appliedCalibrationByBase.front : appliedCalibrationByBase.rear;
+      const rawResidual = snap?.diagnostics?.maxAbsResidualMm;
+      const residualMm = Number.isFinite(rawResidual) ? Math.abs(Number(rawResidual)) : null;
+      const Draw = _nz(r.wheel.D, 250);
+      const D = Draw > 0 ? Draw : 250;
+
+      if (residualMm === null) {
+        map[key] = null;
+        continue;
+      }
+
+      const baseInput = {
+        base,
+        D,
+        A,
+        betaDeg: beta,
+        Dj,
+        Ds,
+        constants: activeMachine.constants,
+      } as const;
+
+      const hnPlus = computeTonHeights({ ...baseInput, betaDeg: beta + delta }).hn;
+      const hnMinus = computeTonHeights({ ...baseInput, betaDeg: beta - delta }).hn;
+      const dHn_dBeta = (hnPlus - hnMinus) / (2 * delta);
+
+      if (Math.abs(dHn_dBeta) < 1e-6) {
+        map[key] = null;
+        continue;
+      }
+
+      map[key] = Math.abs(residualMm / dHn_dBeta);
+    }
+
+    return map;
+  }, [
+    activeMachine.constants,
+    activeMachine.jigDiameter,
+    activeMachine.usbDiameter,
+    appliedCalibrationByBase.front,
+    appliedCalibrationByBase.rear,
+    global.projection,
+    global.targetAngle,
+    wheelResults,
+  ]);
 
   // Persist basic state
   React.useEffect(() => {
@@ -901,7 +972,6 @@ React.useEffect(() => {
     }
   }, [sessionSteps, selectedPresetId]);
 
-  const wheelResults = computeWheelResults(wheels, sessionSteps, global, activeMachine);
   const exportBundle = React.useMemo(
     () => ({
       version: PERSIST_VERSION,
@@ -1373,7 +1443,7 @@ const handleLoadPreset = (presetId: string) => {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-neutral-300">Target angle {angleSymbol}° (/side)</span>
+                <span className="text-neutral-300">Target angle {targetAngleSymbol}° (/side)</span>
                 <input
                   type="number"
                   className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
@@ -1639,7 +1709,7 @@ const handleLoadPreset = (presetId: string) => {
 
                                 <div className="flex flex-wrap items-center gap-2 mt-auto">
                                   <span className="text-neutral-400 text-[0.7rem]">
-                                    {angleSymbol} offset (deg)
+                                    {effectiveAngleSymbol} offset (deg)
                                   </span>
                                   <input
                                     type="number"
@@ -1723,129 +1793,12 @@ const handleLoadPreset = (presetId: string) => {
                     steps for this calculator.
                   </div>
                 ) : (
-                  <>
-                    {/* Calc panel: progression results */}
-                    <div className="grid gap-1 md:grid-cols-2">
-                    {wheelResults.map((r, index) => {
-                      const angleOffset = r.step?.angleOffset ?? 0;
-                      const hasOffset = angleOffset !== 0;
-                      const notesText = r.step?.notes?.trim() ?? '';
-                      const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
-                      const betaValueClass = hasOffset
-                        ? angleOffset > 0
-                          ? 'text-emerald-300'
-                          : 'text-rose-300'
-                        : 'text-neutral-500';
-                      const betaLabelClass = hasOffset ? 'text-neutral-300' : 'text-neutral-500';
-                      const offsetSign = angleOffset > 0 ? '+' : '';
-
-                      return (
-                        <div
-                          key={r.step?.id ?? r.wheel.id}
-                          className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden"
-                        >
-                          {/* ===== Header bar ===== */}
-                          <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 bg-neutral-900/70 min-h-[44px]">
-                            <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
-                              {/* Step badge */}
-                              {r.step && (
-                              <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100 -ml-1">
-                                {index + 1}
-                              </div>
-                              )}
-
-                              {/* Grind direction indicator - read-only in view mode */}
-                              {r.step && (
-                                <GrindDirToggle
-                                  base={r.step.base}
-                                  isHoning={r.wheel.isHoning}
-                                  canToggle={false}
-                                  onToggle={() => {}}
-                                />
-                              )}
-
-                              {/* Wheel name */}
-                              <span className="text-[0.7rem] text-neutral-200 font-medium truncate leading-none">
-                                {r.wheel.name}
-                              </span>
-                            </div>
-
-                            {/* Right side: diameter display */}
-                            <div className="flex items-center gap-1 flex-nowrap ml-auto text-[0.7rem] text-neutral-300 font-mono whitespace-nowrap">
-                              <span>D=</span>
-                              <span>{r.wheel.D?.toFixed(2)}</span>
-                              <span>mm</span>
-                            </div>
-                          </div>
-
-                          {/* ===== Wheel Card Body ===== */}
-                          <div className="px-2 py-2 flex flex-row flex-wrap items-stretch gap-2">
-                            {heightMode === 'hn' ? (
-                              <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0">
-                                <div className="flex items-center text-[0.75rem] text-neutral-300">
-                                  <span>
-                                    {r.step?.base === 'front'
-                                      ? `Base F <-> USB top`
-                                      : `Base R <-> USB top`}
-                                  </span>
-                                </div>
-                                <div className="font-mono text-sm text-neutral-100">
-                                  hn = {r.hnBase.toFixed(2)} mm
-                                </div>
-                                <div className={`text-[0.7rem] ${betaLabelClass}`}>
-                                  {angleSymbol} eff ={' '}
-                                  <span className={betaValueClass}>
-                                    {formatDeg(r.betaEffDeg)}°
-                                  </span>
-                                  {hasOffset && (
-                                    <span className={betaValueClass}>
-                                      {' '}
-                                      ({offsetSign}
-                                      {formatDeg(angleOffset)}°)
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0">
-                                <div className="flex items-center text-[0.75rem] text-neutral-300">
-                                  <span>{`Wheel <-> USB top`}</span>
-                                </div>
-                                <div className="font-mono text-sm text-neutral-100">
-                                  hr = {r.hrWheel.toFixed(2)} mm
-                                </div>
-                                <div className={`text-[0.7rem] ${betaLabelClass}`}>
-                                  {angleSymbol} eff ={' '}
-                                  <span className={betaValueClass}>
-                                    {formatDeg(r.betaEffDeg)}°
-                                  </span>
-                                  {hasOffset && (
-                                    <span className={betaValueClass}>
-                                      {' '}
-                                      ({offsetSign}
-                                      {formatDeg(angleOffset)}°)
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Notes panel (view mode) */}
-                            <div className="flex-1 border border-neutral-700 rounded p-2 min-h-[40px] bg-neutral-950/20">
-                              {notesText ? (
-                                <div className="text-[0.8rem] text-neutral-100 whitespace-pre-wrap break-words">
-                                  {notesText}
-                                </div>
-                              ) : (
-                                <div className="text-[0.8rem] text-neutral-500">No notes</div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    </div>
-                  </>
+                  <ProgressionView
+                    wheelResults={wheelResults}
+                    heightMode={heightMode}
+                    angleSymbol={effectiveAngleSymbol}
+                    angleErrorById={estimatedAngleErrorByResultId}
+                  />
                 )
               )}
             </div>

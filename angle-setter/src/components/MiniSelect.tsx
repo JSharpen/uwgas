@@ -82,7 +82,7 @@ function MiniSelect({
     align === 'right' ? 'dropdown-menu--align-right' : 'dropdown-menu--align-left';
 
   return (
-    <div ref={rootRef} className={`dropdown text-xs ${widthClass ?? ''}`}>
+    <div ref={rootRef} className={`dropdown text-xs flex-shrink-0 ${widthClass ?? ''}`}>
       <button
         type="button"
         className={`dropdown-trigger dropdown-trigger--sm ${
@@ -116,7 +116,7 @@ function MiniSelect({
 
       {isMenuVisible && (
         <div
-          className={`dropdown-menu ${alignClass} ${
+          className={`dropdown-menu z-30 ${alignClass} ${
             isMenuClosing ? 'dropdown-menu--closing' : 'dropdown-menu--opening'
           } ${menuWidthClass ?? 'w-32'}`}
         >
