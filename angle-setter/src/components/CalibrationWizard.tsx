@@ -187,6 +187,25 @@ function CalibrationWizard({
     onApplyCalibration(calibBase as BaseSide, snapshotId);
   }, [calibBase, calibResult, calibSnapshots, onApplyCalibration]);
 
+  const handleReset = React.useCallback(() => {
+    const confirmMsg =
+      'Start over? This will clear entered measurements, any result, and your base/name selection.';
+    if (typeof window !== 'undefined' && !window.confirm(confirmMsg)) return;
+    lastSnapshotIdRef.current = null;
+    setCalibRows([]);
+    setCalibResult(null);
+    setCalibError(null);
+    setCalibBase('');
+    setCalibName('');
+  }, [setCalibBase, setCalibError, setCalibName, setCalibResult, setCalibRows]);
+
+  const hasDraft =
+    Boolean(calibBase) ||
+    Boolean(calibName.trim()) ||
+    calibRows.some(r => (r?.hn ?? '') !== '' || (r?.CAo ?? '') !== '') ||
+    calibResult != null ||
+    calibError != null;
+
   return (
     <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl">
       <h2 className="text-sm font-semibold text-neutral-200">Calibration wizard (single base)</h2>
@@ -342,27 +361,38 @@ function CalibrationWizard({
 
       {/* Actions and results */}
       <div className="flex flex-col gap-2 text-xs">
-        <div className="flex gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="px-2 py-1 rounded border border-emerald-500 bg-emerald-900/40 hover:bg-emerald-900 text-emerald-50"
+              onClick={handleRunCalibration}
+              disabled={!calibBase}
+            >
+              Compute hc &amp; o
+            </button>
+            {calibResult && (
+              <button
+                type="button"
+                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-neutral-100 disabled:opacity-40"
+                disabled={
+                  !calibBase ||
+                  (calibResult.angleErrorDeg != null && calibResult.angleErrorDeg > 0.2)
+                }
+                onClick={handleApplyCalibration}
+              >
+                Apply to{' '}
+                {calibBase === 'rear' ? 'rear base' : calibBase === 'front' ? 'front base' : 'base'}
+              </button>
+            )}
+          </div>
           <button
             type="button"
-            className="px-2 py-1 rounded border border-emerald-500 bg-emerald-900/40 hover:bg-emerald-900 text-emerald-50"
-            onClick={handleRunCalibration}
-            disabled={!calibBase}
+            className="px-2 py-1 rounded border border-neutral-700 bg-neutral-950 hover:bg-neutral-900 text-neutral-200 disabled:opacity-40"
+            onClick={handleReset}
+            disabled={!hasDraft}
           >
-            Compute hc &amp; o
-          </button>
-          <button
-            type="button"
-            className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-neutral-100 disabled:opacity-40"
-            disabled={
-              !calibResult ||
-              !calibBase ||
-              (calibResult.angleErrorDeg != null && calibResult.angleErrorDeg > 0.2)
-            }
-            onClick={handleApplyCalibration}
-          >
-            Apply to{' '}
-            {calibBase === 'rear' ? 'rear base' : calibBase === 'front' ? 'front base' : 'base'}
+            Start over
           </button>
         </div>
 

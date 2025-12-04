@@ -556,6 +556,17 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+type ExportSections = {
+  global: boolean;
+  constants: boolean;
+  wheels: boolean;
+  sessionSteps: boolean;
+  sessionPresets: boolean;
+  heightMode: boolean;
+  calibSnapshots: boolean;
+  calibAppliedIds: boolean;
+};
+
 function normalizeCalibrationSnapshots(items: any[]): CalibrationSnapshot[] {
   return items.map((snap, idx) => {
     const base: BaseSide = snap?.base === 'front' ? 'front' : 'rear';
@@ -604,6 +615,145 @@ function normalizeCalibrationSnapshots(items: any[]): CalibrationSnapshot[] {
   });
 }
 
+type BaseCardProps = {
+  title: string;
+  snap: CalibrationSnapshot | null;
+  options: { value: string; label: string }[];
+  appliedId: string;
+  display: { hc: number; o: number };
+  constantsInputMode: 'normal' | 'failsafe';
+  onChange: (id: string) => void;
+  onChangeField: (field: 'hc' | 'o', value: string) => void;
+};
+
+function BaseCard({
+  title,
+  snap,
+  options,
+  appliedId,
+  display,
+  constantsInputMode,
+  onChange,
+  onChangeField,
+}: BaseCardProps) {
+  const isLocked = Boolean(snap);
+  const baseKey: 'rear' | 'front' = title.toLowerCase().includes('rear') ? 'rear' : 'front';
+  const hcId = `${baseKey}-const-hc`;
+  const oId = `${baseKey}-const-o`;
+  const [hcDraft, setHcDraft] = React.useState<string>(() => String(display.hc ?? ''));
+  const [oDraft, setODraft] = React.useState<string>(() => String(display.o ?? ''));
+
+  // Keep local drafts in sync when the source changes (e.g., switching manual/calibration)
+  React.useEffect(() => {
+    setHcDraft(String(display.hc ?? ''));
+    setODraft(String(display.o ?? ''));
+  }, [display.hc, display.o, appliedId]);
+
+  const residual = snap?.diagnostics?.maxAbsResidualMm;
+  let sourceCls = 'text-neutral-400';
+  if (typeof residual === 'number' && Number.isFinite(residual)) {
+    if (residual <= 0.05) sourceCls = 'text-emerald-300';
+    else if (residual <= 0.1) sourceCls = 'text-emerald-200';
+    else if (residual <= 0.2) sourceCls = 'text-amber-300';
+    else sourceCls = 'text-red-400';
+  }
+
+  const handleFocus = React.useCallback(
+    (field: 'hc' | 'o', draft: string) => {
+      const msg = `[const-input] focus ${field} ${baseKey}-const draft=${draft} applied=${appliedId} mode=${constantsInputMode}`;
+      console.log(msg);
+    },
+    [appliedId, baseKey, constantsInputMode]
+  );
+
+  const handleCommit = React.useCallback(
+    (field: 'hc' | 'o', value: string) => {
+      onChangeField(field, value);
+      console.log(
+        `[const-input] commit ${field} ${baseKey}-const value=${value} mode=${constantsInputMode}`
+      );
+    },
+    [baseKey, constantsInputMode, onChangeField]
+  );
+
+  return (
+    <div className="rounded border border-neutral-700 bg-neutral-950/40 p-3 flex flex-col gap-3">
+      <div className="flex items-center justify-between text-xs text-neutral-200">
+        <span>{title}</span>
+        <MiniSelect value={appliedId} options={options} onChange={onChange} widthClass="w-40" />
+      </div>
+      <div className={`text-[0.7rem] ${sourceCls}`}>
+        {snap ? (
+          <>
+            Source: {(snap.baseTag || snap.base || 'rear').toString().replace(/^\w/, c => c.toUpperCase())} calibration
+            {snap.name?.trim() ? ` "${snap.name.trim()}"` : ''} {snap.createdAt ? `(${snap.createdAt.slice(0, 10)})` : ''} ({snap.count} pts
+            {residual != null ? `, max |resid| ${residual.toFixed(3)} mm` : ''}
+            {snap.angleErrorDeg != null ? `, ~${snap.angleErrorDeg.toFixed(3)} deg` : ''})
+          </>
+        ) : (
+          'Source: Manual input'
+        )}
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <label htmlFor={hcId} className="w-16 text-neutral-300 text-xs">
+            hc (mm)
+          </label>
+          {isLocked ? (
+            <div className="w-28 rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-right text-neutral-400 select-none">
+              {display.hc}
+            </div>
+          ) : (
+            <input
+              type="number"
+              inputMode="decimal"
+              id={hcId}
+              className="w-28 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right"
+              value={hcDraft ?? ''}
+              onFocus={() => handleFocus('hc', hcDraft ?? '')}
+              onChange={e => setHcDraft(e.target.value)}
+              onBlur={e => handleCommit('hc', e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  blurOnEnter(e);
+                  handleCommit('hc', e.currentTarget.value);
+                }
+              }}
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor={oId} className="w-16 text-neutral-300 text-xs">
+            o (mm)
+          </label>
+          {isLocked ? (
+            <div className="w-28 rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-right text-neutral-400 select-none">
+              {display.o}
+            </div>
+          ) : (
+            <input
+              type="number"
+              inputMode="decimal"
+              id={oId}
+              className="w-28 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right"
+              value={oDraft ?? ''}
+              onFocus={() => handleFocus('o', oDraft ?? '')}
+              onChange={e => setODraft(e.target.value)}
+              onBlur={e => handleCommit('o', e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  blurOnEnter(e);
+                  handleCommit('o', e.currentTarget.value);
+                }
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ============================================================================== App =======================================
 
 function App() {
@@ -630,6 +780,16 @@ function App() {
   const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(() =>
     _load('t_sessionPresets', [])
   );
+  const [exportSections, setExportSections] = React.useState<ExportSections>({
+    global: true,
+    constants: true,
+    wheels: true,
+    sessionSteps: true,
+    sessionPresets: true,
+    heightMode: true,
+    calibSnapshots: true,
+    calibAppliedIds: true,
+  });
 
   // View state
   const [view, setView] = React.useState<
@@ -638,6 +798,8 @@ function App() {
   const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration' | 'import'>(
     'machine'
   );
+  
+  const [constantsInputMode] = React.useState<'normal' | 'failsafe'>('normal');
   // Preset dialog / manager state
   const [selectedPresetId, setSelectedPresetId] = React.useState<string>('');
   const [isPresetDialogOpen, setIsPresetDialogOpen] = React.useState(false);
@@ -983,16 +1145,26 @@ React.useEffect(() => {
   const exportBundle = React.useMemo(
     () => ({
       version: PERSIST_VERSION,
-      global,
-      constants,
-      wheels,
-      sessionSteps,
-      sessionPresets,
-      heightMode,
-      calibSnapshots,
-      calibAppliedIds,
+      ...(exportSections.global ? { global } : {}),
+      ...(exportSections.constants ? { constants } : {}),
+      ...(exportSections.wheels ? { wheels } : {}),
+      ...(exportSections.sessionSteps ? { sessionSteps } : {}),
+      ...(exportSections.sessionPresets ? { sessionPresets } : {}),
+      ...(exportSections.heightMode ? { heightMode } : {}),
+      ...(exportSections.calibSnapshots ? { calibSnapshots } : {}),
+      ...(exportSections.calibAppliedIds ? { calibAppliedIds } : {}),
     }),
-    [calibAppliedIds, calibSnapshots, constants, global, heightMode, sessionPresets, sessionSteps, wheels]
+    [
+      exportSections,
+      calibAppliedIds,
+      calibSnapshots,
+      constants,
+      global,
+      heightMode,
+      sessionPresets,
+      sessionSteps,
+      wheels,
+    ]
   );
   const exportText = React.useMemo(() => JSON.stringify(exportBundle, null, 2), [exportBundle]);
   const handleImportText = React.useCallback(
@@ -1001,9 +1173,9 @@ React.useEffect(() => {
       try {
         parsed = JSON.parse(raw);
       } catch {
-        return 'Import failed: invalid JSON.';
+        return { error: 'Import failed: invalid JSON.' };
       }
-      if (!isObject(parsed)) return 'Import failed: expected a JSON object.';
+      if (!isObject(parsed)) return { error: 'Import failed: expected a JSON object.' };
 
       const nextGlobal = isObject(parsed.global)
         ? { ...DEFAULT_GLOBAL, ...(parsed.global as Partial<GlobalState>) }
@@ -1059,7 +1231,9 @@ React.useEffect(() => {
       setCalibSnapshots(nextSnapshots);
       setCalibAppliedIds(ensuredApplied);
 
-      return null;
+      const summary = `Imported ${nextWheels.length} wheel(s), ${nextSteps.length} progression step(s), ${nextPresets.length} preset(s), ${nextSnapshots.length} calibration(s).`;
+      console.log(summary);
+      return { summary };
     },
     []
   );
@@ -1720,10 +1894,9 @@ const handleLoadPreset = (presetId: string) => {
                                     {effectiveAngleSymbol} offset (deg)
                                   </span>
                                   <input
-                                    type="number"
-                                    step="0.1"
+                                    type="text"
+                                    inputMode="decimal"
                                     className="w-10 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
-                                    onKeyDown={blurOnEnter}
                                     value={step.angleOffset === 0 ? '' : step.angleOffset}
                                     placeholder="0"
                                     onFocus={e => {
@@ -2277,82 +2450,6 @@ const handleLoadPreset = (presetId: string) => {
                 const frontDisplay = frontSnap
                   ? { hc: frontSnap.hc, o: frontSnap.o }
                   : constants.front;
-                const BaseCard = ({
-                  title,
-                  snap,
-                  options,
-                  appliedId,
-                  display,
-                  onChange,
-                  onChangeField,
-                }: {
-                  title: string;
-                  snap: typeof rearSnap;
-                  options: { value: string; label: string }[];
-                  appliedId: string;
-                  display: { hc: number; o: number };
-                  onChange: (id: string) => void;
-                  onChangeField: (field: 'hc' | 'o', value: string) => void;
-                }) => {
-                  const residual = snap?.diagnostics?.maxAbsResidualMm;
-                  let sourceCls = 'text-neutral-400';
-                  if (typeof residual === 'number' && Number.isFinite(residual)) {
-                    if (residual <= 0.05) sourceCls = 'text-emerald-300';
-                    else if (residual <= 0.1) sourceCls = 'text-emerald-200';
-                    else if (residual <= 0.2) sourceCls = 'text-amber-300';
-                    else sourceCls = 'text-red-400';
-                  }
-
-                  return (
-                    <div className="rounded border border-neutral-700 bg-neutral-950/40 p-3 flex flex-col gap-3">
-                      <div className="flex items-center justify-between text-xs text-neutral-200">
-                        <span>{title}</span>
-                        <MiniSelect
-                          value={appliedId}
-                          options={options}
-                          onChange={onChange}
-                          widthClass="w-40"
-                        />
-                      </div>
-                      <div className={`text-[0.7rem] ${sourceCls}`}>
-                        {snap ? (
-                          <>
-                            Source: {(snap.baseTag || snap.base || 'rear').toString().replace(/^\w/, c => c.toUpperCase())} calibration{snap.name?.trim() ? ` "${snap.name.trim()}"` : ''} {snap.createdAt ? `(${snap.createdAt.slice(0, 10)})` : ''} ({snap.count} pts
-                            {residual != null ? `, max |resid| ${residual.toFixed(3)} mm` : ''}
-                            {snap.angleErrorDeg != null ? `, ~${snap.angleErrorDeg.toFixed(3)} deg` : ''})
-                          </>
-                        ) : (
-                          'Source: Manual input'
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <label className="flex items-center gap-2">
-                          <span className="w-16 text-neutral-300 text-xs">hc (mm)</span>
-                          <input
-                            type="number"
-                            className="w-28 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right disabled:opacity-50"
-                            value={display.hc}
-                            disabled={Boolean(snap)}
-                            onKeyDown={blurOnEnter}
-                            onChange={e => onChangeField('hc', e.target.value)}
-                          />
-                        </label>
-                        <label className="flex items-center gap-2">
-                          <span className="w-16 text-neutral-300 text-xs">o (mm)</span>
-                          <input
-                            type="number"
-                            className="w-28 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right disabled:opacity-50"
-                            value={display.o}
-                            disabled={Boolean(snap)}
-                            onKeyDown={blurOnEnter}
-                            onChange={e => onChangeField('o', e.target.value)}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  );
-                };
-
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                     <BaseCard
@@ -2361,6 +2458,7 @@ const handleLoadPreset = (presetId: string) => {
                       options={rearOptions}
                       appliedId={calibAppliedIds.rear}
                       display={rearDisplay}
+                      constantsInputMode={constantsInputMode}
                       onChange={val => setCalibAppliedIds(prev => ({ ...prev, rear: val || '' }))}
                       onChangeField={(field, value) =>
                         setConstants(c => ({
@@ -2375,6 +2473,7 @@ const handleLoadPreset = (presetId: string) => {
                       options={frontOptions}
                       appliedId={calibAppliedIds.front}
                       display={frontDisplay}
+                      constantsInputMode={constantsInputMode}
                       onChange={val => setCalibAppliedIds(prev => ({ ...prev, front: val || '' }))}
                       onChangeField={(field, value) =>
                         setConstants(c => ({
@@ -2419,7 +2518,14 @@ const handleLoadPreset = (presetId: string) => {
             />
           )}
           {settingsView === 'import' && (
-            <ImportExportPanel exportText={exportText} onImportText={handleImportText} />
+            <ImportExportPanel
+              exportText={exportText}
+              onImportText={handleImportText}
+              exportSections={exportSections}
+              onToggleExportSection={key =>
+                setExportSections(prev => ({ ...prev, [key]: !prev[key] as boolean }))
+              }
+            />
           )}
         </>
       )}
@@ -2669,5 +2775,7 @@ const handleLoadPreset = (presetId: string) => {
 }
 
 export default App;
+
+
 
 
