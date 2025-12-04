@@ -85,19 +85,47 @@ function CalibrationWizard({
     [setCalibRows]
   );
 
+  const validateInputs = React.useCallback(() => {
+    const missing: string[] = [];
+    const rowsToUse = Array.from({ length: calibCount }, (_, i) => calibRows[i] ?? { hn: '', CAo: '' });
+
+    if (!calibBase) missing.push('Base selection');
+
+    const DaVal = _nz(calibDa, NaN);
+    const DsVal = _nz(calibDs, NaN);
+    if (!Number.isFinite(DaVal) || DaVal <= 0) missing.push('Axle diameter');
+    if (!Number.isFinite(DsVal) || DsVal <= 0) missing.push('USB diameter');
+
+    let validRowCount = 0;
+    rowsToUse.forEach((row, idx) => {
+      const hnVal = _nz(row.hn, NaN);
+      const CAoVal = _nz(row.CAo, NaN);
+      const rowLabel = idx + 1;
+      if (!Number.isFinite(hnVal)) missing.push(`Row ${rowLabel} h?`);
+      if (!Number.isFinite(CAoVal)) missing.push(`Row ${rowLabel} CAo`);
+      if (Number.isFinite(hnVal) && Number.isFinite(CAoVal)) validRowCount += 1;
+    });
+
+    if (validRowCount < 2) {
+      missing.push('At least 2 complete measurement rows');
+    }
+
+    return { missing, rowsToUse, DaVal, DsVal };
+  }, [calibBase, calibCount, calibDa, calibDs, calibRows]);
+
   const handleRunCalibration = React.useCallback(() => {
     setCalibError(null);
     setCalibResult(null);
 
-    if (!calibBase) {
-      setCalibError('Select which base to calibrate.');
+    const { missing, rowsToUse, DaVal, DsVal } = validateInputs();
+    if (missing.length > 0) {
+      setCalibError(`Missing or invalid: ${missing.join(', ')}`);
       return;
     }
 
-    const Da = calibDa || 12;
-    const Ds = calibDs || global.usbDiameter;
+    const Da = DaVal || 12;
+    const Ds = DsVal || global.usbDiameter;
 
-    const rowsToUse = calibRows.slice(0, calibCount);
     const result = calibrateBase(rowsToUse, Da, Ds);
     if (!result) {
       setCalibError('Need at least two valid hn + CAo rows with numeric values.');
@@ -166,14 +194,11 @@ function CalibrationWizard({
   }, [
     activeMachine,
     calibBase,
-    calibCount,
-    calibDa,
-    calibDs,
-    calibRows,
     global,
     setCalibError,
     setCalibResult,
     setCalibSnapshots,
+    validateInputs,
     wheels,
   ]);
 
@@ -206,6 +231,9 @@ function CalibrationWizard({
     calibResult != null ||
     calibError != null;
 
+  const validation = validateInputs();
+  const computeInvalid = validation.missing.length > 0;
+
   return (
     <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl">
       <h2 className="text-sm font-semibold text-neutral-200">Calibration wizard (single base)</h2>
@@ -227,7 +255,14 @@ function CalibrationWizard({
             { value: 'rear', label: 'Rear (edge leading)' },
             { value: 'front', label: 'Front (edge trailing)' },
           ]}
-          onChange={val => setCalibBase(val as BaseSide | '')}
+          onChange={val => {
+            setCalibBase(val as BaseSide | '');
+            // Clear any existing measurements/results when switching base
+            setCalibRows([]);
+            setCalibResult(null);
+            setCalibError(null);
+            ensureCalibRowsLength(calibCount);
+          }}
           align="right"
           widthClass="w-40"
           menuWidthClass="w-40"
@@ -365,9 +400,14 @@ function CalibrationWizard({
           <div className="flex gap-2">
             <button
               type="button"
-              className="px-2 py-1 rounded border border-emerald-500 bg-emerald-900/40 hover:bg-emerald-900 text-emerald-50"
+              className={
+                'px-2 py-1 rounded border transition-colors ' +
+                (computeInvalid
+                  ? 'border-neutral-700 bg-neutral-800 text-neutral-400 cursor-not-allowed'
+                  : 'border-emerald-500 bg-emerald-900/40 text-emerald-50 hover:bg-emerald-900')
+              }
               onClick={handleRunCalibration}
-              disabled={!calibBase}
+              aria-disabled={computeInvalid}
             >
               Compute hc &amp; o
             </button>
