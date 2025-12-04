@@ -209,6 +209,17 @@ function CalibrationWizard({
     const fallback = calibSnapshots.find(s => s.base === calibBase)?.id || null;
     const snapshotId = lastSnapshotIdRef.current || fallback;
     if (!snapshotId) return;
+    const selected = calibSnapshots.find(s => s.id === snapshotId) || null;
+    const label =
+      selected?.name?.trim() ||
+      selected?.createdAt?.slice(0, 10) ||
+      (calibBase === 'rear' ? 'Rear calibration' : 'Front calibration');
+    const baseLabel = calibBase === 'rear' ? 'rear base' : 'front base';
+    const ok =
+      typeof window === 'undefined'
+        ? true
+        : window.confirm(`Apply "${label}" to ${baseLabel}? This will replace the current constants for that base.`);
+    if (!ok) return;
     onApplyCalibration(calibBase as BaseSide, snapshotId);
   }, [calibBase, calibResult, calibSnapshots, onApplyCalibration]);
 
