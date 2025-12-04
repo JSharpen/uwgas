@@ -567,6 +567,9 @@ type ExportSections = {
   calibAppliedIds: boolean;
 };
 
+type ImportSections = ExportSections;
+type ImportModes = Record<keyof ImportSections, 'merge' | 'overwrite'>;
+
 function normalizeCalibrationSnapshots(items: any[]): CalibrationSnapshot[] {
   return items.map((snap, idx) => {
     const base: BaseSide = snap?.base === 'front' ? 'front' : 'rear';
@@ -789,6 +792,26 @@ function App() {
     heightMode: true,
     calibSnapshots: true,
     calibAppliedIds: true,
+  });
+  const [importSections, setImportSections] = React.useState<ImportSections>({
+    global: true,
+    constants: true,
+    wheels: true,
+    sessionSteps: true,
+    sessionPresets: true,
+    heightMode: true,
+    calibSnapshots: true,
+    calibAppliedIds: true,
+  });
+  const [importModes, setImportModes] = React.useState<ImportModes>({
+    global: 'merge',
+    constants: 'merge',
+    wheels: 'merge',
+    sessionSteps: 'merge',
+    sessionPresets: 'merge',
+    heightMode: 'merge',
+    calibSnapshots: 'merge',
+    calibAppliedIds: 'merge',
   });
 
   // View state
@@ -1177,6 +1200,7 @@ React.useEffect(() => {
       }
       if (!isObject(parsed)) return { error: 'Import failed: expected a JSON object.' };
 
+      // Normalise incoming sections
       const nextGlobal = isObject(parsed.global)
         ? { ...DEFAULT_GLOBAL, ...(parsed.global as Partial<GlobalState>) }
         : DEFAULT_GLOBAL;
@@ -1196,7 +1220,7 @@ React.useEffect(() => {
 
       const nextWheels = Array.isArray(parsed.wheels)
         ? parsed.wheels.map(normalizeWheel)
-        : DEFAULT_WHEELS;
+        : [];
 
       const nextSteps = Array.isArray(parsed.sessionSteps)
         ? (parsed.sessionSteps as SessionStep[])
@@ -1217,25 +1241,151 @@ React.useEffect(() => {
         rear: typeof appliedRaw?.rear === 'string' ? appliedRaw.rear : '',
         front: typeof appliedRaw?.front === 'string' ? appliedRaw.front : '',
       };
-      const ensuredApplied = {
-        rear: nextSnapshots.some(s => s.id === nextApplied.rear) ? nextApplied.rear : '',
-        front: nextSnapshots.some(s => s.id === nextApplied.front) ? nextApplied.front : '',
+
+      // Merge/overwrite helpers
+      const mergeMapById = <T extends { id: string }>(current: T[], incoming: T[]) => {
+        const map = new Map<string, T>();
+        current.forEach(item => {
+          if (item && item.id) map.set(item.id, item);
+        });
+        incoming.forEach(item => {
+          if (item && item.id) map.set(item.id, item);
+        });
+        return Array.from(map.values());
       };
 
-      setGlobal(nextGlobal);
-      setConstants(nextConstants);
-      setWheels(nextWheels);
-      setSessionSteps(nextSteps);
-      setSessionPresets(nextPresets);
-      setHeightMode(nextHeightMode);
-      setCalibSnapshots(nextSnapshots);
-      setCalibAppliedIds(ensuredApplied);
+      // Apply per-section with modes
+      const appliedSummary: string[] = [];
 
-      const summary = `Imported ${nextWheels.length} wheel(s), ${nextSteps.length} progression step(s), ${nextPresets.length} preset(s), ${nextSnapshots.length} calibration(s).`;
+      if (importSections.global) {
+        if (importModes.global === 'overwrite') {
+          setGlobal(nextGlobal);
+          appliedSummary.push('global: overwrite');
+        } else {
+          setGlobal(prev => ({ ...prev, ...nextGlobal }));
+          appliedSummary.push('global: merge');
+        }
+      }
+
+      if (importSections.constants) {
+        if (importModes.constants === 'overwrite') {
+          setConstants(nextConstants);
+          appliedSummary.push('constants: overwrite');
+        } else {
+          setConstants(prev => ({
+            rear: {
+              hc: _nz((nextConstants as any).rear?.hc, prev.rear.hc),
+              o: _nz((nextConstants as any).rear?.o, prev.rear.o),
+            },
+            front: {
+              hc: _nz((nextConstants as any).front?.hc, prev.front.hc),
+              o: _nz((nextConstants as any).front?.o, prev.front.o),
+            },
+          }));
+          appliedSummary.push('constants: merge');
+        }
+      }
+
+      if (importSections.wheels) {
+        if (importModes.wheels === 'overwrite') {
+          setWheels(nextWheels);
+          appliedSummary.push(`wheels: overwrite (${nextWheels.length})`);
+        } else {
+          const merged = mergeMapById(wheels, nextWheels);
+          setWheels(merged);
+          appliedSummary.push(`wheels: merge -> ${merged.length}`);
+        }
+      }
+
+      if (importSections.sessionSteps) {
+        if (importModes.sessionSteps === 'overwrite') {
+          setSessionSteps(nextSteps);
+          appliedSummary.push(`steps: overwrite (${nextSteps.length})`);
+        } else {
+          const keyed = new Map<string, SessionStep>();
+          sessionSteps.forEach((s, idx) => keyed.set((s as any).id || `cur-${idx}`, s));
+          nextSteps.forEach((s, idx) => keyed.set((s as any).id || `new-${idx}`, s));
+          const merged = Array.from(keyed.values());
+          setSessionSteps(merged);
+          appliedSummary.push(`steps: merge -> ${merged.length}`);
+        }
+      }
+
+      if (importSections.sessionPresets) {
+        if (importModes.sessionPresets === 'overwrite') {
+          setSessionPresets(nextPresets);
+          appliedSummary.push(`presets: overwrite (${nextPresets.length})`);
+        } else {
+          const merged = mergeMapById(sessionPresets, nextPresets);
+          setSessionPresets(merged);
+          appliedSummary.push(`presets: merge -> ${merged.length}`);
+        }
+      }
+
+      if (importSections.heightMode) {
+        if (importModes.heightMode === 'overwrite') {
+          setHeightMode(nextHeightMode);
+          appliedSummary.push('heightMode: overwrite');
+        } else if (parsed.heightMode === 'hr' || parsed.heightMode === 'hn') {
+          setHeightMode(nextHeightMode);
+          appliedSummary.push('heightMode: merge (applied incoming)');
+        } else {
+          appliedSummary.push('heightMode: merge (kept existing)');
+        }
+      }
+
+      let finalSnapshots = calibSnapshots;
+      if (importSections.calibSnapshots) {
+        if (importModes.calibSnapshots === 'overwrite') {
+          finalSnapshots = nextSnapshots;
+          setCalibSnapshots(nextSnapshots);
+          appliedSummary.push(`calibrations: overwrite (${nextSnapshots.length})`);
+        } else {
+          const merged = mergeMapById(calibSnapshots, nextSnapshots);
+          finalSnapshots = merged;
+          setCalibSnapshots(merged);
+          appliedSummary.push(`calibrations: merge -> ${merged.length}`);
+        }
+      }
+
+      if (importSections.calibAppliedIds) {
+        const ensureApplied = (applied: { rear: string; front: string }) => ({
+          rear: finalSnapshots.some(s => s.id === applied.rear) ? applied.rear : '',
+          front: finalSnapshots.some(s => s.id === applied.front) ? applied.front : '',
+        });
+        if (importModes.calibAppliedIds === 'overwrite') {
+          setCalibAppliedIds(ensureApplied(nextApplied));
+          appliedSummary.push('applied calibrations: overwrite');
+        } else {
+          const mergedApplied = {
+            rear: nextApplied.rear || calibAppliedIds.rear,
+            front: nextApplied.front || calibAppliedIds.front,
+          };
+          setCalibAppliedIds(ensureApplied(mergedApplied));
+          appliedSummary.push('applied calibrations: merge');
+        }
+      }
+
+      const summary =
+        appliedSummary.length > 0
+          ? `Import applied (${appliedSummary.join('; ')})`
+          : 'Import did not apply any sections.';
       console.log(summary);
       return { summary };
     },
-    []
+    [
+      calibAppliedIds.rear,
+      calibAppliedIds.front,
+      calibSnapshots,
+      constants,
+      global,
+      heightMode,
+      importModes,
+      importSections,
+      sessionPresets,
+      sessionSteps,
+      wheels,
+    ]
   );
   const presetNameTrimmed = presetNameDraft.trim();
   const isPresetNameDuplicate =
@@ -2524,6 +2674,14 @@ const handleLoadPreset = (presetId: string) => {
               exportSections={exportSections}
               onToggleExportSection={key =>
                 setExportSections(prev => ({ ...prev, [key]: !prev[key] as boolean }))
+              }
+              importSections={importSections}
+              importModes={importModes}
+              onToggleImportSection={key =>
+                setImportSections(prev => ({ ...prev, [key]: !prev[key] as boolean }))
+              }
+              onChangeImportMode={(key, mode) =>
+                setImportModes(prev => ({ ...prev, [key]: mode }))
               }
             />
           )}

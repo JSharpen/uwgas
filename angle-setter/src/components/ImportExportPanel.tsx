@@ -16,6 +16,10 @@ type ImportExportPanelProps = {
   onImportText: (raw: string) => ImportExportResult;
   exportSections: Record<ImportSectionKey, boolean>;
   onToggleExportSection: (key: ImportSectionKey) => void;
+  importSections: Record<ImportSectionKey, boolean>;
+  importModes: Record<ImportSectionKey, 'merge' | 'overwrite'>;
+  onToggleImportSection: (key: ImportSectionKey) => void;
+  onChangeImportMode: (key: ImportSectionKey, mode: 'merge' | 'overwrite') => void;
 };
 
 const SECTION_LABELS: Record<ImportSectionKey, string> = {
@@ -34,6 +38,10 @@ function ImportExportPanel({
   onImportText,
   exportSections,
   onToggleExportSection,
+  importSections,
+  importModes,
+  onToggleImportSection,
+  onChangeImportMode,
 }: ImportExportPanelProps) {
   const [status, setStatus] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -69,6 +77,7 @@ function ImportExportPanel({
 
   const allChecked = Object.values(exportSections).every(Boolean);
   const anyChecked = Object.values(exportSections).some(Boolean);
+  const allImportChecked = Object.values(importSections).every(Boolean);
 
   return (
     <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl">
@@ -125,6 +134,74 @@ function ImportExportPanel({
           {!anyChecked && (
             <div className="text-amber-200 text-[0.7rem]">
               Warning: nothing selected — export will only include version metadata.
+            </div>
+          )}
+        </div>
+        <div className="rounded border border-neutral-700 bg-neutral-950/60 p-2 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[0.75rem] text-neutral-200">Apply on import</span>
+            <button
+              type="button"
+              className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-100"
+              onClick={() => {
+                const next = !allImportChecked;
+                (Object.keys(importSections) as ImportSectionKey[]).forEach(k => {
+                  if (importSections[k] !== next) {
+                    onToggleImportSection(k);
+                  }
+                });
+                setStatus(next ? 'All import sections selected.' : 'All import sections toggled off.');
+              }}
+            >
+              {allImportChecked ? 'Uncheck all' : 'Check all'}
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+            {(Object.keys(SECTION_LABELS) as ImportSectionKey[]).map(key => {
+              const checked = importSections[key];
+              const mode = importModes[key] || 'merge';
+              return (
+                <div
+                  key={key}
+                  className="flex flex-col gap-1 rounded px-2 py-1 hover:bg-neutral-900"
+                >
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      className="accent-emerald-500"
+                      checked={checked}
+                      onChange={() => onToggleImportSection(key)}
+                    />
+                    <span className="text-neutral-200">{SECTION_LABELS[key] || key}</span>
+                  </label>
+                  <div className="flex items-center gap-2 pl-6 text-[0.7rem] text-neutral-300">
+                    <span>Mode:</span>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="radio"
+                        className="accent-emerald-500"
+                        checked={mode === 'merge'}
+                        onChange={() => onChangeImportMode(key, 'merge')}
+                      />
+                      <span>Merge (safe)</span>
+                    </label>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="radio"
+                        className="accent-amber-500"
+                        checked={mode === 'overwrite'}
+                        onChange={() => onChangeImportMode(key, 'overwrite')}
+                      />
+                      <span>Overwrite</span>
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {!Object.values(importSections).some(Boolean) && (
+            <div className="text-amber-200 text-[0.7rem]">
+              Warning: no sections selected for import — importing will only update version metadata.
             </div>
           )}
         </div>
