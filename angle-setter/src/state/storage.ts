@@ -9,7 +9,7 @@ import type {
 } from '../types/core';
 import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS } from './defaults';
 
-export const PERSIST_VERSION = 2;
+export const PERSIST_VERSION = 3;
 
 export function _save(k: string, v: any) {
   try {

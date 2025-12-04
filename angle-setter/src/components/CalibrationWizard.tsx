@@ -27,6 +27,8 @@ type CalibrationWizardProps = {
   wheels: Wheel[];
   calibBase: BaseSide | '';
   setCalibBase: React.Dispatch<React.SetStateAction<BaseSide | ''>>;
+  calibName: string;
+  setCalibName: React.Dispatch<React.SetStateAction<string>>;
   calibDa: number;
   setCalibDa: React.Dispatch<React.SetStateAction<number>>;
   calibDs: number;
@@ -50,6 +52,8 @@ function CalibrationWizard({
   wheels,
   calibBase,
   setCalibBase,
+  calibName,
+  setCalibName,
   calibDa,
   setCalibDa,
   calibDs,
@@ -136,6 +140,8 @@ function CalibrationWizard({
     const snapshot: CalibrationSnapshot = {
       id: `calib-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       base: calibBase as BaseSide,
+      baseTag: calibBase as BaseSide,
+      name: calibName.trim(),
       hc: result.hc,
       o: result.o,
       measurements: rowsToUse,
@@ -206,6 +212,16 @@ function CalibrationWizard({
           align="right"
           widthClass="w-40"
           menuWidthClass="w-40"
+        />
+      </div>
+
+      <div className="flex items-center gap-3 text-xs justify-end text-left">
+        <span className="text-neutral-300 whitespace-nowrap">Name (optional):</span>
+        <input
+          className="w-40 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs"
+          value={calibName}
+          onChange={e => setCalibName(e.target.value)}
+          placeholder="e.g. New wheel setup"
         />
       </div>
 

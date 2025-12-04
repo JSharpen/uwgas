@@ -559,6 +559,11 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function normalizeCalibrationSnapshots(items: any[]): CalibrationSnapshot[] {
   return items.map((snap, idx) => {
     const base: BaseSide = snap?.base === 'front' ? 'front' : 'rear';
+    const name = typeof snap?.name === 'string' ? snap.name : '';
+    const baseTag =
+      typeof snap?.baseTag === 'string' && snap.baseTag.trim()
+        ? snap.baseTag.trim()
+        : base;
     const hc = typeof snap?.hc === 'number' ? snap.hc : NaN;
     const o = typeof snap?.o === 'number' ? snap.o : NaN;
     const diagnostics =
@@ -593,6 +598,8 @@ function normalizeCalibrationSnapshots(items: any[]): CalibrationSnapshot[] {
       Ds,
       createdAt,
       measurements,
+      name,
+      baseTag,
     };
   });
 }
@@ -764,6 +771,7 @@ React.useEffect(() => {
 
   // Calibration wizard state (single-base)
   const [calibBase, setCalibBase] = React.useState<BaseSide | ''>('');
+  const [calibName, setCalibName] = React.useState<string>('');
   const [calibDa, setCalibDa] = React.useState<number>(12); // axle diameter
   const [calibDs, setCalibDs] = React.useState<number>(DEFAULT_GLOBAL.usbDiameter);
   const [calibCount, setCalibCount] = React.useState<number>(4); // 3/4/5, default 4 (recommended)
@@ -2249,7 +2257,9 @@ const handleLoadPreset = (presetId: string) => {
                     .filter(s => s.base === 'rear')
                     .map(s => ({
                       value: s.id,
-                      label: `Calibration ${s.createdAt?.slice(0, 10) || ''} (${s.count} pts)`,
+                      label: `${(s.baseTag || 'Rear')
+                        .toString()
+                        .replace(/^\w/, c => c.toUpperCase())} • ${s.name?.trim() || s.createdAt?.slice(0, 10) || 'Calibration'} (${s.count} pts)`,
                     })),
                 ];
                 const frontOptions = [
@@ -2258,7 +2268,9 @@ const handleLoadPreset = (presetId: string) => {
                     .filter(s => s.base === 'front')
                     .map(s => ({
                       value: s.id,
-                      label: `Calibration ${s.createdAt?.slice(0, 10) || ''} (${s.count} pts)`,
+                      label: `${(s.baseTag || 'Front')
+                        .toString()
+                        .replace(/^\w/, c => c.toUpperCase())} • ${s.name?.trim() || s.createdAt?.slice(0, 10) || 'Calibration'} (${s.count} pts)`,
                     })),
                 ];
                 const rearDisplay = rearSnap ? { hc: rearSnap.hc, o: rearSnap.o } : constants.rear;
@@ -2305,9 +2317,9 @@ const handleLoadPreset = (presetId: string) => {
                       <div className={`text-[0.7rem] ${sourceCls}`}>
                         {snap ? (
                           <>
-                            Source: Calibration {snap.createdAt?.slice(0, 10) || ''} ({snap.count} pts
+                            Source: {(snap.baseTag || snap.base || 'rear').toString().replace(/^\w/, c => c.toUpperCase())} calibration{snap.name?.trim() ? ` "${snap.name.trim()}"` : ''} {snap.createdAt ? `(${snap.createdAt.slice(0, 10)})` : ''} ({snap.count} pts
                             {residual != null ? `, max |resid| ${residual.toFixed(3)} mm` : ''}
-                            {snap.angleErrorDeg != null ? `, ~${snap.angleErrorDeg.toFixed(3)}°` : ''})
+                            {snap.angleErrorDeg != null ? `, ~${snap.angleErrorDeg.toFixed(3)} deg` : ''})
                           </>
                         ) : (
                           'Source: Manual input'
@@ -2385,6 +2397,8 @@ const handleLoadPreset = (presetId: string) => {
               wheels={wheels}
               calibBase={calibBase}
               setCalibBase={setCalibBase}
+              calibName={calibName}
+              setCalibName={setCalibName}
               calibDa={calibDa}
               setCalibDa={setCalibDa}
               calibDs={calibDs}
@@ -2655,9 +2669,5 @@ const handleLoadPreset = (presetId: string) => {
 }
 
 export default App;
-
-
-
-
 
 

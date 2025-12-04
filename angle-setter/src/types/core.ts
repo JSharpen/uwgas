@@ -116,6 +116,8 @@ export type CalibrationResult = {
 export type CalibrationSnapshot = {
   id: string;
   base: BaseSide;
+  baseTag?: string; // optional user-visible tag for base
+  name?: string; // optional user-supplied label
   hc: number;
   o: number;
   diagnostics: CalibrationDiagnostics;
