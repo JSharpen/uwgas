@@ -15,14 +15,18 @@ function GlossaryCard({ title = 'Glossary', items, className }: GlossaryCardProp
   return (
     <div
       className={
-        'rounded border border-neutral-700 bg-neutral-950/60 p-3 text-[0.75rem] text-neutral-200 ' +
+        'rounded border border-neutral-700 bg-neutral-950/60 p-3 text-[0.75rem] text-neutral-200 motion-card ' +
         (className || '')
       }
     >
       <div className="text-neutral-300 font-semibold text-[0.8rem] mb-1">{title}</div>
       <div className="flex flex-col gap-1 text-neutral-300">
-        {items.map(item => (
-          <div key={item.term} className="flex gap-2">
+        {items.map((item, idx) => (
+          <div
+            key={item.term}
+            className="flex gap-2 motion-list-item"
+            style={{ '--motion-order': idx } as React.CSSProperties}
+          >
             <span className="font-mono text-neutral-100 min-w-[3.5rem]">{item.term}</span>
             <span className="text-neutral-300">{item.description}</span>
           </div>

@@ -80,7 +80,7 @@ function ImportExportPanel({
   const allImportChecked = Object.values(importSections).every(Boolean);
 
   return (
-    <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl">
+    <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl motion-panel">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-neutral-200">Import / Export</h2>
         <button
@@ -93,7 +93,7 @@ function ImportExportPanel({
       </div>
       <div className="flex flex-col gap-2 text-xs">
         <span className="text-neutral-300">Export (JSON file):</span>
-        <div className="rounded border border-neutral-700 bg-neutral-950/60 p-2 flex flex-col gap-2">
+        <div className="rounded border border-neutral-700 bg-neutral-950/60 p-2 flex flex-col gap-2 motion-card">
           <div className="flex items-center justify-between">
             <span className="text-[0.75rem] text-neutral-200">Include in export</span>
             <button
@@ -137,7 +137,7 @@ function ImportExportPanel({
             </div>
           )}
         </div>
-        <div className="rounded border border-neutral-700 bg-neutral-950/60 p-2 flex flex-col gap-2">
+        <div className="rounded border border-neutral-700 bg-neutral-950/60 p-2 flex flex-col gap-2 motion-card">
           <div className="flex items-center justify-between">
             <span className="text-[0.75rem] text-neutral-200">Apply on import</span>
             <button

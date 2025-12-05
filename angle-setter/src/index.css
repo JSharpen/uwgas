@@ -39,6 +39,41 @@ button {
 }
 
 /* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes dialogIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes dialogOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes overlayFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 /* Menu Animations - Kebab */
 @keyframes menuFadeSlideIn {
   from { opacity: 0; transform: translateY(-4px) scale(0.88); }
@@ -58,6 +93,35 @@ button {
 @keyframes dropdownOut {
   from { max-height: 180px; opacity: 1; transform: translateY(0); }
   to   { max-height: 0; opacity: 0; transform: translateY(-4px); }
+}
+
+.motion-panel {
+  animation: fadeUp var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+}
+
+.motion-card {
+  animation: popIn var(--motion-duration-medium) var(--motion-ease-emphasized) both;
+}
+
+.motion-list-item {
+  animation: fadeUp var(--motion-duration-medium) var(--motion-ease-smooth) both;
+  animation-delay: calc(var(--motion-stagger-step) * var(--motion-order, 0));
+}
+
+.motion-overlay {
+  animation: overlayFadeIn var(--motion-duration-medium) ease-out both;
+}
+
+.motion-overlay--closing {
+  animation: overlayFadeOut var(--motion-duration-medium) ease-in forwards;
+}
+
+.motion-dialog {
+  animation: dialogIn var(--motion-duration-medium) var(--motion-ease-emphasized) both;
+}
+
+.motion-dialog--closing {
+  animation: dialogOut var(--motion-duration-medium) var(--motion-ease-standard) forwards;
 }
 
 /* Collapsible panels (shared animation) */
@@ -108,4 +172,12 @@ button {
   border-color: #10b981; /* emerald-500 */
   background: rgba(6, 78, 59, 0.35); /* emerald-900 with a soft tint */
   color: #d1fae5; /* emerald-100 */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

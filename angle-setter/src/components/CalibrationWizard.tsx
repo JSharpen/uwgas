@@ -246,7 +246,7 @@ function CalibrationWizard({
   const computeInvalid = validation.missing.length > 0;
 
   return (
-    <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl">
+    <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl motion-panel">
       <h2 className="text-sm font-semibold text-neutral-200">Calibration wizard (single base)</h2>
       <p className="text-xs text-neutral-300">
         Use this wizard to solve hc and o for one base. Pick the base, confirm axle/USB diameters,
@@ -370,7 +370,11 @@ function CalibrationWizard({
             }
           }
           return (
-            <div key={i} className="grid grid-cols-[1.5rem_repeat(3,minmax(0,1fr))] gap-1 items-center text-[0.75rem]">
+            <div
+              key={i}
+              className="grid grid-cols-[1.5rem_repeat(3,minmax(0,1fr))] gap-1 items-center text-[0.75rem] motion-list-item"
+              style={{ '--motion-order': i } as React.CSSProperties}
+            >
               <div className="text-neutral-500">{i + 1}</div>
               <input
                 type="number"
@@ -455,7 +459,7 @@ function CalibrationWizard({
         {calibError && <div className="text-red-400 text-xs">Error: {calibError}</div>}
 
         {calibResult && (
-          <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1">
+          <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 motion-card">
             <div className="text-neutral-200">
               Proposed constants for {calibBase === 'rear' ? 'rear' : 'front'} base:
             </div>

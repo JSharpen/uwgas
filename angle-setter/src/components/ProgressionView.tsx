@@ -1,3 +1,4 @@
+import type React from 'react';
 import type { WheelResult } from '../types/core';
 
 type ProgressionViewProps = {
@@ -38,7 +39,8 @@ function ProgressionView({
         return (
           <div
             key={r.step?.id ?? r.wheel.id}
-            className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden"
+            className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden motion-list-item"
+            style={{ '--motion-order': index } as React.CSSProperties}
           >
             {/* ===== Header bar ===== */}
             <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 bg-neutral-900/70 min-h-[44px]">

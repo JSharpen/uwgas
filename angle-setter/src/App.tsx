@@ -834,8 +834,14 @@ function App() {
   // Preset dialog / manager state
   const [selectedPresetId, setSelectedPresetId] = React.useState<string>('');
   const [isPresetDialogOpen, setIsPresetDialogOpen] = React.useState(false);
+  const [isPresetDialogVisible, setIsPresetDialogVisible] = React.useState(false);
+  const [isPresetDialogClosing, setIsPresetDialogClosing] = React.useState(false);
+  const presetDialogCloseTimerRef = React.useRef<number | null>(null);
   const [presetNameDraft, setPresetNameDraft] = React.useState('');
   const [isPresetManagerOpen, setIsPresetManagerOpen] = React.useState(false);
+  const [isPresetManagerVisible, setIsPresetManagerVisible] = React.useState(false);
+  const [isPresetManagerClosing, setIsPresetManagerClosing] = React.useState(false);
+  const presetManagerCloseTimerRef = React.useRef<number | null>(null);
   const [presetRenameId, setPresetRenameId] = React.useState<string | null>(null);
   const [presetRenameValue, setPresetRenameValue] = React.useState('');
   const [heightMode, setHeightMode] = React.useState<'hn' | 'hr'>(() => {
@@ -845,6 +851,9 @@ function App() {
 
   // Step notes state
   const [isStepNotesOpen, setIsStepNotesOpen] = React.useState(false);
+  const [isStepNotesVisible, setIsStepNotesVisible] = React.useState(false);
+  const [isStepNotesClosing, setIsStepNotesClosing] = React.useState(false);
+  const stepNotesCloseTimerRef = React.useRef<number | null>(null);
   const [stepNotesDraft, setStepNotesDraft] = React.useState('');
   const stepNotesStepIdRef = React.useRef<string | null>(null);
 
@@ -1116,6 +1125,99 @@ React.useEffect(() => {
       setPresetRenameValue('');
     }
   }, [isPresetManagerOpen]);
+
+  // Modal visibility / exit animations
+  React.useEffect(() => {
+    const closeDuration = 200;
+    if (isPresetManagerOpen) {
+      if (presetManagerCloseTimerRef.current) {
+        window.clearTimeout(presetManagerCloseTimerRef.current);
+        presetManagerCloseTimerRef.current = null;
+      }
+      setIsPresetManagerClosing(false);
+      setIsPresetManagerVisible(true);
+      return;
+    }
+    if (!isPresetManagerVisible) return;
+    setIsPresetManagerClosing(true);
+    presetManagerCloseTimerRef.current = window.setTimeout(() => {
+      setIsPresetManagerVisible(false);
+      setIsPresetManagerClosing(false);
+      presetManagerCloseTimerRef.current = null;
+    }, closeDuration);
+    return () => {
+      if (presetManagerCloseTimerRef.current) {
+        window.clearTimeout(presetManagerCloseTimerRef.current);
+        presetManagerCloseTimerRef.current = null;
+      }
+    };
+  }, [isPresetManagerOpen, isPresetManagerVisible]);
+
+  React.useEffect(() => {
+    const closeDuration = 200;
+    if (isPresetDialogOpen) {
+      if (presetDialogCloseTimerRef.current) {
+        window.clearTimeout(presetDialogCloseTimerRef.current);
+        presetDialogCloseTimerRef.current = null;
+      }
+      setIsPresetDialogClosing(false);
+      setIsPresetDialogVisible(true);
+      return;
+    }
+    if (!isPresetDialogVisible) return;
+    setIsPresetDialogClosing(true);
+    presetDialogCloseTimerRef.current = window.setTimeout(() => {
+      setIsPresetDialogVisible(false);
+      setIsPresetDialogClosing(false);
+      presetDialogCloseTimerRef.current = null;
+    }, closeDuration);
+    return () => {
+      if (presetDialogCloseTimerRef.current) {
+        window.clearTimeout(presetDialogCloseTimerRef.current);
+        presetDialogCloseTimerRef.current = null;
+      }
+    };
+  }, [isPresetDialogOpen, isPresetDialogVisible]);
+
+  React.useEffect(() => {
+    const closeDuration = 200;
+    if (isStepNotesOpen) {
+      if (stepNotesCloseTimerRef.current) {
+        window.clearTimeout(stepNotesCloseTimerRef.current);
+        stepNotesCloseTimerRef.current = null;
+      }
+      setIsStepNotesClosing(false);
+      setIsStepNotesVisible(true);
+      return;
+    }
+    if (!isStepNotesVisible) return;
+    setIsStepNotesClosing(true);
+    stepNotesCloseTimerRef.current = window.setTimeout(() => {
+      setIsStepNotesVisible(false);
+      setIsStepNotesClosing(false);
+      stepNotesCloseTimerRef.current = null;
+    }, closeDuration);
+    return () => {
+      if (stepNotesCloseTimerRef.current) {
+        window.clearTimeout(stepNotesCloseTimerRef.current);
+        stepNotesCloseTimerRef.current = null;
+      }
+    };
+  }, [isStepNotesOpen, isStepNotesVisible]);
+
+  React.useEffect(() => {
+    return () => {
+      if (presetManagerCloseTimerRef.current) {
+        window.clearTimeout(presetManagerCloseTimerRef.current);
+      }
+      if (presetDialogCloseTimerRef.current) {
+        window.clearTimeout(presetDialogCloseTimerRef.current);
+      }
+      if (stepNotesCloseTimerRef.current) {
+        window.clearTimeout(stepNotesCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     return () => {
@@ -1758,7 +1860,7 @@ const handleLoadPreset = (presetId: string) => {
       {view === 'calculator' && (
         <>
           {/* Global controls */}
-          <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/40 flex flex-col gap-2 max-w-xl">
+          <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/40 flex flex-col gap-2 max-w-xl motion-panel">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-neutral-200">Global setup</h2>
               <ExpandToggle
@@ -1833,7 +1935,7 @@ const handleLoadPreset = (presetId: string) => {
           </section>
 
           {/*Progression View*/}
-          <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/20 flex flex-col gap-2">
+          <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/20 flex flex-col gap-2 motion-panel">
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-semibold text-neutral-200">Progression</h2>
               <div className="flex items-center gap-3 ml-auto">
@@ -1937,7 +2039,8 @@ const handleLoadPreset = (presetId: string) => {
                         return (
                           <div
                             key={step.id}
-                            className="border border-neutral-700 rounded bg-neutral-950/40 flex flex-col min-h-[140px]"
+                            className="border border-neutral-700 rounded bg-neutral-950/40 flex flex-col min-h-[140px] motion-list-item"
+                            style={{ '--motion-order': index } as React.CSSProperties}
                           >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
                             <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 bg-neutral-900/80 min-h-[44px]">
@@ -2146,7 +2249,7 @@ const handleLoadPreset = (presetId: string) => {
       )}
       
 {view === 'wheels' && (
-  <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-3xl mx-auto">
+  <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-3xl mx-auto motion-panel">
     <div className="flex flex-col gap-2 border-b border-neutral-800 pb-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-neutral-200">Wheel Manager</h2>
@@ -2225,7 +2328,7 @@ const handleLoadPreset = (presetId: string) => {
             )}
 
             <div className="grid gap-2 md:grid-cols-2">
-              {group.items.map(w => {
+              {group.items.map((w, idx) => {
                 const expanded = expandedWheelIds.includes(w.id);
                 const diameterDisplay =
                   w.DText !== undefined ? w.DText : Number.isNaN(w.D) ? '' : String(w.D);
@@ -2238,7 +2341,8 @@ const handleLoadPreset = (presetId: string) => {
                 return (
                   <div
                     key={w.id}
-                    className="border border-neutral-700 rounded-md p-2 bg-neutral-950/40 flex flex-col gap-2"
+                    className="border border-neutral-700 rounded-md p-2 bg-neutral-950/40 flex flex-col gap-2 motion-card"
+                    style={{ '--motion-order': idx } as React.CSSProperties}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex flex-col gap-1 min-w-0">
@@ -2574,7 +2678,7 @@ const handleLoadPreset = (presetId: string) => {
 
           {/* Machine constants view */}
           {settingsView === 'machine' && (
-            <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-2 max-w-xl">
+            <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-2 max-w-xl motion-panel">
               <h2 className="text-sm font-semibold text-neutral-200">Machine constants</h2>
               <p className="text-xs text-neutral-300 mb-2">
                 Rear and front base geometry for the active machine. Calibration will update these
@@ -2710,9 +2814,19 @@ const handleLoadPreset = (presetId: string) => {
         </>
       )}
       {/* ====== PRESET MANAGER MODAL (shell) ====== */}
-      {isPresetManagerOpen && (
-        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4">
-          <div className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto">
+      {isPresetManagerVisible && (
+        <div
+          className={
+            'fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 motion-overlay ' +
+            (isPresetManagerClosing ? 'motion-overlay--closing' : '')
+          }
+        >
+          <div
+            className={
+              'w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
+              (isPresetManagerClosing ? 'motion-dialog--closing' : '')
+            }
+          >
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="text-sm font-semibold text-neutral-100">Manage presets</h3>
@@ -2847,10 +2961,18 @@ const handleLoadPreset = (presetId: string) => {
       )}
 
       {/* ====== SAVE PRESET MODAL ====== */}
-      {isPresetDialogOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh]">
+      {isPresetDialogVisible && (
+        <div
+          className={
+            'fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
+            (isPresetDialogClosing ? 'motion-overlay--closing' : '')
+          }
+        >
           <div
-            className="w-full max-w-sm rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto"
+            className={
+              'w-full max-w-sm rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
+              (isPresetDialogClosing ? 'motion-dialog--closing' : '')
+            }
             style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
           >
             <h3 className="text-sm font-semibold text-neutral-100">Save preset</h3>
@@ -2895,10 +3017,18 @@ const handleLoadPreset = (presetId: string) => {
         </div>
       )}
       
-      {isStepNotesOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh]">
+      {isStepNotesVisible && (
+        <div
+          className={
+            'fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
+            (isStepNotesClosing ? 'motion-overlay--closing' : '')
+          }
+        >
           <div
-            className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto"
+            className={
+              'w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
+              (isStepNotesClosing ? 'motion-dialog--closing' : '')
+            }
             style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
           >
             <h3 className="text-sm font-semibold text-neutral-100">Step notes</h3>

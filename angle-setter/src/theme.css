@@ -12,6 +12,15 @@
   --color-accent-strong: #065f46; /* emerald-800 */
   --color-danger: #f87171; /* red-400 */
 
+  /* Motion */
+  --motion-duration-fast: 120ms;
+  --motion-duration-medium: 200ms;
+  --motion-duration-slow: 320ms;
+  --motion-ease-smooth: cubic-bezier(0.33, 1, 0.68, 1);
+  --motion-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-stagger-step: 26ms;
+
   /* Radii & shadows */
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
