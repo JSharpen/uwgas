@@ -267,12 +267,17 @@ function CalibrationWizard({
             { value: 'front', label: 'Front (edge trailing)' },
           ]}
           onChange={val => {
-            setCalibBase(val as BaseSide | '');
-            // Clear any existing measurements/results when switching base
-            setCalibRows([]);
-            setCalibResult(null);
-            setCalibError(null);
-            ensureCalibRowsLength(calibCount);
+            const nextBase = val as BaseSide | '';
+            const switchingBase = calibBase && calibBase !== nextBase;
+            const hasCompletedCalib = Boolean(calibResult || lastSnapshotIdRef.current);
+            setCalibBase(nextBase);
+            // Only auto-clear when switching away from a base after a calibration has been run/applied
+            if (switchingBase && hasCompletedCalib) {
+              setCalibRows([]);
+              setCalibResult(null);
+              setCalibError(null);
+              ensureCalibRowsLength(calibCount);
+            }
           }}
           align="right"
           widthClass="w-40"
@@ -345,7 +350,7 @@ function CalibrationWizard({
           <div>#</div>
           <div>hₙ (mm)</div>
           <div>CAo (mm)</div>
-          <div>Residual</div>
+          <div>ε</div>
         </div>
         {Array.from({ length: calibCount }, (_, i) => {
           const row = calibRows[i] ?? { hn: '', CAo: '' };
@@ -458,7 +463,7 @@ function CalibrationWizard({
               hc = {calibResult.hc.toFixed(3)} mm, o = {calibResult.o.toFixed(3)} mm
             </div>
             <div className="text-neutral-300 text-[0.75rem]">
-              Max |residual| in hₙ: {calibResult.diagnostics.maxAbsResidualMm.toFixed(3)} mm
+            Max ε in hₙ: {calibResult.diagnostics.maxAbsResidualMm.toFixed(3)} mm
             </div>
             <div className="text-[0.75rem]">
               {(() => {
@@ -501,3 +506,4 @@ function CalibrationWizard({
 }
 
 export default CalibrationWizard;
+

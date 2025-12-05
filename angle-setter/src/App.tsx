@@ -15,6 +15,7 @@ import { IconKebab, IconTrash, IconSortAsc, IconSortDesc } from './icons';
 import MiniSelect from './components/MiniSelect';
 import CalibrationWizard from './components/CalibrationWizard';
 import ImportExportPanel from './components/ImportExportPanel';
+import GlossaryPage from './components/GlossaryPage';
 import ProgressionView from './components/ProgressionView';
 import type {
   BaseSide,
@@ -38,6 +39,7 @@ import {
   computeTonHeights,
 } from './math/tormek';
 
+const RESIDUAL_SYMBOL = 'ε';
 // =============== Helpers ===============
 
 // helpers moved to utils/state modules
@@ -683,7 +685,13 @@ function BaseCard({
     <div className="rounded border border-neutral-700 bg-neutral-950/40 p-3 flex flex-col gap-3">
       <div className="flex items-center justify-between text-xs text-neutral-200">
         <span>{title}</span>
-        <MiniSelect value={appliedId} options={options} onChange={onChange} widthClass="w-40" />
+        <MiniSelect
+          value={appliedId}
+          options={options}
+          onChange={onChange}
+          widthClass="w-56"
+          menuWidthClass="w-64"
+        />
       </div>
       <div className={`text-[0.7rem] ${sourceCls}`}>
         {snap ? (
@@ -703,7 +711,7 @@ function BaseCard({
             hc (mm)
           </label>
           {isLocked ? (
-            <div className="w-28 rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-right text-neutral-400 select-none">
+            <div className="w-40 rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-right text-neutral-400 select-none">
               {display.hc}
             </div>
           ) : (
@@ -711,7 +719,7 @@ function BaseCard({
               type="number"
               inputMode="decimal"
               id={hcId}
-              className="w-28 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right"
+              className="w-40 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right"
               value={hcDraft ?? ''}
               onFocus={() => handleFocus('hc', hcDraft ?? '')}
               onChange={e => setHcDraft(e.target.value)}
@@ -730,7 +738,7 @@ function BaseCard({
             o (mm)
           </label>
           {isLocked ? (
-            <div className="w-28 rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-right text-neutral-400 select-none">
+            <div className="w-40 rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-right text-neutral-400 select-none">
               {display.o}
             </div>
           ) : (
@@ -738,7 +746,7 @@ function BaseCard({
               type="number"
               inputMode="decimal"
               id={oId}
-              className="w-28 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right"
+              className="w-40 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm text-right"
               value={oDraft ?? ''}
               onFocus={() => handleFocus('o', oDraft ?? '')}
               onChange={e => setODraft(e.target.value)}
@@ -818,9 +826,9 @@ function App() {
   const [view, setView] = React.useState<
   'calculator' | 'wheels' | 'settings'
 >('calculator');
-  const [settingsView, setSettingsView] = React.useState<'machine' | 'calibration' | 'import'>(
-    'machine'
-  );
+  const [settingsView, setSettingsView] = React.useState<
+    'machine' | 'calibration' | 'import' | 'glossary'
+  >('machine');
   
   const [constantsInputMode] = React.useState<'normal' | 'failsafe'>('normal');
   // Preset dialog / manager state
@@ -2556,6 +2564,7 @@ const handleLoadPreset = (presetId: string) => {
                 { value: 'machine', label: 'Machine & constants' },
                 { value: 'calibration', label: 'Calibration wizard' },
                 { value: 'import', label: 'Import / export' },
+                { value: 'glossary', label: 'Glossary' },
               ]}
               onChange={val => setSettingsView(val as typeof settingsView)}
               widthClass="w-52"
@@ -2574,27 +2583,39 @@ const handleLoadPreset = (presetId: string) => {
               {(() => {
                 const rearSnap = calibSnapshots.find(s => s.id === calibAppliedIds.rear) || null;
                 const frontSnap = calibSnapshots.find(s => s.id === calibAppliedIds.front) || null;
+                                const sortByDateDesc = (list: CalibrationSnapshot[]) =>
+                  [...list].sort((a, b) => {
+                    const da = Date.parse(a.createdAt || '') || 0;
+                    const db = Date.parse(b.createdAt || '') || 0;
+                    return db - da;
+                  });
+                const formatOption = (snap: CalibrationSnapshot, fallbackLabel: string) => {
+                  const label =
+                    snap.name?.trim() ||
+                    snap.createdAt?.slice(0, 10) ||
+                    fallbackLabel ||
+                    'Calibration';
+                  const resid = Number.isFinite(snap.diagnostics?.maxAbsResidualMm)
+                    ? `, ${RESIDUAL_SYMBOL} ${snap.diagnostics.maxAbsResidualMm.toFixed(3)} mm`
+                    : '';
+                  return {
+                    value: snap.id,
+                    label: `${(snap.baseTag || fallbackLabel)
+                      .toString()
+                      .replace(/^\w/, c => c.toUpperCase())} - ${label} (${snap.count} pts${resid})`,
+                  };
+                };
                 const rearOptions = [
                   { value: '', label: 'Manual input' },
-                  ...calibSnapshots
-                    .filter(s => s.base === 'rear')
-                    .map(s => ({
-                      value: s.id,
-                      label: `${(s.baseTag || 'Rear')
-                        .toString()
-                        .replace(/^\w/, c => c.toUpperCase())} • ${s.name?.trim() || s.createdAt?.slice(0, 10) || 'Calibration'} (${s.count} pts)`,
-                    })),
+                  ...sortByDateDesc(calibSnapshots.filter(s => s.base === 'rear')).map(s =>
+                    formatOption(s, 'Rear')
+                  ),
                 ];
                 const frontOptions = [
                   { value: '', label: 'Manual input' },
-                  ...calibSnapshots
-                    .filter(s => s.base === 'front')
-                    .map(s => ({
-                      value: s.id,
-                      label: `${(s.baseTag || 'Front')
-                        .toString()
-                        .replace(/^\w/, c => c.toUpperCase())} • ${s.name?.trim() || s.createdAt?.slice(0, 10) || 'Calibration'} (${s.count} pts)`,
-                    })),
+                  ...sortByDateDesc(calibSnapshots.filter(s => s.base === 'front')).map(s =>
+                    formatOption(s, 'Front')
+                  ),
                 ];
                 const rearDisplay = rearSnap ? { hc: rearSnap.hc, o: rearSnap.o } : constants.rear;
                 const frontDisplay = frontSnap
@@ -2667,6 +2688,7 @@ const handleLoadPreset = (presetId: string) => {
               }
             />
           )}
+          {settingsView === 'glossary' && <GlossaryPage />}
           {settingsView === 'import' && (
             <ImportExportPanel
               exportText={exportText}
@@ -2933,6 +2955,7 @@ const handleLoadPreset = (presetId: string) => {
 }
 
 export default App;
+
 
 
 
