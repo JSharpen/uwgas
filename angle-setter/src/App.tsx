@@ -919,6 +919,16 @@ function App() {
 const lastLoadedPresetIdRef = React.useRef<string | null>(null);
 const lastLoadedStepsRef = React.useRef<string | null>(null);
 const [modalShift, setModalShift] = React.useState(0);
+const [modalViewportOffset, setModalViewportOffset] = React.useState(0);
+const modalOverlayPadding = modalShift
+  ? `calc(${modalShift}px + env(safe-area-inset-bottom) + 16px)`
+  : undefined;
+const modalOverlayStyle = React.useMemo(() => {
+  const style: React.CSSProperties = {};
+  if (modalOverlayPadding) style.paddingBottom = modalOverlayPadding;
+  if (modalViewportOffset) style.transform = `translateY(${modalViewportOffset}px)`;
+  return Object.keys(style).length ? style : undefined;
+}, [modalOverlayPadding, modalViewportOffset]);
 
 // Nudge modals up on mobile when the virtual keyboard is visible
 React.useEffect(() => {
@@ -931,13 +941,16 @@ React.useEffect(() => {
     const isMobile = window.innerWidth < 768;
     const next = isMobile ? Math.min(shrink, 180) : 0;
     setModalShift(next);
+    setModalViewportOffset(isMobile ? vv.offsetTop || 0 : 0);
   };
 
   updateShift();
   vv.addEventListener('resize', updateShift);
+  vv.addEventListener('scroll', updateShift);
   window.addEventListener('orientationchange', updateShift);
   return () => {
     vv.removeEventListener('resize', updateShift);
+    vv.removeEventListener('scroll', updateShift);
     window.removeEventListener('orientationchange', updateShift);
   };
 }, []);
@@ -2503,7 +2516,10 @@ const handleLoadPreset = (presetId: string) => {
   </section>
 )}
 {isAddWheelModalOpen && (
-  <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh]">
+  <div
+    className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh]"
+    style={modalOverlayStyle}
+  >
     <div
       className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto"
       style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
@@ -2817,9 +2833,10 @@ const handleLoadPreset = (presetId: string) => {
       {isPresetManagerVisible && (
         <div
           className={
-            'fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 motion-overlay ' +
+            'fixed inset-0 z-40 flex items-start justify-center overflow-hidden bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 motion-overlay ' +
             (isPresetManagerClosing ? 'motion-overlay--closing' : '')
           }
+          style={modalOverlayStyle}
         >
           <div
             className={
@@ -2964,9 +2981,10 @@ const handleLoadPreset = (presetId: string) => {
       {isPresetDialogVisible && (
         <div
           className={
-            'fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
+            'fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
             (isPresetDialogClosing ? 'motion-overlay--closing' : '')
           }
+          style={modalOverlayStyle}
         >
           <div
             className={
@@ -3020,9 +3038,10 @@ const handleLoadPreset = (presetId: string) => {
       {isStepNotesVisible && (
         <div
           className={
-            'fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
+            'fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
             (isStepNotesClosing ? 'motion-overlay--closing' : '')
           }
+          style={modalOverlayStyle}
         >
           <div
             className={
