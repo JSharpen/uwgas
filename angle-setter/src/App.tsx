@@ -2521,13 +2521,13 @@ const handleLoadPreset = (presetId: string) => {
     style={modalOverlayStyle}
   >
     <div
-      className="w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto"
+      className="w-full max-w-md rounded-lg border u-border u-surface p-4 shadow-xl max-h-[90vh] overflow-y-auto"
       style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
     >
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-neutral-100">Add wheel</h3>
-          <p className="text-[0.75rem] text-neutral-400">
+          <h3 className="text-sm font-semibold u-text panel-header">Add wheel</h3>
+          <p className="text-[0.75rem] u-text-muted">
             Enter wheel details. Saved wheels will appear in the list below.
           </p>
         </div>
@@ -2546,7 +2546,7 @@ const handleLoadPreset = (presetId: string) => {
 
       <div className="mt-4 flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-neutral-400">Wheel name</span>
+          <span className="text-xs u-text-muted">Wheel name</span>
           <input
             className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
             value={newWheelDraft.name}
@@ -2558,7 +2558,7 @@ const handleLoadPreset = (presetId: string) => {
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-neutral-400">Diameter (mm)</span>
+          <span className="text-xs u-text-muted">Diameter (mm)</span>
           <div className="flex items-center gap-2 text-xs">
             <input
               type="text"
@@ -2600,7 +2600,7 @@ const handleLoadPreset = (presetId: string) => {
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-neutral-400">Grit / abrasive</span>
+          <span className="text-xs u-text-muted">Grit / abrasive</span>
           <input
             className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
             value={newWheelDraft.grit ?? ''}
@@ -2694,9 +2694,9 @@ const handleLoadPreset = (presetId: string) => {
 
           {/* Machine constants view */}
           {settingsView === 'machine' && (
-            <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-2 max-w-xl motion-panel">
-              <h2 className="text-sm font-semibold text-neutral-200">Machine constants</h2>
-              <p className="text-xs text-neutral-300 mb-2">
+            <section className="border u-border rounded-lg p-3 u-surface flex flex-col gap-2 max-w-xl motion-panel">
+              <h2 className="text-sm font-semibold u-text panel-header">Machine constants</h2>
+              <p className="text-xs u-text-muted mb-2">
                 Rear and front base geometry for the active machine. Calibration will update these
                 values; you can also tweak them manually.
               </p>
