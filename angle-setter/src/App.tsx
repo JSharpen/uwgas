@@ -1826,7 +1826,7 @@ const handleLoadPreset = (presetId: string) => {
   );
 
   return (
-    <div className="min-h-dvh bg-neutral-950 text-neutral-100 p-4 flex flex-col gap-4">
+    <div className="min-h-dvh u-bg p-4 flex flex-col gap-4">
       <h1 className="text-lg font-semibold">UWGAS Dev build</h1>
 
 <div className="flex gap-2 text-sm mb-2">
@@ -1835,7 +1835,7 @@ const handleLoadPreset = (presetId: string) => {
     className={
       'px-2 py-1 rounded border ' +
       (view === 'calculator'
-        ? 'border-emerald-500 bg-emerald-900/40'
+        ? 'border-accent bg-accent-tint'
         : 'border-neutral-700 bg-neutral-900')
     }
     onClick={() => setView('calculator')}
@@ -1848,7 +1848,7 @@ const handleLoadPreset = (presetId: string) => {
     className={
       'px-2 py-1 rounded border ' +
       (view === 'wheels'
-        ? 'border-emerald-500 bg-emerald-900/40'
+        ? 'border-accent bg-accent-tint'
         : 'border-neutral-700 bg-neutral-900')
     }
     onClick={() => setView('wheels')}
@@ -1861,7 +1861,7 @@ const handleLoadPreset = (presetId: string) => {
     className={
       'px-2 py-1 rounded border ' +
       (view === 'settings'
-        ? 'border-emerald-500 bg-emerald-900/40'
+        ? 'border-accent bg-accent-tint'
         : 'border-neutral-700 bg-neutral-900')
     }
     onClick={() => setView('settings')}
@@ -1873,9 +1873,9 @@ const handleLoadPreset = (presetId: string) => {
       {view === 'calculator' && (
         <>
           {/* Global controls */}
-          <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/40 flex flex-col gap-2 max-w-xl motion-panel">
+          <section className="border u-border rounded-lg p-3 u-surface-strong flex flex-col gap-2 max-w-xl motion-panel">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold text-neutral-200">Global setup</h2>
+              <h2 className="text-sm font-semibold u-text panel-header">Global setup</h2>
               <ExpandToggle
                 expanded={isSetupPanelOpen}
                 onToggle={() => setIsSetupPanelOpen(open => !open)}
@@ -1948,9 +1948,9 @@ const handleLoadPreset = (presetId: string) => {
           </section>
 
           {/*Progression View*/}
-          <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/20 flex flex-col gap-2 motion-panel">
+          <section className="border u-border rounded-lg p-3 u-surface flex flex-col gap-2 motion-panel">
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-sm font-semibold text-neutral-200">Progression</h2>
+              <h2 className="text-sm font-semibold u-text panel-header">Progression</h2>
               <div className="flex items-center gap-3 ml-auto">
                 <PresetSelect
                   presets={sessionPresets}
@@ -2052,7 +2052,7 @@ const handleLoadPreset = (presetId: string) => {
                         return (
                           <div
                             key={step.id}
-                            className="border border-neutral-700 rounded bg-neutral-950/40 flex flex-col min-h-[140px] motion-list-item"
+                            className="border u-border rounded u-surface flex flex-col min-h-[140px] motion-list-item"
                             style={{ '--motion-order': index } as React.CSSProperties}
                           >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
@@ -2153,7 +2153,7 @@ const handleLoadPreset = (presetId: string) => {
                               <div className="flex-1 flex flex-col gap-2">
                                 <button
                                   type="button"
-                                  className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 text-xs text-neutral-200 hover:bg-neutral-800 self-start"
+                            className="px-2 py-1 rounded border u-border u-surface text-xs u-text hover:bg-neutral-800 self-start"
                                   onClick={() => {
                                     stepNotesStepIdRef.current = step.id;
                                     setStepNotesDraft(step.notes || '');
@@ -2229,7 +2229,7 @@ const handleLoadPreset = (presetId: string) => {
                   {/* Add step button — same width and spacing as cards */}
                   <button
                     type="button"
-                    className="w-full px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-center disabled:opacity-40"
+                    className="w-full px-2 py-1 rounded border border-accent bg-accent-tint text-xs text-center disabled:opacity-40"
                     onClick={addStep}
                     disabled={wheels.length === 0}
                   >
@@ -2242,7 +2242,7 @@ const handleLoadPreset = (presetId: string) => {
               ) : (
                 // VIEW MODE – if no progression, show prompt instead of default wheels
                 sessionSteps.length === 0 ? (
-                  <div className="text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-2">
+                  <div className="text-xs text-neutral-400 border border-dashed u-border rounded p-2">
                     No progression steps defined yet. Click{' '}
                     <span className="font-semibold">Edit progression</span> above to add wheels and
                     steps for this calculator.
@@ -2262,13 +2262,13 @@ const handleLoadPreset = (presetId: string) => {
       )}
       
 {view === 'wheels' && (
-  <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-3xl mx-auto motion-panel">
-    <div className="flex flex-col gap-2 border-b border-neutral-800 pb-2">
+  <section className="border u-border rounded-lg p-3 u-surface flex flex-col gap-3 max-w-3xl mx-auto motion-panel">
+    <div className="flex flex-col gap-2 border-b u-border-strong pb-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-neutral-200">Wheel Manager</h2>
+        <h2 className="text-sm font-semibold u-text panel-header">Wheel Manager</h2>
         <button
           type="button"
-          className="px-3 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-xs text-emerald-100 hover:bg-emerald-900 active:scale-95"
+          className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95"
           onClick={addWheel}
         >
           + Add Wheel
@@ -2276,13 +2276,13 @@ const handleLoadPreset = (presetId: string) => {
       </div>
     </div>
 
-    <p className="text-xs text-neutral-300">
+    <p className="text-xs u-text-muted">
       Configure your grinding and honing wheels here. These settings are shared with
       the calculator view and saved to your browser.
     </p>
 
     <div className="flex items-center gap-2 flex-wrap justify-end">
-        <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
+        <label className="text-[0.75rem] u-text-muted flex items-center gap-1">
           <span>Group:</span>
           <MiniSelect
             value={wheelGroup}
@@ -2295,7 +2295,7 @@ const handleLoadPreset = (presetId: string) => {
             widthClass="min-w-[6rem]"
           />
         </label>
-        <label className="text-[0.75rem] text-neutral-400 flex items-center gap-1">
+        <label className="text-[0.75rem] u-text-muted flex items-center gap-1">
           <span>Sort:</span>
           <MiniSelect
             value={wheelSortField}
@@ -2840,20 +2840,20 @@ const handleLoadPreset = (presetId: string) => {
         >
           <div
             className={
-              'w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
+              'w-full max-w-md rounded-lg border u-border u-surface p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
               (isPresetManagerClosing ? 'motion-dialog--closing' : '')
             }
           >
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h3 className="text-sm font-semibold text-neutral-100">Manage presets</h3>
-                <p className="mt-1 text-[0.75rem] text-neutral-400">
+                <h3 className="text-sm font-semibold u-text">Manage presets</h3>
+                <p className="mt-1 text-[0.75rem] u-text-muted">
                   Rename, load, or delete saved progressions.
                 </p>
               </div>
               <button
                 type="button"
-                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-200 active:scale-95 transition-transform"
+                className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95 transition-transform"
                 onClick={() => setIsPresetManagerOpen(false)}
               >
                 Close
@@ -2881,14 +2881,14 @@ const handleLoadPreset = (presetId: string) => {
                     return (
                       <li
                         key={preset.id}
-                        className="flex items-start justify-between gap-2 rounded border border-neutral-700 bg-neutral-900 px-2 py-2"
+                        className="flex items-start justify-between gap-2 rounded border u-border u-surface px-2 py-2"
                       >
                         <div className="flex-1 flex flex-col gap-1">
                           <div className="flex items-center gap-2">
                             {isEditing ? (
                               <input
                                 type="text"
-                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                                className="w-full rounded border u-border u-surface px-2 py-1 text-xs u-text placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
                                 value={presetRenameValue}
                                 onChange={e => setPresetRenameValue(e.target.value)}
                                 onKeyDown={e => {
@@ -2902,19 +2902,19 @@ const handleLoadPreset = (presetId: string) => {
                                 autoFocus
                               />
                             ) : (
-                              <span className="text-neutral-100">{preset.name}</span>
+                              <span className="u-text">{preset.name}</span>
                             )}
                             {selectedPresetId === preset.id && (
-                              <span className="text-[0.65rem] text-emerald-300 border border-emerald-600/60 rounded px-1 py-[2px]">
+                              <span className="text-[0.65rem] text-accent-soft border border-accent rounded px-1 py-[2px]">
                                 active
                               </span>
                             )}
                           </div>
-                          <div className="text-[0.7rem] text-neutral-400">
+                          <div className="text-[0.7rem] u-text-muted">
                             {preset.steps.length} step{preset.steps.length === 1 ? '' : 's'}
                           </div>
                           {isEditing && renameConflicts && (
-                            <div className="text-[0.65rem] text-amber-300">
+                            <div className="text-[0.65rem] text-warning">
                               A preset with that name already exists.
                             </div>
                           )}
@@ -2924,7 +2924,7 @@ const handleLoadPreset = (presetId: string) => {
                             <div className="flex gap-1">
                               <button
                                 type="button"
-                                className="px-2 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-[0.7rem] text-emerald-100 hover:bg-emerald-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="px-2 py-1 rounded border border-accent bg-accent-tint text-[0.7rem] text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                                 disabled={renameDisabled}
                                 onClick={handleCommitPresetRename}
                               >
@@ -2932,7 +2932,7 @@ const handleLoadPreset = (presetId: string) => {
                               </button>
                               <button
                                 type="button"
-                                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-200 active:scale-95"
+                                className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
                                 onClick={handleCancelPresetRename}
                               >
                                 Cancel
@@ -2942,7 +2942,7 @@ const handleLoadPreset = (presetId: string) => {
                             <div className="flex flex-wrap gap-1 justify-end">
                               <button
                                 type="button"
-                                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-200 active:scale-95"
+                                className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
                                 onClick={() => {
                                   handleLoadPreset(preset.id);
                                   setIsPresetManagerOpen(false);
@@ -2952,14 +2952,14 @@ const handleLoadPreset = (presetId: string) => {
                               </button>
                               <button
                                 type="button"
-                                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-200 active:scale-95"
+                                className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
                                 onClick={() => handleBeginPresetRename(preset)}
                               >
                                 Rename
                               </button>
                               <button
                                 type="button"
-                                className="px-2 py-1 rounded border border-red-500/70 bg-red-900/40 text-[0.7rem] text-red-200 hover:bg-red-900 active:scale-95"
+                                className="px-2 py-1 rounded border border-danger bg-danger-tint text-[0.7rem] text-danger hover:bg-red-900 active:scale-95"
                                 onClick={() => handleDeletePreset(preset.id)}
                               >
                                 Delete
@@ -2988,20 +2988,20 @@ const handleLoadPreset = (presetId: string) => {
         >
           <div
             className={
-              'w-full max-w-sm rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
+              'w-full max-w-sm rounded-lg border u-border u-surface p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
               (isPresetDialogClosing ? 'motion-dialog--closing' : '')
             }
             style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
           >
-            <h3 className="text-sm font-semibold text-neutral-100">Save preset</h3>
-            <p className="mt-1 text-[0.75rem] text-neutral-400">
+            <h3 className="text-sm font-semibold u-text">Save preset</h3>
+            <p className="mt-1 text-[0.75rem] u-text-muted">
               Enter a name for this progression.
             </p>
 
             <div className="mt-3">
               <input
                 type="text"
-                className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full rounded border u-border u-surface px-2 py-1 text-xs u-text placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
                 placeholder="Preset name…"
                 value={presetNameDraft}
                 onKeyDown={blurOnEnter}
@@ -3013,7 +3013,7 @@ const handleLoadPreset = (presetId: string) => {
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300"
+                className="px-2 py-1 rounded border u-border u-surface text-xs u-text-muted"
                 onClick={() => {
                   setIsPresetDialogOpen(false);
                   setPresetNameDraft('');
@@ -3024,7 +3024,7 @@ const handleLoadPreset = (presetId: string) => {
 
               <button
                 type="button"
-                className="px-3 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-xs text-emerald-100 hover:bg-emerald-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
+                className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
                 onClick={handleSavePreset}
                 disabled={!presetNameTrimmed || sessionSteps.length === 0 || isPresetNameDuplicate}
               >
@@ -3045,18 +3045,18 @@ const handleLoadPreset = (presetId: string) => {
         >
           <div
             className={
-              'w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-950 p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
+              'w-full max-w-md rounded-lg border u-border u-surface p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
               (isStepNotesClosing ? 'motion-dialog--closing' : '')
             }
             style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
           >
-            <h3 className="text-sm font-semibold text-neutral-100">Step notes</h3>
-            <p className="mt-1 text-[0.75rem] text-neutral-400">
+            <h3 className="text-sm font-semibold u-text">Step notes</h3>
+            <p className="mt-1 text-[0.75rem] u-text-muted">
               Notes for this step.
             </p>
             <div className="mt-3">
               <textarea
-                className="w-full min-h-[6rem] rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-100"
+                className="w-full min-h-[6rem] rounded border u-border u-surface px-2 py-1 text-xs u-text"
                 autoFocus
                 value={stepNotesDraft}
                 onChange={e => setStepNotesDraft(e.target.value)}
@@ -3076,14 +3076,14 @@ const handleLoadPreset = (presetId: string) => {
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300"
+                className="px-2 py-1 rounded border u-border u-surface text-xs u-text-muted"
                 onClick={() => setIsStepNotesOpen(false)}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                className="px-3 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-xs text-emerald-100 hover:bg-emerald-900 active:scale-95"
+                className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95"
                 onClick={() => {
                   const id = stepNotesStepIdRef.current;
                   if (!id) return;

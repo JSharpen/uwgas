@@ -31,7 +31,7 @@
 }
 
 .u-btn:hover {
-  background: #1a1a1a;
+  background: var(--color-panel-strong);
 }
 
 .u-btn:active {
@@ -50,7 +50,7 @@
 .u-btn-primary {
   border-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent-strong) 60%, transparent);
-  color: #d1fae5; /* emerald-100-ish */
+  color: var(--color-text);
 }
 
 .u-btn-primary:hover {
@@ -129,13 +129,13 @@
 }
 
 .u-toggle:hover {
-  background: #1f1f1f;
+  background: var(--color-panel-strong);
 }
 
 .u-toggle--active {
   border-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent-strong) 50%, transparent);
-  color: #d1fae5;
+  color: var(--color-text);
 }
 
 /* Dropdown primitives */
@@ -164,12 +164,12 @@
 }
 
 .dropdown-trigger:hover {
-  background: #141414; /* neutral-900-ish */
+  background: var(--color-panel-strong);
 }
 
 .dropdown-trigger--open {
-  border-color: #38bdf8; /* sky-400 */
-  background: #0f172a; /* deeper neutral */
+  border-color: var(--color-focus);
+  background: color-mix(in srgb, var(--color-focus) 12%, var(--color-panel));
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
@@ -225,12 +225,12 @@
 }
 
 .dropdown-item:hover {
-  background: #141414;
+  background: var(--color-panel-strong);
 }
 
 .dropdown-item--active {
-  background: rgba(16, 185, 129, 0.3); /* emerald-500 tint */
-  color: #d1fae5;
+  background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  color: var(--color-text);
 }
 
 .dropdown-item__meta {

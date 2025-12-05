@@ -11,6 +11,11 @@
   --color-accent: #10b981; /* emerald-500 */
   --color-accent-strong: #065f46; /* emerald-800 */
   --color-danger: #f87171; /* red-400 */
+  --color-danger-soft: #fca5a5; /* red-300 */
+  --color-warning: #fbbf24; /* amber-400 */
+  --color-warning-soft: #fcd34d; /* amber-300 */
+  --color-accent-soft: #6ee7b7; /* emerald-300 */
+  --color-disabled: #737373; /* neutral-500 */
 
   /* Motion */
   --motion-duration-fast: 120ms;
@@ -45,5 +50,10 @@
   --color-accent: #059669;
   --color-accent-strong: #047857;
   --color-danger: #ef4444;
+  --color-danger-soft: #fca5a5;
+  --color-warning: #f59e0b;
+  --color-warning-soft: #fcd34d;
+  --color-accent-soft: #6ee7b7;
+  --color-disabled: #737373;
 }
 */
