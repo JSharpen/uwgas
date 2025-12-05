@@ -360,13 +360,13 @@ function CalibrationWizard({
           let badge = '';
           if (abs != null) {
             if (abs > 0.2) {
-              resClass = 'text-red-400';
+              resClass = 'text-danger';
               badge = ' re-measure';
             } else if (abs > 0.1) {
-              resClass = 'text-amber-300';
+              resClass = 'text-warning';
               badge = ' check';
             } else {
-              resClass = 'text-emerald-300';
+              resClass = 'text-accent';
             }
           }
           return (
@@ -456,7 +456,7 @@ function CalibrationWizard({
           </button>
         </div>
 
-        {calibError && <div className="text-red-400 text-xs">Error: {calibError}</div>}
+        {calibError && <div className="text-danger text-xs">Error: {calibError}</div>}
 
         {calibResult && (
           <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 motion-card">
@@ -483,16 +483,16 @@ function CalibrationWizard({
                 let cls = '';
                 if (a <= 0.05) {
                   label = 'Excellent';
-                  cls = 'text-emerald-300';
+                  cls = 'text-accent';
                 } else if (a <= 0.1) {
                   label = 'Good';
-                  cls = 'text-emerald-200';
+                  cls = 'text-accent-soft';
                 } else if (a <= 0.2) {
                   label = 'Fair';
-                  cls = 'text-amber-300';
+                  cls = 'text-warning';
                 } else {
                   label = 'Poor';
-                  cls = 'text-red-400';
+                  cls = 'text-danger';
                 }
                 return (
                   <span className={cls}>

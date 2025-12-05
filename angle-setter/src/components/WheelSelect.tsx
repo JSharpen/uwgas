@@ -114,8 +114,8 @@ function WheelSelect({ wheels, value, onChange, showUnselected = true }: WheelSe
         className={
           'inline-flex w-full items-center justify-between gap-1 rounded border px-2 py-1 text-xs ' +
           (isMenuVisible
-            ? 'border-sky-400 bg-neutral-900 shadow-md'
-            : 'border-neutral-700 bg-neutral-950 hover:bg-neutral-900')
+            ? 'border-accent u-surface shadow-md'
+            : 'border-neutral-700 u-surface hover:bg-neutral-900')
         }
         onClick={() => {
           if (isMenuVisible && !isMenuClosing) {
@@ -176,14 +176,14 @@ function WheelSelect({ wheels, value, onChange, showUnselected = true }: WheelSe
                 className={
                   'w-full px-2 py-1 text-left text-[0.75rem] ' +
                   (isActive
-                    ? 'bg-emerald-900/40 text-emerald-100'
+                    ? 'bg-accent-tint text-accent'
                     : 'bg-neutral-950 text-neutral-100 hover:bg-neutral-900')
                 }
                 onClick={() => handleSelect(w.id)}
               >
                 {w.name}
                 {w.isHoning && (
-                  <span className="ml-1 text-[0.65rem] text-emerald-300">• honing</span>
+                  <span className="ml-1 text-[0.65rem] text-accent-soft">• honing</span>
                 )}
               </button>
             );

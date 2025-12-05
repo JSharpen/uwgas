@@ -657,10 +657,10 @@ function BaseCard({
   const residual = snap?.diagnostics?.maxAbsResidualMm;
   let sourceCls = 'text-neutral-400';
   if (typeof residual === 'number' && Number.isFinite(residual)) {
-    if (residual <= 0.05) sourceCls = 'text-emerald-300';
-    else if (residual <= 0.1) sourceCls = 'text-emerald-200';
-    else if (residual <= 0.2) sourceCls = 'text-amber-300';
-    else sourceCls = 'text-red-400';
+  if (residual <= 0.05) sourceCls = 'text-accent';
+  else if (residual <= 0.1) sourceCls = 'text-accent-soft';
+  else if (residual <= 0.2) sourceCls = 'text-warning';
+  else sourceCls = 'text-danger';
   }
 
   const handleFocus = React.useCallback(

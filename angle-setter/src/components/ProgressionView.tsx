@@ -30,10 +30,10 @@ function ProgressionView({
         const angleError = angleErrorById?.[key] ?? null;
         const betaValueClass = hasOffset
           ? angleOffset > 0
-            ? 'text-emerald-300'
-            : 'text-rose-300'
+            ? 'text-accent'
+            : 'text-danger'
           : 'text-neutral-500';
-        const betaLabelClass = hasOffset ? 'text-neutral-300' : 'text-neutral-500';
+        const betaLabelClass = hasOffset ? 'u-text-muted' : 'text-neutral-500';
         const offsetSign = angleOffset > 0 ? '+' : '';
 
         return (
