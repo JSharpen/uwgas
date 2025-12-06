@@ -87,10 +87,10 @@ function GrindDirToggle({
       'border-neutral-700 bg-neutral-900 text-neutral-500 opacity-60 cursor-not-allowed';
   } else if (base === 'rear') {
     // Edge leading
-    stateClasses = 'border-emerald-500 bg-emerald-900/40 text-emerald-200';
+    stateClasses = 'border-accent bg-accent-tint text-accent';
   } else {
     // Edge trailing
-    stateClasses = 'border-sky-500 bg-sky-900/40 text-sky-200';
+    stateClasses = 'border-sky-400 bg-sky-900/40 text-sky-200';
   }
 
   return (
@@ -222,8 +222,8 @@ function WheelSelect({
         className={
            'inline-flex w-full items-center justify-between gap-1 rounded border px-2 py-1 text-xs ' +
           (isMenuVisible
-            ? 'border-sky-400 bg-neutral-900 shadow-md'
-            : 'border-neutral-700 bg-neutral-950 hover:bg-neutral-900')
+            ? 'border-accent u-surface shadow-md'
+            : 'border-neutral-700 u-surface hover:bg-neutral-900')
         }
         onClick={() => {
           if (isMenuVisible && !isMenuClosing) {
@@ -257,7 +257,7 @@ function WheelSelect({
       {/* Menu */}
       {isMenuVisible && (
         <div
-          className="absolute left-0 mt-1 z-20 w-44 max-h-36 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          className="absolute left-0 mt-1 z-20 w-44 max-h-36 overflow-auto rounded border u-border u-surface shadow-lg"
           style={{
             animation: `${isMenuClosing ? 'dropdownOut 140ms ease-in forwards' : 'dropdownIn 160ms ease-out forwards'}`,
             transformOrigin: 'top left',
@@ -271,7 +271,7 @@ function WheelSelect({
 
           <button
             type="button"
-            className="w-full px-2 py-1 text-left text-[0.75rem] bg-neutral-950 text-neutral-300 hover:bg-neutral-900"
+            className="w-full px-2 py-1 text-left text-[0.75rem] u-surface u-text-muted hover:bg-neutral-900"
             onClick={() => handleSelect('')}
           >
             Select wheel...
@@ -286,14 +286,14 @@ function WheelSelect({
                 className={
                   'w-full px-2 py-1 text-left text-[0.75rem] ' +
                   (isActive
-                    ? 'bg-emerald-900/40 text-emerald-100'
+                    ? 'bg-accent-tint text-accent'
                     : 'bg-neutral-950 text-neutral-100 hover:bg-neutral-900')
                 }
                 onClick={() => handleSelect(w.id)}
               >
                 {w.name}
                 {w.isHoning && (
-                  <span className="ml-1 text-[0.65rem] text-emerald-300">• honing</span>
+                  <span className="ml-1 text-[0.65rem] text-accent-soft">honing</span>
                 )}
               </button>
             );
@@ -421,8 +421,8 @@ function PresetSelect({
         className={
           'inline-flex items-center justify-between gap-1 rounded border px-2 py-1.5 min-w-[8rem] text-xs ' +
           (isMenuVisible
-            ? 'border-sky-400 bg-neutral-900 shadow-md'
-            : 'border-neutral-700 bg-neutral-950 hover:bg-neutral-900')
+            ? 'border-accent u-surface shadow-md'
+            : 'border-neutral-700 u-surface hover:bg-neutral-900')
         }
         onClick={() => {
           if (isMenuVisible && !isMenuClosing) {
@@ -456,14 +456,14 @@ function PresetSelect({
       {/* Menu */}
       {isMenuVisible && (
         <div
-          className="absolute right-0 mt-1 z-20 w-48 max-h-36 overflow-auto rounded border border-neutral-700 bg-neutral-950 shadow-lg"
+          className="absolute right-0 mt-1 z-20 w-48 max-h-36 overflow-auto rounded border u-border u-surface shadow-lg"
           style={{
             animation: `${isMenuClosing ? 'dropdownOut 140ms ease-in forwards' : 'dropdownIn 160ms ease-out forwards'}`,
             transformOrigin: 'top right',
           }}
         >
           {presets.length === 0 && (
-            <div className="px-2 py-1 text-[0.7rem] text-neutral-500">
+            <div className="px-2 py-1 text-[0.7rem] u-text-muted">
               No presets saved
             </div>
           )}
@@ -476,8 +476,8 @@ function PresetSelect({
                 className={
                   'w-full px-2 py-1 text-left text-[0.75rem] ' +
                   (isActive
-                    ? 'bg-emerald-900/40 text-emerald-100'
-                    : 'bg-neutral-950 text-neutral-100 hover:bg-neutral-900')
+                    ? 'bg-accent-tint text-accent'
+                    : 'u-surface u-text hover:bg-neutral-900')
                 }
                 onClick={() => handleSelect(p.id)}
               >
@@ -2052,7 +2052,7 @@ const handleLoadPreset = (presetId: string) => {
                         return (
                           <div
                             key={step.id}
-                            className="border u-border rounded u-surface flex flex-col min-h-[140px] motion-list-item"
+                            className="border u-border rounded u-surface flex flex-col min-h-[140px] motion-list-item overflow-hidden"
                             style={{ '--motion-order': index } as React.CSSProperties}
                           >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
@@ -2136,7 +2136,7 @@ const handleLoadPreset = (presetId: string) => {
                                 {/* Delete step button*/}
                                 <button
                                   type="button"
-                                  className="text-red-400 hover:text-red-300 active:scale-95 transition-transform ml-1"
+                                  className="text-danger hover:text-danger active:scale-95 transition-transform ml-1"
                                   onClick={() =>
                                     setSessionSteps(prev => prev.filter(s => s.id !== step.id))
                                   }
@@ -2354,7 +2354,7 @@ const handleLoadPreset = (presetId: string) => {
                 return (
                   <div
                     key={w.id}
-                    className="border border-neutral-700 rounded-md p-2 bg-neutral-950/40 flex flex-col gap-2 motion-card"
+                    className="border u-border rounded-md p-2 u-surface flex flex-col gap-2 motion-card overflow-hidden"
                     style={{ '--motion-order': idx } as React.CSSProperties}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -2497,7 +2497,7 @@ const handleLoadPreset = (presetId: string) => {
                         <div className="flex justify-end">
                           <button
                             type="button"
-                            className="text-red-400 text-xs border border-red-400 rounded px-2 py-1 hover:bg-red-900/30"
+                            className="text-danger text-xs border border-danger rounded px-2 py-1 hover:bg-danger-tint"
                             onClick={() => deleteWheel(w.id)}
                           >
                             Delete wheel
@@ -2663,7 +2663,7 @@ const handleLoadPreset = (presetId: string) => {
 
         <button
           type="button"
-          className="px-3 py-1 rounded border border-emerald-500 bg-emerald-900/40 text-xs text-emerald-100 hover:bg-emerald-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
+          className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
           disabled={isAddWheelSaveDisabled}
           onClick={handleSaveNewWheel}
         >
@@ -3104,6 +3104,7 @@ const handleLoadPreset = (presetId: string) => {
 }
 
 export default App;
+
 
 
 

@@ -82,6 +82,7 @@ html, body {
 .bg-accent-tint { background-color: color-mix(in srgb, var(--color-accent-strong) 45%, transparent) !important; }
 
 .text-disabled { color: var(--color-disabled) !important; }
+.accent-accent { accent-color: var(--color-accent) !important; }
 
 /* Panel header strip */
 .panel-header {

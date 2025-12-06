@@ -80,25 +80,25 @@ function ImportExportPanel({
   const allImportChecked = Object.values(importSections).every(Boolean);
 
   return (
-    <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl motion-panel">
+    <section className="border u-border rounded-lg p-3 u-surface flex flex-col gap-3 max-w-xl motion-panel">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-neutral-200">Import / Export</h2>
+        <h2 className="text-sm font-semibold u-text panel-header">Import / Export</h2>
         <button
           type="button"
-          className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-200"
+          className="px-2 py-1 rounded border u-border u-surface text-xs u-text"
           onClick={handleUploadClick}
         >
           Upload JSON
         </button>
       </div>
       <div className="flex flex-col gap-2 text-xs">
-        <span className="text-neutral-300">Export (JSON file):</span>
-        <div className="rounded border border-neutral-700 bg-neutral-950/60 p-2 flex flex-col gap-2 motion-card">
+        <span className="u-text-muted">Export (JSON file):</span>
+        <div className="rounded border u-border u-surface p-2 flex flex-col gap-2 motion-card">
           <div className="flex items-center justify-between">
-            <span className="text-[0.75rem] text-neutral-200">Include in export</span>
+            <span className="text-[0.75rem] u-text">Include in export</span>
             <button
               type="button"
-              className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-100"
+              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text"
               onClick={() => {
                 const next = !allChecked;
                 (Object.keys(exportSections) as ImportSectionKey[]).forEach(k => {
@@ -118,31 +118,31 @@ function ImportExportPanel({
               return (
                 <label
                   key={key}
-                  className="flex items-center gap-2 rounded px-2 py-1 hover:bg-neutral-900 cursor-pointer select-none"
+                  className="flex items-center gap-2 rounded px-2 py-1 hover:bg-accent-tint cursor-pointer select-none"
                 >
                   <input
                     type="checkbox"
-                    className="accent-emerald-500"
+                    className="accent-accent"
                     checked={checked}
                     onChange={() => onToggleExportSection(key)}
                   />
-                  <span className="text-neutral-200">{SECTION_LABELS[key] || key}</span>
+                  <span className="u-text">{SECTION_LABELS[key] || key}</span>
                 </label>
               );
             })}
           </div>
           {!anyChecked && (
-            <div className="text-amber-200 text-[0.7rem]">
-              Warning: nothing selected — export will only include version metadata.
+            <div className="text-warning text-[0.7rem]">
+              Warning: nothing selected - export will only include version metadata.
             </div>
           )}
         </div>
-        <div className="rounded border border-neutral-700 bg-neutral-950/60 p-2 flex flex-col gap-2 motion-card">
+        <div className="rounded border u-border u-surface p-2 flex flex-col gap-2 motion-card">
           <div className="flex items-center justify-between">
-            <span className="text-[0.75rem] text-neutral-200">Apply on import</span>
+            <span className="text-[0.75rem] u-text">Apply on import</span>
             <button
               type="button"
-              className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-[0.7rem] text-neutral-100"
+              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text"
               onClick={() => {
                 const next = !allImportChecked;
                 (Object.keys(importSections) as ImportSectionKey[]).forEach(k => {
@@ -163,23 +163,23 @@ function ImportExportPanel({
               return (
                 <div
                   key={key}
-                  className="flex flex-col gap-1 rounded px-2 py-1 hover:bg-neutral-900"
+                  className="flex flex-col gap-1 rounded px-2 py-1 hover:bg-accent-tint"
                 >
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
-                      className="accent-emerald-500"
+                      className="accent-accent"
                       checked={checked}
                       onChange={() => onToggleImportSection(key)}
                     />
-                    <span className="text-neutral-200">{SECTION_LABELS[key] || key}</span>
+                    <span className="u-text">{SECTION_LABELS[key] || key}</span>
                   </label>
-                  <div className="flex items-center gap-2 pl-6 text-[0.7rem] text-neutral-300">
+                  <div className="flex items-center gap-2 pl-6 text-[0.7rem] u-text-muted">
                     <span>Mode:</span>
                     <label className="flex items-center gap-1 cursor-pointer">
                       <input
                         type="radio"
-                        className="accent-emerald-500"
+                        className="accent-accent"
                         checked={mode === 'merge'}
                         onChange={() => onChangeImportMode(key, 'merge')}
                       />
@@ -200,13 +200,13 @@ function ImportExportPanel({
             })}
           </div>
           {!Object.values(importSections).some(Boolean) && (
-            <div className="text-amber-200 text-[0.7rem]">
-              Warning: no sections selected for import — importing will only update version metadata.
+            <div className="text-warning text-[0.7rem]">
+              Warning: no sections selected for import - importing will only update version metadata.
             </div>
           )}
         </div>
         <textarea
-          className="w-full h-28 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 font-mono text-[0.75rem] text-neutral-200"
+          className="w-full h-28 rounded border u-border u-surface px-2 py-1 font-mono text-[0.75rem] u-text"
           value={exportText}
           readOnly
         />
@@ -220,13 +220,13 @@ function ImportExportPanel({
           />
           <button
             type="button"
-            className="px-2 py-1 rounded border border-emerald-500 bg-emerald-900/40 hover:bg-emerald-900 text-emerald-50"
+            className="px-2 py-1 rounded border border-accent bg-accent-tint hover:bg-neutral-900 text-accent"
             onClick={handleDownload}
           >
             Download JSON
           </button>
         </div>
-        {status && <div className="text-[0.75rem] text-amber-200">{status}</div>}
+        {status && <div className="text-[0.75rem] text-warning-soft">{status}</div>}
       </div>
     </section>
   );
