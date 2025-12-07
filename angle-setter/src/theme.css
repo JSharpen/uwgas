@@ -1,21 +1,21 @@
 :root {
-  /* Core palette */
-  --color-bg: #0a0a0a;
-  --color-panel: #0f0f0f;
-  --color-panel-strong: #111111;
-  --color-border: #303030;
-  --color-border-strong: #3f3f3f;
-  --color-text: #e5e5e5;
-  --color-text-muted: #a3a3a3;
-  --color-focus: #38bdf8; /* sky-400 */
-  --color-accent: #10b981; /* emerald-500 */
-  --color-accent-strong: #065f46; /* emerald-800 */
-  --color-danger: #f87171; /* red-400 */
-  --color-danger-soft: #fca5a5; /* red-300 */
-  --color-warning: #fbbf24; /* amber-400 */
-  --color-warning-soft: #fcd34d; /* amber-300 */
-  --color-accent-soft: #6ee7b7; /* emerald-300 */
-  --color-disabled: #737373; /* neutral-500 */
+  /* Core palette: light default */
+  --color-bg: #f5f7ff;
+  --color-panel: #ffffff;
+  --color-panel-strong: #eef2fb;
+  --color-border: #d6deef;
+  --color-border-strong: #c2cee6;
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+  --color-focus: #2563eb;
+  --color-accent: #0ea5e9;
+  --color-accent-strong: #0b82ba;
+  --color-accent-soft: #bae6fd;
+  --color-danger: #e11d48;
+  --color-danger-soft: #fda4af;
+  --color-warning: #f59e0b;
+  --color-warning-soft: #fcd34d;
+  --color-disabled: #94a3b8;
 
   /* Motion */
   --motion-duration-fast: 120ms;
@@ -36,24 +36,3 @@
   --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
-
-/* Example theme hook for future light/alt themes:
-[data-theme="light"] {
-  --color-bg: #f9fafb;
-  --color-panel: #ffffff;
-  --color-panel-strong: #f3f4f6;
-  --color-border: #e5e7eb;
-  --color-border-strong: #d1d5db;
-  --color-text: #0f172a;
-  --color-text-muted: #475569;
-  --color-focus: #0ea5e9;
-  --color-accent: #059669;
-  --color-accent-strong: #047857;
-  --color-danger: #ef4444;
-  --color-danger-soft: #fca5a5;
-  --color-warning: #f59e0b;
-  --color-warning-soft: #fcd34d;
-  --color-accent-soft: #6ee7b7;
-  --color-disabled: #737373;
-}
-*/

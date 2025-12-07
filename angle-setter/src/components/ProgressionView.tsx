@@ -28,13 +28,30 @@ function ProgressionView({
         const hasOffset = angleOffset !== 0;
         const notesText = r.step?.notes?.trim() ?? '';
         const angleError = angleErrorById?.[key] ?? null;
-        const betaValueClass = hasOffset
+        const angleValueClass = hasOffset
           ? angleOffset > 0
             ? 'text-accent'
             : 'text-danger'
-          : 'text-neutral-500';
-        const betaLabelClass = hasOffset ? 'u-text-muted' : 'text-neutral-500';
-        const offsetSign = angleOffset > 0 ? '+' : '';
+          : 'text-neutral-100';
+        const formatResidual = (val: number) => {
+          if (!Number.isFinite(val)) return '';
+          const abs = Math.abs(val);
+          if (abs === 0) return '0';
+          const fixed = abs.toFixed(8); // stay out of scientific notation but keep precision
+          const [intPart, fracPart = ''] = fixed.split('.');
+
+          // If integer part exists, keep it and the first non-zero fractional digit
+          if (intPart !== '0') {
+            const firstIdx = fracPart.search(/[1-9]/);
+            if (firstIdx === -1) return intPart;
+            return `${intPart}.${fracPart.slice(0, firstIdx + 1)}`;
+          }
+
+          // abs < 1: preserve leading zeros then the first non-zero digit only
+          const match = fracPart.match(/^(0*)([1-9])/);
+          if (!match) return '0';
+          return `0.${match[1]}${match[2]}`;
+        };
 
         return (
           <div
@@ -79,21 +96,14 @@ function ProgressionView({
                   <div className="font-mono text-sm text-neutral-100">
                     hn = {r.hnBase.toFixed(2)} mm
                   </div>
-                  <div className={`text-[0.7rem] ${betaLabelClass}`}>
+                  <div className="text-[0.7rem] text-neutral-400">
                     {angleSymbol} ={' '}
-                    <span className={betaValueClass}>
+                    <span className={angleValueClass}>
                       {formatDeg(r.betaEffDeg)}°
                     </span>
-                    {hasOffset && (
-                      <span className={betaValueClass}>
-                        {' '}
-                        ({offsetSign}
-                        {formatDeg(angleOffset)}°)
-                      </span>
-                    )}
                     {angleError != null && (
                       <span className="ml-1 text-neutral-500">
-                        (calib +/-{formatDeg(angleError)}°)
+                        (calib ±{formatResidual(angleError)}°)
                       </span>
                     )}
                   </div>
@@ -106,21 +116,14 @@ function ProgressionView({
                   <div className="font-mono text-sm text-neutral-100">
                     hr = {r.hrWheel.toFixed(2)} mm
                   </div>
-                  <div className={`text-[0.7rem] ${betaLabelClass}`}>
+                  <div className="text-[0.7rem] text-neutral-400">
                     {angleSymbol} ={' '}
-                    <span className={betaValueClass}>
+                    <span className={angleValueClass}>
                       {formatDeg(r.betaEffDeg)}°
                     </span>
-                    {hasOffset && (
-                      <span className={betaValueClass}>
-                        {' '}
-                        ({offsetSign}
-                        {formatDeg(angleOffset)}°)
-                      </span>
-                    )}
                     {angleError != null && (
                       <span className="ml-1 text-neutral-500">
-                        (calib +/-{formatDeg(angleError)}°)
+                        (calib ±{formatResidual(angleError)}°)
                       </span>
                     )}
                   </div>

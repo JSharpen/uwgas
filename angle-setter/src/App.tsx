@@ -823,9 +823,9 @@ function App() {
   });
 
   // View state
-  const [view, setView] = React.useState<
-  'calculator' | 'wheels' | 'settings'
->('calculator');
+  const [view, setView] = React.useState<'calculator' | 'wheels' | 'settings'>(
+    'calculator'
+  );
   const [settingsView, setSettingsView] = React.useState<
     'machine' | 'calibration' | 'import' | 'glossary'
   >('machine');
@@ -1865,12 +1865,12 @@ const handleLoadPreset = (presetId: string) => {
         : 'border-neutral-700 bg-neutral-900')
     }
     onClick={() => setView('settings')}
-  >
-    Settings
-  </button>
-</div>
-
-      {view === 'calculator' && (
+    >
+      Settings
+    </button>
+  </div>
+  
+        {view === 'calculator' && (
         <>
           {/* Global controls */}
           <section className="border u-border rounded-lg p-3 u-surface-strong flex flex-col gap-2 max-w-xl motion-panel">
@@ -2829,6 +2829,7 @@ const handleLoadPreset = (presetId: string) => {
           )}
         </>
       )}
+
       {/* ====== PRESET MANAGER MODAL (shell) ====== */}
       {isPresetManagerVisible && (
         <div
