@@ -6,6 +6,7 @@ type ProgressionViewProps = {
   heightMode: 'hn' | 'hr';
   angleSymbol: string;
   angleErrorById?: Record<string, number | null>;
+  cardMinHeight?: number;
 };
 
 /**
@@ -17,11 +18,12 @@ function ProgressionView({
   heightMode,
   angleSymbol,
   angleErrorById,
+  cardMinHeight,
 }: ProgressionViewProps) {
   const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
 
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid gap-2 md:grid-cols-2">
       {wheelResults.map((r, index) => {
         const key = r.step?.id ?? r.wheel.id;
         const angleOffset = r.step?.angleOffset ?? 0;
@@ -56,7 +58,12 @@ function ProgressionView({
           <div
             key={r.step?.id ?? r.wheel.id}
             className="card-elevated overflow-hidden motion-list-item"
-            style={{ '--motion-order': index } as React.CSSProperties}
+            style={
+              {
+                '--motion-order': index,
+                minHeight: cardMinHeight,
+              } as React.CSSProperties
+            }
           >
             {/* ===== Header bar ===== */}
             <div className="card-elevated__header wheel-card__header flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 min-h-[44px]">
@@ -82,7 +89,7 @@ function ProgressionView({
             </div>
 
             {/* ===== Wheel Card Body ===== */}
-            <div className="px-3 py-3 flex flex-row flex-wrap items-stretch gap-3 u-surface">
+            <div className="px-3 py-2 flex flex-row flex-wrap items-stretch gap-2 u-surface">
               {heightMode === 'hn' ? (
                 <div className="border u-border rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0 u-surface">
                   <div className="flex items-center text-[0.75rem] u-text-muted">

@@ -1031,6 +1031,7 @@ React.useEffect(() => {
   };
   const targetAngleSymbol = 'θ';
   const effectiveAngleSymbol = 'γ';
+  const progressionCardMinHeight = 140;
   const wheelResults = computeWheelResults(wheels, sessionSteps, global, activeMachine);
 
 
@@ -2055,11 +2056,13 @@ const handleLoadPreset = (presetId: string) => {
                         const isHoning = wheel.isHoning;
 
                         return (
-                          <div
-                            key={step.id}
-                            className="card-elevated flex flex-col min-h-[140px] motion-list-item overflow-hidden"
-                            style={{ '--motion-order': index } as React.CSSProperties}
-                          >
+                              <div
+                                key={step.id}
+                                className="card-elevated flex flex-col motion-list-item overflow-hidden"
+                                style={
+                                  { '--motion-order': index, minHeight: progressionCardMinHeight } as React.CSSProperties
+                                }
+                              >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
                             <div className="card-elevated__header wheel-card__header flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 min-h-[44px]">
                               {/* LEFT: step badge + grind direction + wheel select */}
@@ -2069,19 +2072,7 @@ const handleLoadPreset = (presetId: string) => {
                                   {index + 1}
                                 </div>
 
-                                {/* Grind direction toggle – EL/ET, interactive in edit mode for non-honing */}
-                                <GrindDirToggle
-                                  base={step.base}
-                                  isHoning={isHoning}
-                                  canToggle={!isHoning}
-                                  onToggle={() =>
-                                    updateStep(step.id, {
-                                      base: step.base === 'rear' ? 'front' : 'rear',
-                                    })
-                                  }
-                                />
-
-                                {/* Wheel selector – now grouped immediately to the right of the toggle */}
+                                {/* Wheel selector */}
                                 <WheelSelect
                                   wheels={wheels}
                                   value={step.wheelId}
@@ -2152,79 +2143,91 @@ const handleLoadPreset = (presetId: string) => {
                               </div>
                             </div>
                             
-                            {/* === Body: angle offset + sort controls anchored at bottom === */}
-                            <div className="px-3 py-2 flex items-stretch gap-2">
-                              {/* Left: notes trigger + angle offset */}
-                              <div className="flex-1 flex flex-col gap-2">
-                                <button
-                                  type="button"
-                                  className="px-2.5 py-1 rounded border u-border u-surface text-xs u-text hover:bg-neutral-800 self-start shadow-sm"
-                                  onClick={() => {
-                                    stepNotesStepIdRef.current = step.id;
-                                    setStepNotesDraft(step.notes || '');
-                                    setIsStepNotesOpen(true);
-                                  }}
-                                >
-                                  Notes
-                                </button>
+                              {/* === Body: two-column layout for base/angle and notes/sort === */}
+                              <div className="px-3 py-2 grid grid-cols-2 gap-2 items-stretch">
+                                {/* Left column: base select + angle offset */}
+                                <div className="flex flex-col gap-2 h-full">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-neutral-400 text-[0.7rem]">Base</span>
+                                    <GrindDirToggle
+                                      base={step.base}
+                                      isHoning={isHoning}
+                                      canToggle={!isHoning}
+                                      onToggle={() =>
+                                        updateStep(step.id, {
+                                          base: step.base === 'rear' ? 'front' : 'rear',
+                                        })
+                                      }
+                                    />
+                                  </div>
 
-                                <div className="flex flex-wrap items-center gap-2 mt-auto">
-                                  <span className="text-neutral-400 text-[0.7rem]">
-                                    {effectiveAngleSymbol} offset (deg)
-                                  </span>
-                                  <input
-                                    type="text"
-                                    inputMode="decimal"
-                                    className="w-10 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
-                                    value={step.angleOffset === 0 ? '' : step.angleOffset}
-                                    placeholder="0"
-                                    onFocus={e => {
-                                      // Select only if non-empty for quick overwrite
-                                      if (e.target.value !== '') {
-                                        e.target.select();
-                                      }
-                                    }}
-                                    onChange={e => {
-                                      const text = e.target.value;
-                                      if (text.trim() === '') {
-                                        // Empty input = treat as 0 (no offset)
-                                        updateStep(step.id, { angleOffset: 0 });
-                                        return;
-                                      }
-                                      const val = Number(text);
-                                      if (!Number.isNaN(val)) {
-                                        updateStep(step.id, { angleOffset: val });
-                                      }
-                                    }}
-                                  />
-                                  <span className="text-neutral-400 text-[0.7rem]">°</span>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-neutral-400 text-[0.7rem]">
+                                      {effectiveAngleSymbol} offset (deg)
+                                    </span>
+                                    <input
+                                      type="text"
+                                      inputMode="decimal"
+                                      className="w-14 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs"
+                                      value={step.angleOffset === 0 ? '' : step.angleOffset}
+                                      placeholder="0"
+                                      onFocus={e => {
+                                        if (e.target.value !== '') {
+                                          e.target.select();
+                                        }
+                                      }}
+                                      onChange={e => {
+                                        const text = e.target.value;
+                                        if (text.trim() === '') {
+                                          updateStep(step.id, { angleOffset: 0 });
+                                          return;
+                                        }
+                                        const val = Number(text);
+                                        if (!Number.isNaN(val)) {
+                                          updateStep(step.id, { angleOffset: val });
+                                        }
+                                      }}
+                                    />
+                                    <span className="text-neutral-400 text-[0.7rem]">°</span>
+                                  </div>
                                 </div>
-                              </div>
 
-                              {/* Right: sort controls, anchored to the bottom */}
-                              <div className="flex flex-col justify-end items-end gap-2">
-                                <div className="flex flex-col gap-1 items-end">
+                                {/* Right column: notes + sort controls */}
+                                <div className="flex flex-col gap-2 items-start h-full">
                                   <button
                                     type="button"
-                                    className="px-2 py-2 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform"
-                                    onClick={() => moveStep(index, -1)}
-                                    disabled={index === 0}
-                                    title="Move up"
+                                    className="px-2 py-1 rounded border u-border u-surface text-xs u-text hover:bg-neutral-800 self-start shadow-sm"
+                                    onClick={() => {
+                                      stepNotesStepIdRef.current = step.id;
+                                      setStepNotesDraft(step.notes || '');
+                                      setIsStepNotesOpen(true);
+                                    }}
                                   >
-                                    ↑
+                                    Notes
                                   </button>
-                                  <button
-                                    type="button"
-                                    className="px-2 py-2 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform"
-                                    onClick={() => moveStep(index, 1)}
-                                    disabled={index === sessionSteps.length - 1}
-                                    title="Move down"
-                                  >
-                                    ↓
-                                  </button>
+
+                                  <div className="flex flex-col gap-1 items-end self-end mt-auto">
+                                    <button
+                                      type="button"
+                                      className="px-2 py-1.5 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform"
+                                      onClick={() => moveStep(index, -1)}
+                                      disabled={index === 0}
+                                      title="Move up"
+                                    >
+                                      ↑
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="px-2 py-1.5 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform"
+                                      onClick={() => moveStep(index, 1)}
+                                      disabled={index === sessionSteps.length - 1}
+                                      title="Move down"
+                                    >
+                                      ↓
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
                           </div>
                         );
                       })}
@@ -2258,6 +2261,7 @@ const handleLoadPreset = (presetId: string) => {
                     heightMode={heightMode}
                     angleSymbol={effectiveAngleSymbol}
                     angleErrorById={estimatedAngleErrorByResultId}
+                    cardMinHeight={progressionCardMinHeight}
                   />
                 )
               )}
