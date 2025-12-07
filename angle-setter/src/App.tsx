@@ -1871,85 +1871,89 @@ const handleLoadPreset = (presetId: string) => {
   </div>
   
         {view === 'calculator' && (
-        <>
+        <div className="flex flex-col gap-4">
           {/* Global controls */}
-          <section className="border u-border rounded-lg p-3 u-surface-strong flex flex-col gap-2 max-w-xl motion-panel">
-            <div className="flex items-center justify-between gap-2">
+          <section className="panel-card panel-card--strong flex flex-col gap-0 max-w-xl motion-panel">
+            <div className="panel-card__header">
               <h2 className="text-sm font-semibold u-text panel-header">Global setup</h2>
-              <ExpandToggle
-                expanded={isSetupPanelOpen}
-                onToggle={() => setIsSetupPanelOpen(open => !open)}
-                labelExpanded="Hide setup panel"
-                labelCollapsed="Show setup panel"
-              />
+              <div className="ml-auto">
+                <ExpandToggle
+                  expanded={isSetupPanelOpen}
+                  onToggle={() => setIsSetupPanelOpen(open => !open)}
+                  labelExpanded="Hide setup panel"
+                  labelCollapsed="Show setup panel"
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <label className="flex flex-col gap-1">
-                <span className="text-neutral-300">Projection A (mm)</span>
-                <input
-                  type="number"
-                  className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-                  value={global.projection}
-                  onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({ ...g, projection: _nz(e.target.value, g.projection) }))
-                  }
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-neutral-300">Target angle {targetAngleSymbol}° (/side)</span>
-                <input
-                  type="number"
-                  className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-                  value={global.targetAngle}
-                  onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({ ...g, targetAngle: _nz(e.target.value, g.targetAngle) }))
-                  }
-                />
-              </label>
-            </div>
-
-            <div className={'collapsible ' + (isSetupPanelOpen ? 'collapsible--open' : '')}>
-              <div className="grid grid-cols-2 gap-2 text-sm pt-1">
+            <div className="panel-card__body flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-2 text-sm">
                 <label className="flex flex-col gap-1">
-                  <span className="text-neutral-300">USB diameter Ds (mm)</span>
+                  <span className="u-text">Projection A (mm)</span>
                   <input
                     type="number"
-                    className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-                    value={global.usbDiameter}
+                    className="rounded border u-border u-surface px-2 py-1 text-sm u-text"
+                    value={global.projection}
                     onKeyDown={blurOnEnter}
                     onChange={e =>
-                      setGlobal(g => ({
-                        ...g,
-                        usbDiameter: _nz(e.target.value, g.usbDiameter),
-                      }))
+                      setGlobal(g => ({ ...g, projection: _nz(e.target.value, g.projection) }))
                     }
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-neutral-300">Jig diameter Dj (mm)</span>
+                  <span className="u-text">Target angle {targetAngleSymbol}° (/side)</span>
                   <input
                     type="number"
-                    className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-                    value={global.jig.Dj}
+                    className="rounded border u-border u-surface px-2 py-1 text-sm u-text"
+                    value={global.targetAngle}
                     onKeyDown={blurOnEnter}
                     onChange={e =>
-                      setGlobal(g => ({
-                        ...g,
-                        jig: { ...g.jig, Dj: _nz(e.target.value, g.jig.Dj) },
-                      }))
+                      setGlobal(g => ({ ...g, targetAngle: _nz(e.target.value, g.targetAngle) }))
                     }
                   />
                 </label>
+              </div>
+
+              <div className={'collapsible ' + (isSetupPanelOpen ? 'collapsible--open' : '')}>
+                <div className="grid grid-cols-2 gap-2 text-sm pt-1">
+                  <label className="flex flex-col gap-1">
+                    <span className="u-text">USB diameter Ds (mm)</span>
+                    <input
+                      type="number"
+                      className="rounded border u-border u-surface px-2 py-1 text-sm u-text"
+                      value={global.usbDiameter}
+                      onKeyDown={blurOnEnter}
+                      onChange={e =>
+                        setGlobal(g => ({
+                          ...g,
+                          usbDiameter: _nz(e.target.value, g.usbDiameter),
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="u-text">Jig diameter Dj (mm)</span>
+                    <input
+                      type="number"
+                      className="rounded border u-border u-surface px-2 py-1 text-sm u-text"
+                      value={global.jig.Dj}
+                      onKeyDown={blurOnEnter}
+                      onChange={e =>
+                        setGlobal(g => ({
+                          ...g,
+                          jig: { ...g.jig, Dj: _nz(e.target.value, g.jig.Dj) },
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </section>
 
           {/*Progression View*/}
-          <section className="border u-border rounded-lg p-3 u-surface flex flex-col gap-2 motion-panel">
-            <div className="flex flex-wrap items-center gap-3">
+          <section className="panel-card motion-panel flex flex-col gap-0">
+            <div className="panel-card__header flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-semibold u-text panel-header">Progression</h2>
               <div className="flex items-center gap-3 ml-auto">
                 <PresetSelect
@@ -2018,9 +2022,10 @@ const handleLoadPreset = (presetId: string) => {
                 </div>
               </div>
             </div>
-            {/* TOGGLE: math vs progression cards */}
-            {/* Shared wrapper so cards start at the exact same vertical position in both modes */}
-            <div className="mt-2">
+            <div className="panel-card__body flex flex-col gap-3">
+              {/* TOGGLE: math vs progression cards */}
+              {/* Shared wrapper so cards start at the exact same vertical position in both modes */}
+              <div className="mt-2">
               {isWheelConfigOpen ? (
                 // EDIT MODE – progression controls
                 <div className="flex flex-col gap-3 text-xs">
@@ -2035,7 +2040,7 @@ const handleLoadPreset = (presetId: string) => {
 
                   {/* Steps list */}
                   {sessionSteps.length > 0 && (
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-3">
                       {sessionSteps.map((step, index) => {
                         const wheel =
                           wheels.find(w => w.id === step.wheelId) || {
@@ -2052,15 +2057,15 @@ const handleLoadPreset = (presetId: string) => {
                         return (
                           <div
                             key={step.id}
-                            className="border u-border rounded u-surface flex flex-col min-h-[140px] motion-list-item overflow-hidden"
+                            className="card-elevated flex flex-col min-h-[140px] motion-list-item overflow-hidden"
                             style={{ '--motion-order': index } as React.CSSProperties}
                           >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
-                            <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 bg-neutral-900/80 min-h-[44px]">
+                            <div className="card-elevated__header wheel-card__header flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 min-h-[44px]">
                               {/* LEFT: step badge + grind direction + wheel select */}
                               <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
                                 {/* Step badge */}
-                                <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100 -ml-1">
+                                <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100 -ml-1 shadow-sm">
                                   {index + 1}
                                 </div>
 
@@ -2148,12 +2153,12 @@ const handleLoadPreset = (presetId: string) => {
                             </div>
                             
                             {/* === Body: angle offset + sort controls anchored at bottom === */}
-                            <div className="px-2 py-2 flex items-stretch gap-2">
+                            <div className="px-3 py-2 flex items-stretch gap-2">
                               {/* Left: notes trigger + angle offset */}
                               <div className="flex-1 flex flex-col gap-2">
                                 <button
                                   type="button"
-                            className="px-2 py-1 rounded border u-border u-surface text-xs u-text hover:bg-neutral-800 self-start"
+                                  className="px-2.5 py-1 rounded border u-border u-surface text-xs u-text hover:bg-neutral-800 self-start shadow-sm"
                                   onClick={() => {
                                     stepNotesStepIdRef.current = step.id;
                                     setStepNotesDraft(step.notes || '');
@@ -2257,8 +2262,9 @@ const handleLoadPreset = (presetId: string) => {
                 )
               )}
             </div>
+            </div>
           </section>
-        </>
+        </div>
       )}
       
 {view === 'wheels' && (

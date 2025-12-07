@@ -5,7 +5,10 @@
 html, body {
   margin: 0;
   min-height: 100dvh;
-  background: var(--color-bg); /* your app background */
+  background:
+    radial-gradient(1400px 1400px at 20% 10%, color-mix(in srgb, var(--color-border) 12%, transparent) 0%, transparent 55%),
+    radial-gradient(1200px 1200px at 80% 30%, color-mix(in srgb, var(--color-border-strong) 11%, transparent) 0%, transparent 52%),
+    var(--color-bg); /* subtle lift behind panels */
   padding-bottom: env(safe-area-inset-bottom); /* keeps bottom UI clear of home indicator */
   overscroll-behavior-y: none; /* optional: reduce bounce showing white */
 }
@@ -99,6 +102,147 @@ html, body {
   border-radius: var(--radius-sm);
   background: var(--color-accent);
   opacity: 0.8;
+}
+
+.panel-card {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, var(--color-border-strong) 20%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-panel) 88%, var(--color-panel-strong) 12%) 0%,
+    var(--color-panel) 100%
+  );
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 20px 54px color-mix(in srgb, var(--color-border-strong) 28%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-panel-strong) 65%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 28%, transparent);
+  overflow: hidden;
+}
+.panel-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #ffffff 20%, transparent) 0%,
+    transparent 32%
+  );
+  opacity: 0.55;
+}
+
+.panel-card--strong {
+  background: color-mix(in srgb, var(--color-panel-strong) 70%, var(--color-panel) 30%);
+  border-color: var(--color-border-strong);
+  box-shadow:
+    0 18px 48px color-mix(in srgb, var(--color-border-strong) 26%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-panel-strong) 70%, transparent);
+}
+
+.panel-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-panel-strong) 82%, transparent) 0%,
+    color-mix(in srgb, var(--color-panel) 92%, transparent) 100%
+  );
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border-strong) 60%, transparent);
+}
+
+.panel-card__body {
+  padding: 1.05rem 1rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-panel) 92%, var(--color-panel-strong) 8%) 0%,
+    var(--color-panel) 100%
+  );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.panel-card__body + .panel-card__body {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.card-elevated {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, var(--color-border-strong) 20%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-panel) 84%, var(--color-panel-strong) 16%) 0%,
+    color-mix(in srgb, var(--color-panel) 94%, transparent) 100%
+  );
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 14px 34px color-mix(in srgb, var(--color-border-strong) 24%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-panel-strong) 40%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, #ffffff 14%, transparent);
+  overflow: hidden;
+}
+.card-elevated::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #ffffff 18%, transparent) 0%,
+    transparent 35%
+  );
+  opacity: 0.55;
+}
+
+.card-elevated__header {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-panel-strong) 78%, transparent) 0%,
+      color-mix(in srgb, var(--color-panel) 94%, transparent) 100%
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-accent) 14%, transparent) 0%,
+      transparent 55%,
+      color-mix(in srgb, var(--color-accent) 10%, transparent) 100%
+    );
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border-strong) 55%, transparent);
+}
+
+.wheel-card__header {
+  position: relative;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-accent) 12%, var(--color-panel-strong) 88%) 0%,
+      color-mix(in srgb, var(--color-panel) 92%, var(--color-accent) 8%) 100%
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-accent) 20%, transparent) 0%,
+      transparent 50%,
+      color-mix(in srgb, var(--color-accent) 14%, transparent) 100%
+    );
+  border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border-strong) 65%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+.wheel-card__header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #ffffff 26%, transparent) 0%,
+    transparent 60%
+  );
+  opacity: 0.65;
 }
 
 /* Tailwind-to-theme bridge (keeps JSX classNames working while sourcing from vars) */

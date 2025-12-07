@@ -21,7 +21,7 @@ function ProgressionView({
   const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
 
   return (
-    <div className="grid gap-1 md:grid-cols-2">
+    <div className="grid gap-3 md:grid-cols-2">
       {wheelResults.map((r, index) => {
         const key = r.step?.id ?? r.wheel.id;
         const angleOffset = r.step?.angleOffset ?? 0;
@@ -32,50 +32,49 @@ function ProgressionView({
           ? angleOffset > 0
             ? 'text-accent'
             : 'text-danger'
-          : 'text-neutral-100';
+          : 'u-text';
         const formatResidual = (val: number) => {
           if (!Number.isFinite(val)) return '';
           const abs = Math.abs(val);
           if (abs === 0) return '0';
-          const fixed = abs.toFixed(8); // stay out of scientific notation but keep precision
-          const [intPart, fracPart = ''] = fixed.split('.');
+          const fixed = abs.toFixed(12); // ensure fractional part is available without scientific notation
+          const [intPart, fracPartRaw = ''] = fixed.split('.');
+          const firstIdx = fracPartRaw.split('').findIndex(ch => ch !== '0');
 
-          // If integer part exists, keep it and the first non-zero fractional digit
-          if (intPart !== '0') {
-            const firstIdx = fracPart.search(/[1-9]/);
-            if (firstIdx === -1) return intPart;
-            return `${intPart}.${fracPart.slice(0, firstIdx + 1)}`;
+          if (firstIdx === -1) {
+            // No fractional significance
+            return intPart;
           }
 
-          // abs < 1: preserve leading zeros then the first non-zero digit only
-          const match = fracPart.match(/^(0*)([1-9])/);
-          if (!match) return '0';
-          return `0.${match[1]}${match[2]}`;
+          const dp = firstIdx + 1; // keep through the first non-zero digit
+          const rounded = abs.toFixed(dp);
+          // Trim trailing ".0" if rounding carried into an integer (e.g., 0.99996 -> 1)
+          return rounded.replace(/\.0+$/, '');
         };
 
         return (
           <div
             key={r.step?.id ?? r.wheel.id}
-            className="border border-neutral-700 rounded bg-neutral-950/40 overflow-hidden motion-list-item"
+            className="card-elevated overflow-hidden motion-list-item"
             style={{ '--motion-order': index } as React.CSSProperties}
           >
             {/* ===== Header bar ===== */}
-            <div className="flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 bg-neutral-900/70 min-h-[44px]">
+            <div className="card-elevated__header wheel-card__header flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 min-h-[44px]">
               <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
                 {/* Step badge */}
                 {r.step && (
-                  <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100 -ml-1">
+                  <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-50 -ml-1 shadow-sm">
                     {index + 1}
                   </div>
                 )}
                 {/* Wheel name */}
-                <span className="text-[0.7rem] text-neutral-200 font-medium truncate leading-none">
+                <span className="text-[0.7rem] text-neutral-100 font-medium truncate leading-none">
                   {r.wheel.name}
                 </span>
               </div>
 
               {/* Right side: diameter display */}
-              <div className="flex items-center gap-1 flex-nowrap ml-auto text-[0.7rem] text-neutral-300 font-mono whitespace-nowrap">
+              <div className="flex items-center gap-1 flex-nowrap ml-auto text-[0.7rem] text-neutral-100 font-mono whitespace-nowrap">
                 <span>D=</span>
                 <span>{r.wheel.D?.toFixed(2)}</span>
                 <span>mm</span>
@@ -83,20 +82,20 @@ function ProgressionView({
             </div>
 
             {/* ===== Wheel Card Body ===== */}
-            <div className="px-2 py-2 flex flex-row flex-wrap items-stretch gap-2">
+            <div className="px-3 py-3 flex flex-row flex-wrap items-stretch gap-3 u-surface">
               {heightMode === 'hn' ? (
-                <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0">
-                  <div className="flex items-center text-[0.75rem] text-neutral-300">
+                <div className="border u-border rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0 u-surface">
+                  <div className="flex items-center text-[0.75rem] u-text-muted">
                     <span>
                       {r.step?.base === 'front'
                         ? `Base F <-> USB top`
                         : `Base R <-> USB top`}
                     </span>
                   </div>
-                  <div className="font-mono text-sm text-neutral-100">
+                  <div className="font-mono text-sm u-text">
                     hn = {r.hnBase.toFixed(2)} mm
                   </div>
-                  <div className="text-[0.7rem] text-neutral-400">
+                  <div className="text-[0.7rem] u-text-muted">
                     {angleSymbol} ={' '}
                     <span className={angleValueClass}>
                       {formatDeg(r.betaEffDeg)}°
@@ -109,14 +108,14 @@ function ProgressionView({
                   </div>
                 </div>
               ) : (
-                <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0">
-                  <div className="flex items-center text-[0.75rem] text-neutral-300">
+                <div className="border u-border rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0 u-surface">
+                  <div className="flex items-center text-[0.75rem] u-text-muted">
                     <span>{`Wheel <-> USB top`}</span>
                   </div>
-                  <div className="font-mono text-sm text-neutral-100">
+                  <div className="font-mono text-sm u-text">
                     hr = {r.hrWheel.toFixed(2)} mm
                   </div>
-                  <div className="text-[0.7rem] text-neutral-400">
+                  <div className="text-[0.7rem] u-text-muted">
                     {angleSymbol} ={' '}
                     <span className={angleValueClass}>
                       {formatDeg(r.betaEffDeg)}°
@@ -131,13 +130,13 @@ function ProgressionView({
               )}
 
               {/* Notes panel (view mode) */}
-              <div className="flex-1 border border-neutral-700 rounded p-2 min-h-[40px] bg-neutral-950/20">
+              <div className="flex-1 border u-border rounded p-2 min-h-[40px] u-surface">
                 {notesText ? (
-                  <div className="text-[0.8rem] text-neutral-100 whitespace-pre-wrap break-words">
+                  <div className="text-[0.8rem] u-text whitespace-pre-wrap break-words">
                     {notesText}
                   </div>
                 ) : (
-                  <div className="text-[0.8rem] text-neutral-500">No notes</div>
+                  <div className="text-[0.8rem] u-text-muted">No notes</div>
                 )}
               </div>
             </div>
