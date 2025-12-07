@@ -7,6 +7,9 @@ type ProgressionViewProps = {
   angleSymbol: string;
   angleErrorById?: Record<string, number | null>;
   cardMinHeight?: number;
+  bodyPaddingX?: string;
+  bodyPaddingY?: string;
+  bodyGap?: string;
 };
 
 /**
@@ -19,11 +22,14 @@ function ProgressionView({
   angleSymbol,
   angleErrorById,
   cardMinHeight,
+  bodyPaddingX = 'px-3',
+  bodyPaddingY = 'py-2',
+  bodyGap = 'gap-2',
 }: ProgressionViewProps) {
   const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
 
   return (
-    <div className="grid gap-2 md:grid-cols-2">
+    <div className="grid card-grid md:grid-cols-2">
       {wheelResults.map((r, index) => {
         const key = r.step?.id ?? r.wheel.id;
         const angleOffset = r.step?.angleOffset ?? 0;
@@ -89,7 +95,9 @@ function ProgressionView({
             </div>
 
             {/* ===== Wheel Card Body ===== */}
-            <div className="px-3 py-2 flex flex-row flex-wrap items-stretch gap-2 u-surface">
+            <div
+              className={`${bodyPaddingX} ${bodyPaddingY} flex flex-row flex-wrap items-stretch ${bodyGap} u-surface`}
+            >
               {heightMode === 'hn' ? (
                 <div className="border u-border rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0 u-surface">
                   <div className="flex items-center text-[0.75rem] u-text-muted">

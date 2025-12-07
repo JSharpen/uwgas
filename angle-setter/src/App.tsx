@@ -55,11 +55,13 @@ function GrindDirToggle({
   isHoning,
   canToggle,
   onToggle,
+  showLabel = false,
 }: {
   base: BaseSide;
   isHoning: boolean;
   canToggle: boolean; // edit-mode control
   onToggle: () => void;
+  showLabel?: boolean;
 }) {
   const label = base === 'rear' ? 'R' : 'F'; // Rear / Front
 
@@ -103,7 +105,7 @@ function GrindDirToggle({
       }}
       className={baseClasses + ' ' + stateClasses}
     >
-      {label}
+      {showLabel ? `Base ${label}` : label}
     </button>
   );
 }
@@ -849,7 +851,7 @@ function App() {
     return val === 'hr' ? 'hr' : 'hn';
   });
 
-  // Step notes state
+  // Step notes modal state
   const [isStepNotesOpen, setIsStepNotesOpen] = React.useState(false);
   const [isStepNotesVisible, setIsStepNotesVisible] = React.useState(false);
   const [isStepNotesClosing, setIsStepNotesClosing] = React.useState(false);
@@ -1031,7 +1033,10 @@ React.useEffect(() => {
   };
   const targetAngleSymbol = 'θ';
   const effectiveAngleSymbol = 'γ';
-  const progressionCardMinHeight = 140;
+  const progressionCardMinHeight = 130;
+  const progressionBodyPaddingX = 'px-3';
+  const progressionBodyPaddingY = 'py-2';
+  const progressionBodyGap = 'gap-2';
   const wheelResults = computeWheelResults(wheels, sessionSteps, global, activeMachine);
 
 
@@ -1194,6 +1199,29 @@ React.useEffect(() => {
   }, [isPresetDialogOpen, isPresetDialogVisible]);
 
   React.useEffect(() => {
+    return () => {
+      if (presetManagerCloseTimerRef.current) {
+        window.clearTimeout(presetManagerCloseTimerRef.current);
+      }
+      if (presetDialogCloseTimerRef.current) {
+        window.clearTimeout(presetDialogCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (progressionMenuCloseTimerRef.current) {
+        window.clearTimeout(progressionMenuCloseTimerRef.current);
+      }
+      if (stepNotesCloseTimerRef.current) {
+        window.clearTimeout(stepNotesCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Close notes popover on outside click/tap
+  React.useEffect(() => {
     const closeDuration = 200;
     if (isStepNotesOpen) {
       if (stepNotesCloseTimerRef.current) {
@@ -1218,28 +1246,6 @@ React.useEffect(() => {
       }
     };
   }, [isStepNotesOpen, isStepNotesVisible]);
-
-  React.useEffect(() => {
-    return () => {
-      if (presetManagerCloseTimerRef.current) {
-        window.clearTimeout(presetManagerCloseTimerRef.current);
-      }
-      if (presetDialogCloseTimerRef.current) {
-        window.clearTimeout(presetDialogCloseTimerRef.current);
-      }
-      if (stepNotesCloseTimerRef.current) {
-        window.clearTimeout(stepNotesCloseTimerRef.current);
-      }
-    };
-  }, []);
-
-  React.useEffect(() => {
-    return () => {
-      if (progressionMenuCloseTimerRef.current) {
-        window.clearTimeout(progressionMenuCloseTimerRef.current);
-      }
-    };
-  }, []);
 
   React.useEffect(() => {
     if (!isProgressionMenuVisible) return;
@@ -2029,7 +2035,7 @@ const handleLoadPreset = (presetId: string) => {
               <div className="mt-2">
               {isWheelConfigOpen ? (
                 // EDIT MODE – progression controls
-                <div className="flex flex-col gap-3 text-xs">
+                    <div className="flex flex-col card-stack text-xs">
                   {/* Empty state when no steps exist */}
                   {sessionSteps.length === 0 && (
                     <div className="text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-2">
@@ -2058,9 +2064,12 @@ const handleLoadPreset = (presetId: string) => {
                         return (
                               <div
                                 key={step.id}
-                                className="card-elevated flex flex-col motion-list-item overflow-hidden"
+                                className="card-elevated flex flex-col motion-list-item"
                                 style={
-                                  { '--motion-order': index, minHeight: progressionCardMinHeight } as React.CSSProperties
+                                  {
+                                    '--motion-order': index,
+                                    minHeight: progressionCardMinHeight,
+                                  } as React.CSSProperties
                                 }
                               >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
@@ -2144,15 +2153,17 @@ const handleLoadPreset = (presetId: string) => {
                             </div>
                             
                               {/* === Body: two-column layout for base/angle and notes/sort === */}
-                              <div className="px-3 py-2 grid grid-cols-2 gap-2 items-stretch">
-                                {/* Left column: base select + angle offset */}
-                                <div className="flex flex-col gap-2 h-full">
+                              <div
+                                className={`${progressionBodyPaddingX} ${progressionBodyPaddingY} grid grid-cols-[1fr_1fr_auto] ${progressionBodyGap} items-stretch`}
+                              >
+                                {/* Left column: base select (top) + angle offset (bottom) */}
+                                <div className="flex flex-col gap-2 h-full justify-between">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-neutral-400 text-[0.7rem]">Base</span>
                                     <GrindDirToggle
                                       base={step.base}
                                       isHoning={isHoning}
                                       canToggle={!isHoning}
+                                      showLabel
                                       onToggle={() =>
                                         updateStep(step.id, {
                                           base: step.base === 'rear' ? 'front' : 'rear',
@@ -2163,7 +2174,7 @@ const handleLoadPreset = (presetId: string) => {
 
                                   <div className="flex flex-wrap items-center gap-2">
                                     <span className="text-neutral-400 text-[0.7rem]">
-                                      {effectiveAngleSymbol} offset (deg)
+                                      {targetAngleSymbol} offset
                                     </span>
                                     <input
                                       type="text"
@@ -2192,8 +2203,8 @@ const handleLoadPreset = (presetId: string) => {
                                   </div>
                                 </div>
 
-                                {/* Right column: notes + sort controls */}
-                                <div className="flex flex-col gap-2 items-start h-full">
+                                {/* Middle column: notes (modal trigger) */}
+                                <div className="flex flex-col gap-2 items-start h-full relative">
                                   <button
                                     type="button"
                                     className="px-2 py-1 rounded border u-border u-surface text-xs u-text hover:bg-neutral-800 self-start shadow-sm"
@@ -2205,27 +2216,28 @@ const handleLoadPreset = (presetId: string) => {
                                   >
                                     Notes
                                   </button>
+                                </div>
 
-                                  <div className="flex flex-col gap-1 items-end self-end mt-auto">
-                                    <button
-                                      type="button"
-                                      className="px-2 py-1.5 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform"
-                                      onClick={() => moveStep(index, -1)}
-                                      disabled={index === 0}
-                                      title="Move up"
-                                    >
-                                      ↑
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="px-2 py-1.5 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform"
-                                      onClick={() => moveStep(index, 1)}
-                                      disabled={index === sessionSteps.length - 1}
-                                      title="Move down"
-                                    >
-                                      ↓
-                                    </button>
-                                  </div>
+                                {/* Right column: sort controls */}
+                                <div className="flex flex-col justify-center items-end h-full min-w-[52px]">
+                                  <button
+                                    type="button"
+                                    className="px-2 py-1.5 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform"
+                                    onClick={() => moveStep(index, -1)}
+                                    disabled={index === 0}
+                                    title="Move up"
+                                  >
+                                    ↑
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="px-2 py-1.5 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform mt-1"
+                                    onClick={() => moveStep(index, 1)}
+                                    disabled={index === sessionSteps.length - 1}
+                                    title="Move down"
+                                  >
+                                    ↓
+                                  </button>
                                 </div>
                               </div>
                           </div>
@@ -2261,6 +2273,9 @@ const handleLoadPreset = (presetId: string) => {
                     heightMode={heightMode}
                     angleSymbol={effectiveAngleSymbol}
                     angleErrorById={estimatedAngleErrorByResultId}
+                    bodyPaddingX={progressionBodyPaddingX}
+                    bodyPaddingY={progressionBodyPaddingY}
+                    bodyGap={progressionBodyGap}
                     cardMinHeight={progressionCardMinHeight}
                   />
                 )
@@ -2272,7 +2287,7 @@ const handleLoadPreset = (presetId: string) => {
       )}
       
 {view === 'wheels' && (
-  <section className="border u-border rounded-lg p-3 u-surface flex flex-col gap-3 max-w-3xl mx-auto motion-panel">
+  <section className="panel-card motion-panel flex flex-col gap-3 max-w-3xl mx-auto">
     <div className="flex flex-col gap-2 border-b u-border-strong pb-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold u-text panel-header">Wheel Manager</h2>
@@ -3045,7 +3060,8 @@ const handleLoadPreset = (presetId: string) => {
           </div>
         </div>
       )}
-      
+
+      {/* ====== STEP NOTES MODAL ====== */}
       {isStepNotesVisible && (
         <div
           className={
@@ -3062,9 +3078,7 @@ const handleLoadPreset = (presetId: string) => {
             style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
           >
             <h3 className="text-sm font-semibold u-text">Step notes</h3>
-            <p className="mt-1 text-[0.75rem] u-text-muted">
-              Notes for this step.
-            </p>
+            <p className="mt-1 text-[0.75rem] u-text-muted">Notes for this step.</p>
             <div className="mt-3">
               <textarea
                 className="w-full min-h-[6rem] rounded border u-border u-surface px-2 py-1 text-xs u-text"
@@ -3110,6 +3124,7 @@ const handleLoadPreset = (presetId: string) => {
           </div>
         </div>
       )}
+      
     </div>
   );
 }
