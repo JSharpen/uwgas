@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-type Option = { value: string; label: string };
+type Option = { value: string; label: React.ReactNode; meta?: React.ReactNode; disabled?: boolean };
 
 type MiniSelectProps = {
   value: string;
@@ -10,6 +10,9 @@ type MiniSelectProps = {
   align?: 'left' | 'right';
   widthClass?: string;
   menuWidthClass?: string;
+  emptyLabel?: string;
+  renderOption?: (option: Option, isActive: boolean) => React.ReactNode;
+  renderLabel?: (option: Option | undefined) => React.ReactNode;
 };
 
 function MiniSelect({
@@ -20,11 +23,33 @@ function MiniSelect({
   align = 'left',
   widthClass,
   menuWidthClass,
+  emptyLabel = 'No options',
+  renderOption,
+  renderLabel,
 }: MiniSelectProps) {
   const [isMenuVisible, setIsMenuVisible] = React.useState(false);
   const [isMenuClosing, setIsMenuClosing] = React.useState(false);
   const menuCloseTimerRef = React.useRef<number | null>(null);
   const rootRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Lift the nearest card when the menu is open so the menu sits above neighboring cards.
+  React.useEffect(() => {
+    const host = rootRef.current?.closest<HTMLElement>('.card-elevated');
+    if (!host) return;
+    const prevZ = host.style.zIndex;
+    const prevOverflow = host.style.overflow;
+    if (isMenuVisible) {
+      host.style.zIndex = '3000';
+      host.style.overflow = 'visible';
+    } else {
+      host.style.zIndex = prevZ;
+      host.style.overflow = prevOverflow;
+    }
+    return () => {
+      host.style.zIndex = prevZ;
+      host.style.overflow = prevOverflow;
+    };
+  }, [isMenuVisible]);
 
   const selected = options.find(o => o.value === value) ?? options[0];
 
@@ -51,10 +76,13 @@ function MiniSelect({
     }, 160);
   }, [isMenuVisible]);
 
+  const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
+  const touchMovedRef = React.useRef(false);
+
   React.useEffect(() => {
     if (!isMenuVisible) return;
 
-    const handlePointer = (event: MouseEvent | TouchEvent) => {
+    const handleMouseDown = (event: MouseEvent) => {
       const el = rootRef.current;
       if (!el) return;
       if (!el.contains(event.target as Node)) {
@@ -62,11 +90,41 @@ function MiniSelect({
       }
     };
 
-    document.addEventListener('mousedown', handlePointer);
-    document.addEventListener('touchstart', handlePointer);
+    const handleTouchStart = (event: TouchEvent) => {
+      const t = event.touches[0];
+      touchStartRef.current = { x: t.clientX, y: t.clientY };
+      touchMovedRef.current = false;
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const t = event.touches[0];
+      const dx = Math.abs(t.clientX - touchStartRef.current.x);
+      const dy = Math.abs(t.clientY - touchStartRef.current.y);
+      if (dx > 8 || dy > 8) {
+        touchMovedRef.current = true; // treat as scroll/drag
+      }
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (touchMovedRef.current) return;
+      const el = rootRef.current;
+      if (!el) return;
+      if (!el.contains(event.target as Node)) {
+        closeMenu();
+      }
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
+
     return () => {
-      document.removeEventListener('mousedown', handlePointer);
-      document.removeEventListener('touchstart', handlePointer);
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [closeMenu, isMenuVisible]);
 
@@ -82,7 +140,12 @@ function MiniSelect({
     align === 'right' ? 'dropdown-menu--align-right' : 'dropdown-menu--align-left';
 
   return (
-    <div ref={rootRef} className={`dropdown text-xs flex-shrink-0 ${widthClass ?? ''}`}>
+    <div
+      ref={rootRef}
+      className={`dropdown text-xs flex-shrink-0 ${isMenuVisible ? 'dropdown--open' : ''} ${
+        widthClass ?? ''
+      }`}
+    >
       <button
         type="button"
         className={`dropdown-trigger dropdown-trigger--sm ${
@@ -97,7 +160,7 @@ function MiniSelect({
           }
         }}
       >
-        <span className="truncate">{selected?.label ?? ''}</span>
+        <span className="truncate">{renderLabel ? renderLabel(selected) : selected?.label ?? ''}</span>
         <svg
           viewBox="0 0 24 24"
           className={'w-3 h-3 transition-transform ' + (isMenuVisible ? 'rotate-180' : 'rotate-0')}
@@ -120,22 +183,35 @@ function MiniSelect({
             isMenuClosing ? 'dropdown-menu--closing' : 'dropdown-menu--opening'
           } ${menuWidthClass ?? 'w-32'}`}
         >
-          {options.map(opt => {
-            const isActive = opt.value === value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                className={`dropdown-item ${isActive ? 'dropdown-item--active' : ''}`}
-                onClick={() => {
-                  onChange(opt.value);
-                  closeMenu();
-                }}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
+          {options.length === 0 ? (
+            <div className="dropdown-empty text-[0.7rem]">{emptyLabel}</div>
+          ) : (
+            options.map(opt => {
+              const isActive = opt.value === value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`dropdown-item ${isActive ? 'dropdown-item--active' : ''}`}
+                  disabled={opt.disabled}
+                  onClick={() => {
+                    if (opt.disabled) return;
+                    onChange(opt.value);
+                    closeMenu();
+                  }}
+                >
+                  {renderOption ? (
+                    renderOption(opt, isActive)
+                  ) : (
+                    <>
+                      <div className="dropdown-item__title">{opt.label}</div>
+                      {opt.meta ? <div className="dropdown-item__meta">{opt.meta}</div> : null}
+                    </>
+                  )}
+                </button>
+              );
+            })
+          )}
         </div>
       )}
     </div>

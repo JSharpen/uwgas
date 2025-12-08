@@ -107,7 +107,7 @@ html, body {
 
 .panel-card {
   position: relative;
-  isolation: isolate;
+  isolation: auto;
   border: 1px solid color-mix(in srgb, var(--color-border) 80%, var(--color-border-strong) 20%);
   background: linear-gradient(
     180deg,
@@ -132,6 +132,7 @@ html, body {
     transparent 32%
   );
   opacity: 0.55;
+  border-radius: inherit;
 }
 
 .panel-card--strong {
@@ -171,7 +172,6 @@ html, body {
 
 .card-elevated {
   position: relative;
-  isolation: isolate;
   border: 1px solid color-mix(in srgb, var(--color-border) 80%, var(--color-border-strong) 20%);
   background: linear-gradient(
     180deg,
@@ -196,6 +196,7 @@ html, body {
     transparent 35%
   );
   opacity: 0.55;
+  border-radius: inherit;
 }
 
 .card-elevated__header {
@@ -219,18 +220,20 @@ html, body {
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-accent) 12%, var(--color-panel-strong) 88%) 0%,
+      color-mix(in srgb, var(--color-accent) 16%, var(--color-panel-strong) 84%) 0%,
       color-mix(in srgb, var(--color-panel) 92%, var(--color-accent) 8%) 100%
     ),
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--color-accent) 20%, transparent) 0%,
-      transparent 50%,
-      color-mix(in srgb, var(--color-accent) 14%, transparent) 100%
+      color-mix(in srgb, var(--color-accent) 18%, transparent) 0%,
+      transparent 60%,
+      color-mix(in srgb, var(--color-accent) 10%, transparent) 100%
     );
-  border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border-strong) 65%);
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 24%, var(--color-border-strong) 60%);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 18%, transparent),
     0 1px 0 color-mix(in srgb, var(--color-accent) 12%, transparent);
 }
 .wheel-card__header::after {
@@ -240,10 +243,21 @@ html, body {
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, #ffffff 26%, transparent) 0%,
+    color-mix(in srgb, #ffffff 18%, transparent) 0%,
     transparent 60%
   );
-  opacity: 0.65;
+  opacity: 0.55;
+}
+
+.wheel-card__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 1rem;
+  background: color-mix(in srgb, var(--color-panel) 96%, var(--color-panel-strong) 4%);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.3;
 }
 
 .card-stack {
@@ -252,6 +266,138 @@ html, body {
 
 .card-grid {
   gap: var(--card-stack-gap, 0.75rem);
+}
+
+/* Menus (kebab / dropdown hover) */
+.menu-item {
+  background: var(--color-panel);
+  color: var(--color-text);
+  text-align: left;
+}
+.menu-item:hover:not(:disabled) {
+  background: var(--color-panel-strong);
+  color: var(--color-text);
+}
+.menu-item:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+.menu-item:disabled:hover {
+  background: var(--color-panel);
+}
+.menu-panel {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    0px 18px 40px color-mix(in srgb, var(--color-shadow, rgba(0, 0, 0, 0.2)) 26%, transparent),
+    0px 6px 20px color-mix(in srgb, var(--color-shadow, rgba(0, 0, 0, 0.2)) 32%, transparent),
+    0 16px 36px rgba(0, 0, 0, 0.18),
+    0 6px 16px rgba(0, 0, 0, 0.14);
+}
+
+/* Dropdowns (MiniSelect, wheel/preset select) */
+.dropdown-menu {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    0px 18px 40px color-mix(in srgb, var(--color-shadow, rgba(0, 0, 0, 0.2)) 26%, transparent),
+    0px 6px 20px color-mix(in srgb, var(--color-shadow, rgba(0, 0, 0, 0.2)) 32%, transparent),
+    0 16px 36px rgba(0, 0, 0, 0.18),
+    0 6px 16px rgba(0, 0, 0, 0.14);
+  border-radius: var(--radius-md);
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 18rem;
+  position: absolute;
+  z-index: 2000;
+  margin-top: 0.25rem;
+  animation: dropdownIn 160ms ease-out forwards;
+}
+.dropdown-menu--closing {
+  animation: dropdownOut 140ms ease-in forwards;
+}
+.dropdown-menu--opening {
+  animation: dropdownIn 160ms ease-out forwards;
+}
+.dropdown-menu--align-right {
+  right: 0;
+}
+.dropdown-menu--align-left {
+  left: 0;
+}
+.dropdown {
+  position: relative;
+}
+.dropdown--open {
+  z-index: 1200;
+}
+.dropdown-trigger {
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.55rem;
+  min-height: 2rem;
+  box-shadow:
+    0 6px 14px color-mix(in srgb, var(--color-shadow, rgba(0, 0, 0, 0.2)) 24%, transparent),
+    0 2px 4px color-mix(in srgb, var(--color-shadow, rgba(0, 0, 0, 0.2)) 20%, transparent);
+  transition: box-shadow 140ms ease, border-color 140ms ease, background-color 140ms ease;
+}
+.dropdown-trigger--open {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border) 55%);
+  box-shadow:
+    0px 18px 40px color-mix(in srgb, var(--color-shadow, rgba(0, 0, 0, 0.2)) 26%, transparent),
+    0px 6px 20px color-mix(in srgb, var(--color-shadow, rgba(0, 0, 0, 0.2)) 32%, transparent),
+    0 16px 36px rgba(0, 0, 0, 0.18),
+    0 6px 16px rgba(0, 0, 0, 0.14);
+}
+.dropdown-trigger--sm {
+  min-height: 1.85rem;
+  padding: 0.3rem 0.55rem;
+}
+.dropdown-item {
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  background: var(--color-panel);
+  color: var(--color-text);
+  text-align: left;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.dropdown-item:hover:not(:disabled) {
+  background: var(--color-panel-strong);
+  color: var(--color-text);
+}
+.dropdown-item--active {
+  background: #9fc8e6;
+  color: var(--color-text);
+}
+.dropdown-item--active:hover:not(:disabled) {
+  background: #9fc8e6;
+  color: var(--color-text);
+}
+.dropdown-item--muted {
+  color: var(--color-text-muted);
+}
+.dropdown-item:disabled {
+  color: var(--color-text-muted);
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.dropdown-item:disabled:hover {
+  background: var(--color-panel);
+}
+.dropdown-item__title {
+  color: inherit;
+}
+.dropdown-item__meta {
+  color: var(--color-text-muted);
+}
+.dropdown-item--active:hover:not(:disabled) .dropdown-item__title,
+.dropdown-item--active .dropdown-item__title {
+  color: var(--color-text);
+}
+.dropdown-item--active .dropdown-item__meta {
+  color: var(--color-text-muted);
 }
 
 /* Tailwind-to-theme bridge (keeps JSX classNames working while sourcing from vars) */
@@ -328,12 +474,12 @@ button {
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 @keyframes popIn {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 1; transform: none; }
 }
 
 @keyframes dialogIn {

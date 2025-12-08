@@ -12,11 +12,12 @@
 //================Imports=================
 import * as React from 'react';
 import { IconKebab, IconTrash, IconSortAsc, IconSortDesc } from './icons';
-import MiniSelect from './components/MiniSelect';
 import CalibrationWizard from './components/CalibrationWizard';
 import ImportExportPanel from './components/ImportExportPanel';
 import GlossaryPage from './components/GlossaryPage';
 import ProgressionView from './components/ProgressionView';
+import MiniSelect from './components/MiniSelect';
+import useModalLayout from './hooks/useModalLayout';
 import type {
   BaseSide,
   CalibrationDiagnostics,
@@ -109,389 +110,178 @@ function GrindDirToggle({
     </button>
   );
 }
-// =============== Wheel Selector Dropdown===============
-function WheelSelect({
-  wheels,
+
+
+type WheelFormValue = Pick<Wheel, 'name' | 'D' | 'DText' | 'grit' | 'isHoning' | 'baseForHn'>;
+
+function WheelFormFields({
   value,
   onChange,
+  autoFocusName = false,
 }: {
-  wheels: Wheel[];
-  value: string;
-  onChange: (id: string) => void;
+  value: WheelFormValue;
+  onChange: (patch: Partial<WheelFormValue>) => void;
+  autoFocusName?: boolean;
 }) {
-  const [open, setOpen] = React.useState(false);
-  const [isMenuVisible, setIsMenuVisible] = React.useState(false);
-  const [isMenuClosing, setIsMenuClosing] = React.useState(false);
-  const menuCloseTimerRef = React.useRef<number | null>(null);
-  const rootRef = React.useRef<HTMLDivElement | null>(null);
-  const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
-  const touchMovedRef = React.useRef(false);
-
-  const selected = wheels.find(w => w.id === value) || null;
-
-  const handleSelect = (id: string) => {
-    onChange(id);
-    closeMenu();
-  };
-
-  const openMenu = React.useCallback(() => {
-    if (menuCloseTimerRef.current) {
-      window.clearTimeout(menuCloseTimerRef.current);
-      menuCloseTimerRef.current = null;
-    }
-    setIsMenuVisible(true);
-    setIsMenuClosing(false);
-    setOpen(true);
-  }, []);
-
-  const closeMenu = React.useCallback(() => {
-    if (!isMenuVisible && !open) return;
-    if (menuCloseTimerRef.current) {
-      window.clearTimeout(menuCloseTimerRef.current);
-      menuCloseTimerRef.current = null;
-    }
-    setOpen(false);
-    setIsMenuClosing(true);
-    menuCloseTimerRef.current = window.setTimeout(() => {
-      setIsMenuVisible(false);
-      setIsMenuClosing(false);
-      menuCloseTimerRef.current = null;
-    }, 160);
-  }, [isMenuVisible, open]);
-
-    React.useEffect(() => {
-    if (!isMenuVisible) return;
-
-    const handlePointer = (event: MouseEvent) => {
-      const el = rootRef.current;
-      if (!el) return;
-      if (!el.contains(event.target as Node)) {
-        closeMenu();
-      }
-    };
-
-    const handleTouchStart = (event: TouchEvent) => {
-      const t = event.touches[0];
-      touchStartRef.current = { x: t.clientX, y: t.clientY };
-      touchMovedRef.current = false;
-    };
-
-    const handleTouchMove = (event: TouchEvent) => {
-      if (!touchStartRef.current) return;
-      const t = event.touches[0];
-      const dx = Math.abs(t.clientX - touchStartRef.current.x);
-      const dy = Math.abs(t.clientY - touchStartRef.current.y);
-      if (dx > 8 || dy > 8) {
-        touchMovedRef.current = true; // scrolling/dragging
-      }
-    };
-
-    const handleTouchEnd = (event: TouchEvent) => {
-      if (touchMovedRef.current) return;
-      const el = rootRef.current;
-      if (!el) return;
-      if (!el.contains(event.target as Node)) {
-        closeMenu();
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointer);
-    document.addEventListener('touchstart', handleTouchStart, { passive: true });
-    document.addEventListener('touchmove', handleTouchMove, { passive: true });
-    document.addEventListener('touchend', handleTouchEnd);
-
-    return () => {
-      document.removeEventListener('mousedown', handlePointer);
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [closeMenu, isMenuVisible]);
-
-  React.useEffect(() => {
-    return () => {
-      if (menuCloseTimerRef.current) {
-        window.clearTimeout(menuCloseTimerRef.current);
-      }
-    };
-  }, []);
-
   return (
-    <div ref={rootRef} className="relative text-xs min-w-[9rem] max-w-[9rem]">
-      {/* Shell / trigger */}
-      <button
-        type="button"
-        className={
-           'inline-flex w-full items-center justify-between gap-1 rounded border px-2 py-1 text-xs ' +
-          (isMenuVisible
-            ? 'border-accent u-surface shadow-md'
-            : 'border-neutral-700 u-surface hover:bg-neutral-900')
-        }
-        onClick={() => {
-          if (isMenuVisible && !isMenuClosing) {
-            closeMenu();
-          } else {
-            openMenu();
-          }
-        }}
-      >
-        <span className="truncate text-left">
-          {selected ? selected.name : 'Select wheel...'}
-        </span>
-        <svg
-          viewBox="0 0 24 24"
-          className={
-            'w-3 h-3 transition-transform ' + (isMenuVisible ? 'rotate-180' : 'rotate-0')
-          }
-          aria-hidden="true"
-        >
-          <path
-            d="M7 10l5 5 5-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <span className="text-xs u-text-muted">Wheel name</span>
+        <input
+          className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+          value={value.name}
+          autoFocus={autoFocusName}
+          onChange={e => onChange({ name: e.target.value })}
+          onFocus={e => autoFocusName && e.target.select()}
+          onKeyDown={blurOnEnter}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-xs u-text-muted">Diameter (mm)</span>
+        <div className="flex items-center gap-2 text-xs">
+          <input
+            type="text"
+            inputMode="decimal"
+            className="w-24 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-sm appearance-none"
+            value={
+              value.DText !== undefined
+                ? value.DText
+                : Number.isNaN(value.D)
+                ? ''
+                : String(value.D)
+            }
+            onKeyDown={blurOnEnter}
+            onFocus={e => e.target.select()}
+            onChange={e => {
+              const text = e.target.value;
+              const patch: Partial<WheelFormValue> = { DText: text };
+
+              const trimmed = text.trim();
+              if (trimmed === '') {
+                patch.D = NaN as unknown as number;
+                onChange(patch);
+                return;
+              }
+
+              const normalised = trimmed.replace(',', '.');
+              const val = Number(normalised);
+
+              if (!Number.isNaN(val)) {
+                patch.D = Math.round(val * 100) / 100;
+              }
+
+              onChange(patch);
+            }}
           />
-        </svg>
-      </button>
-
-      {/* Menu */}
-      {isMenuVisible && (
-        <div
-          className="absolute left-0 mt-1 z-20 w-44 max-h-36 overflow-auto rounded border u-border u-surface shadow-lg"
-          style={{
-            animation: `${isMenuClosing ? 'dropdownOut 140ms ease-in forwards' : 'dropdownIn 160ms ease-out forwards'}`,
-            transformOrigin: 'top left',
-          }}
-        >
-          {wheels.length === 0 && (
-            <div className="px-2 py-1 text-[0.7rem] text-neutral-500">
-              No wheels defined
-            </div>
-          )}
-
-          <button
-            type="button"
-            className="w-full px-2 py-1 text-left text-[0.75rem] u-surface u-text-muted hover:bg-neutral-900"
-            onClick={() => handleSelect('')}
-          >
-            Select wheel...
-          </button>
-
-          {wheels.map(w => {
-            const isActive = w.id === value;
-            return (
-              <button
-                key={w.id}
-                type="button"
-                className={
-                  'w-full px-2 py-1 text-left text-[0.75rem] ' +
-                  (isActive
-                    ? 'bg-accent-tint text-accent'
-                    : 'bg-neutral-950 text-neutral-100 hover:bg-neutral-900')
-                }
-                onClick={() => handleSelect(w.id)}
-              >
-                {w.name}
-                {w.isHoning && (
-                  <span className="ml-1 text-[0.65rem] text-accent-soft">honing</span>
-                )}
-              </button>
-            );
-          })}
+          <span className="text-neutral-400 text-[0.75rem]">mm</span>
         </div>
-      )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-xs u-text-muted">Grit / abrasive</span>
+        <input
+          className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+          value={value.grit ?? ''}
+          onChange={e => onChange({ grit: e.target.value })}
+          onKeyDown={blurOnEnter}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1 text-sm">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={value.isHoning}
+            onChange={e =>
+              onChange({
+                isHoning: e.target.checked,
+                baseForHn: e.target.checked ? 'front' : value.baseForHn,
+              })
+            }
+          />
+          <span className="text-neutral-300">Honing wheel? (Locks to Front base)</span>
+        </label>
+
+        {!value.isHoning && (
+          <div className="flex items-center gap-3 text-xs text-neutral-300">
+            <span>Default base for h?:</span>
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                checked={value.baseForHn === 'rear'}
+                onChange={() => onChange({ baseForHn: 'rear' })}
+              />
+              <span>Rear (edge leading)</span>
+            </label>
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                checked={value.baseForHn === 'front'}
+                onChange={() => onChange({ baseForHn: 'front' })}
+              />
+              <span>Front (edge trailing)</span>
+            </label>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-// =============== Preset Selector Dropdown===============
-function PresetSelect({
-  presets,
-  value,
-  onChange,
+function ModalShell({
+  title,
+  subtitle,
+  onClose,
+  children,
+  footer,
+  overlayStyle,
+  dialogStyle,
+  closing = false,
 }: {
-  presets: SessionPreset[];
-  value: string;
-  onChange: (id: string) => void;
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  overlayStyle?: React.CSSProperties;
+  dialogStyle?: React.CSSProperties;
+  closing?: boolean;
 }) {
-  const [open, setOpen] = React.useState(false);
-  const [isMenuVisible, setIsMenuVisible] = React.useState(false);
-  const [isMenuClosing, setIsMenuClosing] = React.useState(false);
-  const menuCloseTimerRef = React.useRef<number | null>(null);
-
-  const rootRef = React.useRef<HTMLDivElement | null>(null);
-  const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
-  const touchMovedRef = React.useRef(false);
-
-  const selected = presets.find(p => p.id === value) || null;
-
-  const handleSelect = (id: string) => {
-    onChange(id);  // parent will load the preset
-    closeMenu();
-  };
-
-  const openMenu = React.useCallback(() => {
-    if (menuCloseTimerRef.current) {
-      window.clearTimeout(menuCloseTimerRef.current);
-      menuCloseTimerRef.current = null;
-    }
-    setIsMenuVisible(true);
-    setIsMenuClosing(false);
-    setOpen(true);
-  }, []);
-
-  const closeMenu = React.useCallback(() => {
-    if (!isMenuVisible && !open) return;
-    if (menuCloseTimerRef.current) {
-      window.clearTimeout(menuCloseTimerRef.current);
-      menuCloseTimerRef.current = null;
-    }
-    setOpen(false);
-    setIsMenuClosing(true);
-    menuCloseTimerRef.current = window.setTimeout(() => {
-      setIsMenuVisible(false);
-      setIsMenuClosing(false);
-      menuCloseTimerRef.current = null;
-    }, 160);
-  }, [isMenuVisible, open]);
-
-  React.useEffect(() => {
-    if (!isMenuVisible) return;
-
-    const handlePointer = (event: MouseEvent) => {
-      const el = rootRef.current;
-      if (!el) return;
-      if (!el.contains(event.target as Node)) {
-        closeMenu();
-      }
-    };
-
-    const handleTouchStart = (event: TouchEvent) => {
-      const t = event.touches[0];
-      touchStartRef.current = { x: t.clientX, y: t.clientY };
-      touchMovedRef.current = false;
-    };
-
-    const handleTouchMove = (event: TouchEvent) => {
-      if (!touchStartRef.current) return;
-      const t = event.touches[0];
-      const dx = Math.abs(t.clientX - touchStartRef.current.x);
-      const dy = Math.abs(t.clientY - touchStartRef.current.y);
-      if (dx > 8 || dy > 8) {
-        touchMovedRef.current = true; // scrolling/dragging
-      }
-    };
-
-    const handleTouchEnd = (event: TouchEvent) => {
-      if (touchMovedRef.current) return;
-      const el = rootRef.current;
-      if (!el) return;
-      if (!el.contains(event.target as Node)) {
-        closeMenu();
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointer);
-    document.addEventListener('touchstart', handleTouchStart, { passive: true });
-    document.addEventListener('touchmove', handleTouchMove, { passive: true });
-    document.addEventListener('touchend', handleTouchEnd);
-
-    return () => {
-      document.removeEventListener('mousedown', handlePointer);
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [closeMenu, isMenuVisible]);
-
-  React.useEffect(() => {
-    return () => {
-      if (menuCloseTimerRef.current) {
-        window.clearTimeout(menuCloseTimerRef.current);
-      }
-    };
-  }, []);
-
   return (
-    <div ref={rootRef} className="relative inline-block text-xs">
-
-      {/* Trigger */}
-      <button
-        type="button"
+    <div
+      className={
+        'fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
+        (closing ? 'motion-overlay--closing' : '')
+      }
+      style={overlayStyle}
+    >
+      <div
         className={
-          'inline-flex items-center justify-between gap-1 rounded border px-2 py-1.5 min-w-[8rem] text-xs ' +
-          (isMenuVisible
-            ? 'border-accent u-surface shadow-md'
-            : 'border-neutral-700 u-surface hover:bg-neutral-900')
+          'w-full max-w-md rounded-lg border u-border u-surface p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
+          (closing ? 'motion-dialog--closing' : '')
         }
-        onClick={() => {
-          if (isMenuVisible && !isMenuClosing) {
-            closeMenu();
-          } else {
-            openMenu();
-          }
-        }}
+        style={dialogStyle}
       >
-        <span className="truncate text-left">
-          {selected ? selected.name : 'Presets…'}
-        </span>
-        <svg
-          viewBox="0 0 24 24"
-          className={
-            'w-3 h-3 transition-transform ' + (isMenuVisible ? 'rotate-180' : 'rotate-0')
-          }
-          aria-hidden="true"
-        >
-          <path
-            d="M7 10l5 5 5-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-
-      {/* Menu */}
-      {isMenuVisible && (
-        <div
-          className="absolute right-0 mt-1 z-20 w-48 max-h-36 overflow-auto rounded border u-border u-surface shadow-lg"
-          style={{
-            animation: `${isMenuClosing ? 'dropdownOut 140ms ease-in forwards' : 'dropdownIn 160ms ease-out forwards'}`,
-            transformOrigin: 'top right',
-          }}
-        >
-          {presets.length === 0 && (
-            <div className="px-2 py-1 text-[0.7rem] u-text-muted">
-              No presets saved
-            </div>
-          )}
-          {presets.map(p => {
-            const isActive = p.id === value;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                className={
-                  'w-full px-2 py-1 text-left text-[0.75rem] ' +
-                  (isActive
-                    ? 'bg-accent-tint text-accent'
-                    : 'u-surface u-text hover:bg-neutral-900')
-                }
-                onClick={() => handleSelect(p.id)}
-              >
-                <span className="truncate">{p.name}</span>
-                <span className="ml-1 text-[0.65rem] text-neutral-500">
-                  · {p.steps.length} step{p.steps.length === 1 ? '' : 's'}
-                </span>
-              </button>
-            );
-          })}
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-semibold u-text panel-header">{title}</h3>
+            {subtitle ? <p className="text-[0.75rem] u-text-muted">{subtitle}</p> : null}
+          </div>
+          <button
+            type="button"
+            className="text-neutral-400 hover:text-neutral-200"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            X
+          </button>
         </div>
-      )}
+
+        <div className="mt-4">{children}</div>
+
+        {footer ? <div className="mt-4">{footer}</div> : null}
+      </div>
     </div>
   );
 }
@@ -862,7 +652,13 @@ function App() {
   // Wheel config panel state
   const [isWheelConfigOpen, setIsWheelConfigOpen] = React.useState(false);
   const [isSetupPanelOpen, setIsSetupPanelOpen] = React.useState(false);
-  const [isAddWheelModalOpen, setIsAddWheelModalOpen] = React.useState(false);
+  const [isAddWheelModalVisible, setIsAddWheelModalVisible] = React.useState(false);
+  const [isAddWheelModalClosing, setIsAddWheelModalClosing] = React.useState(false);
+  const [editingWheelId, setEditingWheelId] = React.useState<string | null>(null);
+  const [editingWheelDraft, setEditingWheelDraft] = React.useState<WheelFormValue | null>(null);
+  const [isEditWheelModalVisible, setIsEditWheelModalVisible] = React.useState(false);
+  const [isEditWheelModalClosing, setIsEditWheelModalClosing] = React.useState(false);
+  const MODAL_CLOSE_MS = 200;
   const [newWheelDraft, setNewWheelDraft] = React.useState<Omit<Wheel, 'id'>>({
     name: '',
     D: NaN,
@@ -872,7 +668,6 @@ function App() {
     isHoning: false,
     grit: '',
   });
-  const [expandedWheelIds, setExpandedWheelIds] = React.useState<string[]>([]);
   const [wheelSortField, setWheelSortField] = React.useState<'name' | 'diam'>('name');
   const [wheelSortDir, setWheelSortDir] = React.useState<'asc' | 'desc'>('asc');
   const [wheelGroup, setWheelGroup] = React.useState<'none' | 'grit'>('none');
@@ -911,51 +706,13 @@ function App() {
   }, [isProgressionMenuOpen, isProgressionMenuVisible]);
 
 
-    // Track which wheel should auto-focus in the Wheel Manager
-  const focusWheelIdRef = React.useRef<string | null>(null);
-
     // Scroll target for newly added progression steps
   const progressionEndRef = React.useRef<HTMLDivElement | null>(null);
 
   // Track last loaded preset and its steps
 const lastLoadedPresetIdRef = React.useRef<string | null>(null);
 const lastLoadedStepsRef = React.useRef<string | null>(null);
-const [modalShift, setModalShift] = React.useState(0);
-const [modalViewportOffset, setModalViewportOffset] = React.useState(0);
-const modalOverlayPadding = modalShift
-  ? `calc(${modalShift}px + env(safe-area-inset-bottom) + 16px)`
-  : undefined;
-const modalOverlayStyle = React.useMemo(() => {
-  const style: React.CSSProperties = {};
-  if (modalOverlayPadding) style.paddingBottom = modalOverlayPadding;
-  if (modalViewportOffset) style.transform = `translateY(${modalViewportOffset}px)`;
-  return Object.keys(style).length ? style : undefined;
-}, [modalOverlayPadding, modalViewportOffset]);
-
-// Nudge modals up on mobile when the virtual keyboard is visible
-React.useEffect(() => {
-  if (typeof window === 'undefined') return;
-  const vv = window.visualViewport;
-  if (!vv) return;
-
-  const updateShift = () => {
-    const shrink = Math.max(0, window.innerHeight - vv.height);
-    const isMobile = window.innerWidth < 768;
-    const next = isMobile ? Math.min(shrink, 180) : 0;
-    setModalShift(next);
-    setModalViewportOffset(isMobile ? vv.offsetTop || 0 : 0);
-  };
-
-  updateShift();
-  vv.addEventListener('resize', updateShift);
-  vv.addEventListener('scroll', updateShift);
-  window.addEventListener('orientationchange', updateShift);
-  return () => {
-    vv.removeEventListener('resize', updateShift);
-    vv.removeEventListener('scroll', updateShift);
-    window.removeEventListener('orientationchange', updateShift);
-  };
-}, []);
+const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } = useModalLayout();
 
 
   // 🔒 Safety net: de-duplicate wheels by id (keep first, drop duplicates)
@@ -1552,18 +1309,55 @@ React.useEffect(() => {
       items,
     }));
   }, [sortedWheels, wheelGroup]);
+  const editingWheel = React.useMemo(
+    () => (editingWheelId ? wheels.find(w => w.id === editingWheelId) || null : null),
+    [editingWheelId, wheels]
+  );
+
+  React.useEffect(() => {
+    if (!editingWheel) {
+      setEditingWheelDraft(null);
+      return;
+    }
+    setEditingWheelDraft({
+      name: editingWheel.name,
+      D: editingWheel.D,
+      DText: editingWheel.DText,
+      grit: editingWheel.grit,
+      isHoning: editingWheel.isHoning,
+      baseForHn: editingWheel.baseForHn,
+    });
+  }, [editingWheel]);
+
+  const openEditWheelModal = (wheel: Wheel) => {
+    setEditingWheelDraft({
+      name: wheel.name,
+      D: wheel.D,
+      DText: wheel.DText,
+      grit: wheel.grit,
+      isHoning: wheel.isHoning,
+      baseForHn: wheel.baseForHn,
+    });
+    setEditingWheelId(wheel.id);
+    setIsEditWheelModalVisible(true);
+    setIsEditWheelModalClosing(false);
+  };
+
+  const closeEditWheelModal = () => {
+    setIsEditWheelModalClosing(true);
+    window.setTimeout(() => {
+      setIsEditWheelModalVisible(false);
+      setIsEditWheelModalClosing(false);
+      setEditingWheelId(null);
+      setEditingWheelDraft(null);
+    }, MODAL_CLOSE_MS);
+  };
   const newWheelNameTrimmed = newWheelDraft.name.trim();
   const isNewWheelDiameterValid = Number.isFinite(newWheelDraft.D);
   const isAddWheelSaveDisabled = !newWheelNameTrimmed || !isNewWheelDiameterValid;
 
   const updateWheel = (id: string, patch: Partial<Wheel>) => {
     setWheels(prev => prev.map(w => (w.id === id ? { ...w, ...patch } : w)));
-  };
-
-  const toggleWheelExpanded = (id: string) => {
-    setExpandedWheelIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
   };
 
   const resetNewWheelDraft = () => {
@@ -1578,9 +1372,23 @@ React.useEffect(() => {
     });
   };
 
+  const openAddWheelModal = () => {
+    setIsAddWheelModalVisible(true);
+    setIsAddWheelModalClosing(false);
+  };
+
+  const closeAddWheelModal = () => {
+    setIsAddWheelModalClosing(true);
+    window.setTimeout(() => {
+      setIsAddWheelModalVisible(false);
+      setIsAddWheelModalClosing(false);
+      resetNewWheelDraft();
+    }, MODAL_CLOSE_MS);
+  };
+
   const addWheel = () => {
     resetNewWheelDraft();
-    setIsAddWheelModalOpen(true);
+    openAddWheelModal();
   };
 
   const handleSaveNewWheel = () => {
@@ -1598,13 +1406,8 @@ React.useEffect(() => {
       grit: newWheelDraft.grit?.trim() ?? '',
     };
 
-    // Tell the Wheel Manager to auto-focus this wheel's name input
-    focusWheelIdRef.current = id;
-
     setWheels(prev => [...prev, w]);
-    setExpandedWheelIds(prev => [...prev, id]);
-    setIsAddWheelModalOpen(false);
-    resetNewWheelDraft();
+    closeAddWheelModal();
   };
 
   const deleteWheel = (id: string) => {
@@ -1619,11 +1422,14 @@ React.useEffect(() => {
 
     // Remove the wheel itself
     setWheels(prev => prev.filter(w => w.id !== id));
-    setExpandedWheelIds(prev => prev.filter(x => x !== id));
 
     // Also remove any progression steps that referenced this wheel
     setSessionSteps(prev => prev.filter(step => step.wheelId !== id));
+    if (editingWheelId === id) {
+      closeEditWheelModal();
+    }
   };
+
 const addStep = () => {
   if (wheels.length === 0) return;
 
@@ -1963,15 +1769,35 @@ const handleLoadPreset = (presetId: string) => {
             <div className="panel-card__header flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-semibold u-text panel-header">Progression</h2>
               <div className="flex items-center gap-3 ml-auto">
-                <PresetSelect
-                  presets={sessionPresets}
+                <MiniSelect
                   value={selectedPresetId || ''}
+                  options={[
+                    { value: '', label: 'Select preset' },
+                    ...sessionPresets.map(p => ({
+                      value: p.id,
+                      label: p.name,
+                      meta: `${p.steps.length} step${p.steps.length === 1 ? '' : 's'}`,
+                    })),
+                  ]}
                   onChange={id => {
                     setSelectedPresetId(id);
                     if (id) {
                       handleLoadPreset(id); // auto-load on selection
                     }
                   }}
+                  align="right"
+                  widthClass="min-w-[8rem]"
+                  menuWidthClass="w-48"
+                  emptyLabel="No presets saved"
+                  renderOption={opt => (
+                    <>
+                      <div className="dropdown-item__title text-[0.75rem] truncate">{opt.label}</div>
+                      {opt.meta ? (
+                        <div className="dropdown-item__meta text-[0.7rem]">{opt.meta}</div>
+                      ) : null}
+                    </>
+                  )}
+                  renderLabel={opt => (opt ? opt.label : 'Select preset')}
                 />
 
                 {/*Edit <-> Back toggle*/}
@@ -2003,7 +1829,7 @@ const handleLoadPreset = (presetId: string) => {
 
                   {isProgressionMenuVisible && (
                     <div
-                      className="absolute right-0 mt-1 w-52 rounded border border-neutral-700 bg-neutral-950 shadow-lg text-xs z-30"
+                      className="absolute right-0 mt-1 w-52 rounded border u-border u-surface shadow-lg text-xs z-30"
                       style={{
                         animation: `${isProgressionMenuClosing ? 'menuFadeSlideOut 100ms ease-in forwards' : 'menuFadeSlideIn 100ms ease-out forwards'}`,
                         transformOrigin: 'top right',
@@ -2013,7 +1839,7 @@ const handleLoadPreset = (presetId: string) => {
                         <button
                           key={item.label}
                           type="button"
-                          className="w-full px-3 py-2 text-left hover:bg-neutral-900 disabled:opacity-40"
+                          className="menu-item w-full px-3 py-2 text-left"
                           disabled={item.disabled}
                           onClick={() => {
                             if (item.disabled) return;
@@ -2082,9 +1908,16 @@ const handleLoadPreset = (presetId: string) => {
                                 </div>
 
                                 {/* Wheel selector */}
-                                <WheelSelect
-                                  wheels={wheels}
+                                <MiniSelect
                                   value={step.wheelId}
+                                  options={[
+                                    { value: '', label: 'Select wheel...' },
+                                    ...wheels.map(w => ({
+                                      value: w.id,
+                                      label: w.name,
+                                      meta: w.isHoning ? 'honing' : undefined,
+                                    })),
+                                  ]}
                                   onChange={id => {
                                     const newWheel = wheels.find(w => w.id === id);
                                     if (!newWheel) return;
@@ -2093,6 +1926,18 @@ const handleLoadPreset = (presetId: string) => {
                                       base: newWheel.isHoning ? 'front' : step.base,
                                     });
                                   }}
+                                  widthClass="min-w-[9rem] max-w-[9rem]"
+                                  menuWidthClass="w-44"
+                                  emptyLabel="No wheels defined"
+                                  renderOption={opt => (
+                                    <>
+                                      <div className="dropdown-item__title text-[0.75rem]">{opt.label}</div>
+                                      {opt.meta ? (
+                                        <div className="dropdown-item__meta text-[0.7rem]">{opt.meta}</div>
+                                      ) : null}
+                                    </>
+                                  )}
+                                  renderLabel={opt => (opt ? opt.label : 'Select wheel...')}
                                 />
                               </div>
 
@@ -2287,26 +2132,25 @@ const handleLoadPreset = (presetId: string) => {
       )}
       
 {view === 'wheels' && (
-  <section className="panel-card motion-panel flex flex-col gap-3 max-w-3xl mx-auto">
-    <div className="flex flex-col gap-2 border-b u-border-strong pb-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+  <section className="panel-card motion-panel flex flex-col gap-0 max-w-3xl mx-auto">
+    <div className="panel-card__header flex flex-wrap items-center justify-between gap-2">
+      <div>
         <h2 className="text-sm font-semibold u-text panel-header">Wheel Manager</h2>
-        <button
-          type="button"
-          className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95"
-          onClick={addWheel}
-        >
-          + Add Wheel
-        </button>
+        <p className="text-xs u-text-muted">
+          Configure your grinding and honing wheels here. These settings are shared with the calculator view.
+        </p>
       </div>
+      <button
+        type="button"
+        className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95"
+        onClick={addWheel}
+      >
+        + Add Wheel
+      </button>
     </div>
 
-    <p className="text-xs u-text-muted">
-      Configure your grinding and honing wheels here. These settings are shared with
-      the calculator view and saved to your browser.
-    </p>
-
-    <div className="flex items-center gap-2 flex-wrap justify-end">
+    <div className="panel-card__body flex flex-col gap-3">
+      <div className="flex items-center gap-2 flex-wrap justify-end">
         <label className="text-[0.75rem] u-text-muted flex items-center gap-1">
           <span>Group:</span>
           <MiniSelect
@@ -2335,368 +2179,197 @@ const handleLoadPreset = (presetId: string) => {
         </label>
         <button
           type="button"
-          className="w-8 h-8 inline-flex items-center justify-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
+          className="w-8 h-8 inline-flex items-center justify-center rounded border u-border u-surface text-xs hover:bg-neutral-900"
           aria-label={`Toggle ${wheelSortField === 'name' ? 'name' : 'diameter'} sort ${wheelSortDir === 'asc' ? 'ascending' : 'descending'}`}
-        onClick={() => setWheelSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'))}
-      >
-        {wheelSortDir === 'asc' ? (
-          <IconSortAsc className="w-4 h-4" />
-        ) : (
-          <IconSortDesc className="w-4 h-4" />
-        )}
-      </button>
-    </div>
-
-    {wheels.length === 0 ? (
-      <div className="text-xs text-neutral-400 border border-dashed border-neutral-700 rounded p-3">
-        No wheels saved yet. Click <span className="font-semibold text-neutral-200">Add Wheel</span>{' '}
-        to create your first wheel.
+          onClick={() => setWheelSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'))}
+        >
+          {wheelSortDir === 'asc' ? (
+            <IconSortAsc className="w-4 h-4" />
+          ) : (
+            <IconSortDesc className="w-4 h-4" />
+          )}
+        </button>
       </div>
-    ) : (
-      <div className="flex flex-col gap-4">
-        {groupedWheels.map(group => (
-          <div key={group.key} className="flex flex-col gap-2">
-            {group.label && (
-              <div className="flex items-center gap-2 text-[0.85rem] text-neutral-200">
-                <span className="font-semibold">{group.label}</span>
-                <span className="text-[0.7rem] text-neutral-500">
-                  {group.items.length} wheel{group.items.length === 1 ? '' : 's'}
-                </span>
-              </div>
-            )}
 
-            <div className="grid gap-2 md:grid-cols-2">
-              {group.items.map((w, idx) => {
-                const expanded = expandedWheelIds.includes(w.id);
-                const diameterDisplay =
-                  w.DText !== undefined ? w.DText : Number.isNaN(w.D) ? '' : String(w.D);
-                const baseLabel = w.isHoning
-                  ? 'Honing (front base)'
-                  : w.baseForHn === 'rear'
-                  ? 'Rear base'
-                  : 'Front base';
+      {wheels.length === 0 ? (
+        <div className="text-xs u-text-muted border border-dashed u-border rounded p-3 u-surface">
+          No wheels saved yet. Click <span className="font-semibold u-text">Add Wheel</span> to create your first wheel.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {groupedWheels.map(group => (
+            <div key={group.key} className="flex flex-col gap-2">
+              {group.label && (
+                <div className="flex items-center gap-2 text-[0.85rem] u-text">
+                  <span className="font-semibold">{group.label}</span>
+                  <span className="text-[0.7rem] u-text-muted">
+                    {group.items.length} wheel{group.items.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+              )}
+
+              <div className="grid card-grid md:grid-cols-2">
+                {group.items.map((w, idx) => {
+                  const diameterDisplay =
+                    w.DText !== undefined ? w.DText : Number.isNaN(w.D) ? '' : String(w.D);
+                  const baseLabel = w.isHoning
+                    ? 'Honing (front base)'
+                    : w.baseForHn === 'rear'
+                    ? 'Rear base'
+                    : 'Front base';
 
                 return (
-                  <div
-                    key={w.id}
-                    className="border u-border rounded-md p-2 u-surface flex flex-col gap-2 motion-card overflow-hidden"
-                    style={{ '--motion-order': idx } as React.CSSProperties}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <div className="text-sm font-semibold text-neutral-100 truncate">
-                          {w.name || 'Untitled wheel'}
-                        </div>
-                        <div className="text-[0.75rem] text-neutral-400 flex flex-wrap items-center gap-2">
-                          <span className="font-mono">D: {diameterDisplay || '-'} mm</span>
-                          <span>{baseLabel}</span>
-                          {w.grit ? (
-                            <span className="px-2 py-[2px] rounded border border-neutral-700 bg-neutral-900 text-neutral-200">
-                              Grit: {w.grit}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <ExpandToggle
-                          expanded={expanded}
-                          onToggle={() => toggleWheelExpanded(w.id)}
-                          labelExpanded="Hide wheel details"
-                          labelCollapsed="Show wheel details"
-                        />
-                      </div>
-                    </div>
-
                     <div
-                      className={
-                        'collapsible mt-1 border-t border-neutral-800 ' +
-                        (expanded ? 'collapsible--open' : '')
-                      }
+                      key={w.id}
+                      className="card-elevated wheel-card flex flex-col gap-2 motion-card"
+                      style={{ '--motion-order': idx } as React.CSSProperties}
                     >
-                      <div className="flex flex-col gap-2 pt-1">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs text-neutral-400">Wheel name</span>
-                          <input
-                            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-                            value={w.name}
-                            ref={el => {
-                              if (el && focusWheelIdRef.current === w.id && view === 'wheels') {
-                                el.focus();
-                                el.select();
-                                focusWheelIdRef.current = null;
-                              }
-                            }}
-                            onKeyDown={blurOnEnter}
-                            onFocus={e => e.target.select()}
-                            onChange={e => updateWheel(w.id, { name: e.target.value })}
-                          />
+                    <div className="card-elevated__header wheel-card__header grid grid-cols-[1fr_auto] items-center gap-2">
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <div className="text-sm font-semibold u-text truncate">
+                            {w.name || 'Untitled wheel'}
+                          </div>
                         </div>
-
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="text-neutral-300">D</span>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            className="w-20 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-sm appearance-none"
-                            value={
-                              w.DText !== undefined
-                                ? w.DText
-                                : Number.isNaN(w.D)
-                                ? ''
-                                : String(w.D)
-                            }
-                            onKeyDown={blurOnEnter}
-                            onFocus={e => e.target.select()}
-                            onChange={e => {
-                              const text = e.target.value;
-                              const patch: Partial<Wheel> = { DText: text };
-
-                              const trimmed = text.trim();
-                              if (trimmed === '') {
-                                patch.D = NaN as unknown as number;
-                                updateWheel(w.id, patch);
-                                return;
-                              }
-
-                              const normalised = trimmed.replace(',', '.');
-                              const val = Number(normalised);
-
-                              if (!Number.isNaN(val)) {
-                                patch.D = Math.round(val * 100) / 100;
-                              }
-
-                              updateWheel(w.id, patch);
-                            }}
-                          />
-                          <span className="text-neutral-400 text-[0.65rem]">mm</span>
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs text-neutral-400">Grit / abrasive</span>
-                          <input
-                            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-                            value={w.grit ?? ''}
-                            onChange={e => updateWheel(w.id, { grit: e.target.value })}
-                            onKeyDown={blurOnEnter}
-                          />
-                        </div>
-
-                        <div className="flex flex-col gap-1 text-sm">
-                          <label className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={w.isHoning}
-                              onChange={e =>
-                                updateWheel(w.id, {
-                                  isHoning: e.target.checked,
-                                  baseForHn: e.target.checked ? 'front' : w.baseForHn,
-                                })
-                              }
-                            />
-                            <span className="text-neutral-300">Honing wheel? (Locks to Front base)</span>
-                          </label>
-
-                          {!w.isHoning && (
-                            <div className="flex items-center gap-3 text-xs text-neutral-300">
-                              <span>Default base for h?:</span>
-                              <label className="flex items-center gap-1">
-                                <input
-                                  type="radio"
-                                  checked={w.baseForHn === 'rear'}
-                                  onChange={() => updateWheel(w.id, { baseForHn: 'rear' })}
-                                />
-                                <span>Rear (edge leading)</span>
-                              </label>
-                              <label className="flex items-center gap-1">
-                                <input
-                                  type="radio"
-                                  checked={w.baseForHn === 'front'}
-                                  onChange={() => updateWheel(w.id, { baseForHn: 'front' })}
-                                />
-                                <span>Front (edge trailing)</span>
-                              </label>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex justify-end">
+                        <div className="flex items-center justify-center gap-2 shrink-0 h-full">
                           <button
                             type="button"
-                            className="text-danger text-xs border border-danger rounded px-2 py-1 hover:bg-danger-tint"
-                            onClick={() => deleteWheel(w.id)}
+                            className="px-2 py-1 rounded border u-border u-surface text-xs u-text hover:bg-neutral-900 active:scale-95 transition-transform"
+                            onClick={() => openEditWheelModal(w)}
                           >
-                            Delete wheel
+                            Details
                           </button>
                         </div>
                       </div>
+
+                      <div className="wheel-card__summary">
+                        <span className="font-mono u-text text-[0.8rem]">
+                          D: {diameterDisplay || '-'} mm
+                        </span>
+                        <span className="u-text-muted">{baseLabel}</span>
+                        {w.grit ? (
+                          <span className="px-2 py-[2px] rounded border u-border u-surface text-[0.75rem] u-text">
+                            Grit: {w.grit}
+                          </span>
+                        ) : null}
+                      </div>
+
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-    )}
+          ))}
+        </div>
+      )}
+    </div>
   </section>
 )}
-{isAddWheelModalOpen && (
-  <div
-    className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh]"
-    style={modalOverlayStyle}
+{isEditWheelModalVisible && (editingWheelDraft || editingWheel) && (
+  <ModalShell
+    title="Edit wheel"
+    subtitle="Changes apply immediately to the calculator and presets."
+    onClose={closeEditWheelModal}
+    closing={isEditWheelModalClosing}
+    overlayStyle={modalOverlayStyle}
+    dialogStyle={getModalDialogStyle({ liftByKeyboard: true })}
   >
-    <div
-      className="w-full max-w-md rounded-lg border u-border u-surface p-4 shadow-xl max-h-[90vh] overflow-y-auto"
-      style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-sm font-semibold u-text panel-header">Add wheel</h3>
-          <p className="text-[0.75rem] u-text-muted">
-            Enter wheel details. Saved wheels will appear in the list below.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="text-neutral-400 hover:text-neutral-200"
-          onClick={() => {
-            setIsAddWheelModalOpen(false);
-            resetNewWheelDraft();
-          }}
-          aria-label="Close"
-        >
-          X
-        </button>
-      </div>
+    {(() => {
+      const source = editingWheelDraft || editingWheel!;
+      const hasBaseline = Boolean(editingWheel);
+      const saveDisabled =
+        !editingWheelId ||
+        !source.name.trim() ||
+        !Number.isFinite(source.D) ||
+        (hasBaseline &&
+          source.name === editingWheel!.name &&
+          source.D === editingWheel!.D &&
+          (source.DText ?? '') === (editingWheel!.DText ?? '') &&
+          (source.grit ?? '') === (editingWheel!.grit ?? '') &&
+          source.isHoning === editingWheel!.isHoning &&
+          source.baseForHn === editingWheel!.baseForHn);
 
-      <div className="mt-4 flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <span className="text-xs u-text-muted">Wheel name</span>
-          <input
-            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-            value={newWheelDraft.name}
-            onChange={e => setNewWheelDraft(prev => ({ ...prev, name: e.target.value }))}
-            onFocus={e => e.target.select()}
-            onKeyDown={blurOnEnter}
-            autoFocus
+      return (
+        <>
+          <WheelFormFields
+            value={source}
+            onChange={patch =>
+              setEditingWheelDraft(prev => ({
+                ...(prev || source),
+                ...patch,
+              }))
+            }
           />
-        </div>
 
-        <div className="flex flex-col gap-1">
-          <span className="text-xs u-text-muted">Diameter (mm)</span>
-          <div className="flex items-center gap-2 text-xs">
-            <input
-              type="text"
-              inputMode="decimal"
-              className="w-24 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-sm appearance-none"
-              value={
-                newWheelDraft.DText !== undefined
-                  ? newWheelDraft.DText
-                  : Number.isNaN(newWheelDraft.D)
-                  ? ''
-                  : String(newWheelDraft.D)
-              }
-              onKeyDown={blurOnEnter}
-              onFocus={e => e.target.select()}
-              onChange={e => {
-                const text = e.target.value;
-
-                const patch: Partial<Wheel> = { DText: text };
-
-                const trimmed = text.trim();
-                if (trimmed === '') {
-                  patch.D = NaN as unknown as number;
-                  setNewWheelDraft(prev => ({ ...prev, ...patch }));
-                  return;
-                }
-
-                const normalised = trimmed.replace(',', '.');
-                const val = Number(normalised);
-
-                if (!Number.isNaN(val)) {
-                  patch.D = Math.round(val * 100) / 100;
-                }
-
-                setNewWheelDraft(prev => ({ ...prev, ...patch }));
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              className="text-danger text-xs border border-danger rounded px-3 py-1 hover:bg-danger-tint"
+              onClick={() => {
+                if (!editingWheelId) return;
+                deleteWheel(editingWheelId);
               }}
-            />
-            <span className="text-neutral-400 text-[0.75rem]">mm</span>
+            >
+              Delete wheel
+            </button>
+            <button
+              type="button"
+              className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300"
+              onClick={closeEditWheelModal}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
+              disabled={saveDisabled}
+              onClick={() => {
+                if (!editingWheelId || !editingWheelDraft) return;
+                updateWheel(editingWheelId, editingWheelDraft as Partial<Wheel>);
+                closeEditWheelModal();
+              }}
+            >
+              Save changes
+            </button>
           </div>
-        </div>
+        </>
+      );
+    })()}
+  </ModalShell>
+)}
+{isAddWheelModalVisible && (
+  <ModalShell
+    title="Add wheel"
+    subtitle="Enter wheel details. Saved wheels will appear in the list below."
+    onClose={closeAddWheelModal}
+    closing={isAddWheelModalClosing}
+    overlayStyle={modalOverlayStyle}
+    dialogStyle={getModalDialogStyle({ liftByKeyboard: true })}
+  >
+    <WheelFormFields
+      value={newWheelDraft}
+      onChange={patch => setNewWheelDraft(prev => ({ ...prev, ...patch }))}
+      autoFocusName
+    />
 
-        <div className="flex flex-col gap-1">
-          <span className="text-xs u-text-muted">Grit / abrasive</span>
-          <input
-            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-            value={newWheelDraft.grit ?? ''}
-            onChange={e => setNewWheelDraft(prev => ({ ...prev, grit: e.target.value }))}
-            onKeyDown={blurOnEnter}
-          />
-        </div>
+    <div className="mt-4 flex justify-end gap-2">
+      <button
+        type="button"
+        className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300"
+        onClick={closeAddWheelModal}
+      >
+        Cancel
+      </button>
 
-        <div className="flex flex-col gap-2 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={newWheelDraft.isHoning}
-              onChange={e =>
-                setNewWheelDraft(prev => ({
-                  ...prev,
-                  isHoning: e.target.checked,
-                  baseForHn: e.target.checked ? 'front' : prev.baseForHn,
-                }))
-              }
-            />
-            <span className="text-neutral-300">Honing wheel? (Locks to Front base)</span>
-          </label>
-
-          {!newWheelDraft.isHoning && (
-            <div className="flex items-center gap-3 text-xs text-neutral-300">
-              <span>Default base for h?:</span>
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  checked={newWheelDraft.baseForHn === 'rear'}
-                  onChange={() => setNewWheelDraft(prev => ({ ...prev, baseForHn: 'rear' }))}
-                />
-                <span>Rear (edge leading)</span>
-              </label>
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  checked={newWheelDraft.baseForHn === 'front'}
-                  onChange={() => setNewWheelDraft(prev => ({ ...prev, baseForHn: 'front' }))}
-                />
-                <span>Front (edge trailing)</span>
-              </label>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-4 flex justify-end gap-2">
-        <button
-          type="button"
-          className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300"
-          onClick={() => {
-            setIsAddWheelModalOpen(false);
-            resetNewWheelDraft();
-          }}
-        >
-          Cancel
-        </button>
-
-        <button
-          type="button"
-          className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
-          disabled={isAddWheelSaveDisabled}
-          onClick={handleSaveNewWheel}
-        >
-          Save wheel
-        </button>
-      </div>
+      <button
+        type="button"
+        className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
+        disabled={isAddWheelSaveDisabled}
+        onClick={handleSaveNewWheel}
+      >
+        Save wheel
+      </button>
     </div>
-  </div>
+  </ModalShell>
 )}
 
       {/* Settings view */}
@@ -2857,174 +2530,147 @@ const handleLoadPreset = (presetId: string) => {
 
       {/* ====== PRESET MANAGER MODAL (shell) ====== */}
       {isPresetManagerVisible && (
-        <div
-          className={
-            'fixed inset-0 z-40 flex items-start justify-center overflow-hidden bg-black/60 pt-12 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 motion-overlay ' +
-            (isPresetManagerClosing ? 'motion-overlay--closing' : '')
-          }
-          style={modalOverlayStyle}
+        <ModalShell
+          title="Manage presets"
+          subtitle="Rename, load, or delete saved progressions."
+          onClose={() => setIsPresetManagerOpen(false)}
+          closing={isPresetManagerClosing}
+          overlayStyle={modalOverlayStyle}
+          dialogStyle={getModalDialogStyle()}
         >
-          <div
-            className={
-              'w-full max-w-md rounded-lg border u-border u-surface p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
-              (isPresetManagerClosing ? 'motion-dialog--closing' : '')
-            }
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold u-text">Manage presets</h3>
-                <p className="mt-1 text-[0.75rem] u-text-muted">
-                  Rename, load, or delete saved progressions.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95 transition-transform"
-                onClick={() => setIsPresetManagerOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-3 max-h-64 overflow-y-auto text-xs">
-              {sessionPresets.length === 0 ? (
-                <div className="text-neutral-500">No presets saved yet.</div>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {sessionPresets.map(preset => {
-                    const isEditing = presetRenameId === preset.id;
-                    const renameTrimmed = presetRenameValue.trim();
-                    const renameConflicts =
-                      isEditing &&
-                      sessionPresets.some(
-                        p =>
-                          p.id !== preset.id &&
-                          p.name.toLowerCase() === renameTrimmed.toLowerCase()
-                      );
-                    const renameDisabled =
-                      !isEditing || renameTrimmed.length === 0 || renameConflicts;
-
-                    return (
-                      <li
-                        key={preset.id}
-                        className="flex items-start justify-between gap-2 rounded border u-border u-surface px-2 py-2"
-                      >
-                        <div className="flex-1 flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                className="w-full rounded border u-border u-surface px-2 py-1 text-xs u-text placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
-                                value={presetRenameValue}
-                                onChange={e => setPresetRenameValue(e.target.value)}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    handleCommitPresetRename();
-                                  }
-                                  if (e.key === 'Escape') {
-                                    handleCancelPresetRename();
-                                  }
-                                }}
-                                autoFocus
-                              />
-                            ) : (
-                              <span className="u-text">{preset.name}</span>
-                            )}
-                            {selectedPresetId === preset.id && (
-                              <span className="text-[0.65rem] text-accent-soft border border-accent rounded px-1 py-[2px]">
-                                active
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[0.7rem] u-text-muted">
-                            {preset.steps.length} step{preset.steps.length === 1 ? '' : 's'}
-                          </div>
-                          {isEditing && renameConflicts && (
-                            <div className="text-[0.65rem] text-warning">
-                              A preset with that name already exists.
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col gap-1 self-start">
-                          {isEditing ? (
-                            <div className="flex gap-1">
-                              <button
-                                type="button"
-                                className="px-2 py-1 rounded border border-accent bg-accent-tint text-[0.7rem] text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                                disabled={renameDisabled}
-                                onClick={handleCommitPresetRename}
-                              >
-                                Save
-                              </button>
-                              <button
-                                type="button"
-                                className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
-                                onClick={handleCancelPresetRename}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap gap-1 justify-end">
-                              <button
-                                type="button"
-                                className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
-                                onClick={() => {
-                                  handleLoadPreset(preset.id);
-                                  setIsPresetManagerOpen(false);
-                                }}
-                              >
-                                Load
-                              </button>
-                              <button
-                                type="button"
-                                className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
-                                onClick={() => handleBeginPresetRename(preset)}
-                              >
-                                Rename
-                              </button>
-                              <button
-                                type="button"
-                                className="px-2 py-1 rounded border border-danger bg-danger-tint text-[0.7rem] text-danger hover:bg-red-900 active:scale-95"
-                                onClick={() => handleDeletePreset(preset.id)}
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </li>
+          <div className="max-h-64 overflow-y-auto text-xs">
+            {sessionPresets.length === 0 ? (
+              <div className="text-neutral-500">No presets saved yet.</div>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {sessionPresets.map(preset => {
+                  const isEditing = presetRenameId === preset.id;
+                  const renameTrimmed = presetRenameValue.trim();
+                  const renameConflicts =
+                    isEditing &&
+                    sessionPresets.some(
+                      p =>
+                        p.id !== preset.id &&
+                        p.name.toLowerCase() === renameTrimmed.toLowerCase()
                     );
-                  })}
-                </ul>
-              )}
-            </div>
+                  const renameDisabled =
+                    !isEditing || renameTrimmed.length === 0 || renameConflicts;
+
+                  return (
+                    <li
+                      key={preset.id}
+                      className="flex items-start justify-between gap-2 rounded border u-border u-surface px-2 py-2"
+                    >
+                      <div className="flex-1 flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              className="w-full rounded border u-border u-surface px-2 py-1 text-xs u-text placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+                              value={presetRenameValue}
+                              onChange={e => setPresetRenameValue(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  handleCommitPresetRename();
+                                }
+                                if (e.key === 'Escape') {
+                                  handleCancelPresetRename();
+                                }
+                              }}
+                              autoFocus
+                            />
+                          ) : (
+                            <span className="u-text">{preset.name}</span>
+                          )}
+                          {selectedPresetId === preset.id && (
+                            <span className="text-[0.65rem] text-accent-soft border border-accent rounded px-1 py-[2px]">
+                              active
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[0.7rem] u-text-muted">
+                          {preset.steps.length} step{preset.steps.length === 1 ? '' : 's'}
+                        </div>
+                        {isEditing && renameConflicts && (
+                          <div className="text-[0.65rem] text-warning">
+                            A preset with that name already exists.
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1 self-start">
+                        {isEditing ? (
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border border-accent bg-accent-tint text-[0.7rem] text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                              disabled={renameDisabled}
+                              onClick={handleCommitPresetRename}
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
+                              onClick={handleCancelPresetRename}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1 justify-end">
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
+                              onClick={() => {
+                                handleLoadPreset(preset.id);
+                                setIsPresetManagerOpen(false);
+                              }}
+                            >
+                              Load
+                            </button>
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
+                              onClick={() => handleBeginPresetRename(preset)}
+                            >
+                              Rename
+                            </button>
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border border-danger bg-danger-tint text-[0.7rem] text-danger hover:bg-red-900 active:scale-95"
+                              onClick={() => handleDeletePreset(preset.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
-        </div>
+        </ModalShell>
       )}
 
       {/* ====== SAVE PRESET MODAL ====== */}
-      {isPresetDialogVisible && (
-        <div
-          className={
-            'fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
-            (isPresetDialogClosing ? 'motion-overlay--closing' : '')
-          }
-          style={modalOverlayStyle}
+{isPresetDialogVisible && (
+        <ModalShell
+          title="Save preset"
+          subtitle="Enter a name for this progression."
+          onClose={() => {
+            setIsPresetDialogOpen(false);
+            setPresetNameDraft('');
+          }}
+          closing={isPresetDialogClosing}
+          overlayStyle={modalOverlayStyle}
+          dialogStyle={getModalDialogStyle()}
         >
-          <div
-            className={
-              'w-full max-w-sm rounded-lg border u-border u-surface p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
-              (isPresetDialogClosing ? 'motion-dialog--closing' : '')
-            }
-            style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
-          >
-            <h3 className="text-sm font-semibold u-text">Save preset</h3>
-            <p className="mt-1 text-[0.75rem] u-text-muted">
-              Enter a name for this progression.
-            </p>
+          <h3 className="sr-only">Save preset</h3>
+          <p className="sr-only">Enter a name for this progression.</p>
 
-            <div className="mt-3">
+          <div className="mt-3">
               <input
                 type="text"
                 className="w-full rounded border u-border u-surface px-2 py-1 text-xs u-text placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
@@ -3036,7 +2682,7 @@ const handleLoadPreset = (presetId: string) => {
               />
             </div>
 
-            <div className="mt-4 flex justify-end gap-2">
+          <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
                 className="px-2 py-1 rounded border u-border u-surface text-xs u-text-muted"
@@ -3057,72 +2703,62 @@ const handleLoadPreset = (presetId: string) => {
                 Save
               </button>
             </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
       {/* ====== STEP NOTES MODAL ====== */}
       {isStepNotesVisible && (
-        <div
-          className={
-            'fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
-            (isStepNotesClosing ? 'motion-overlay--closing' : '')
-          }
-          style={modalOverlayStyle}
+        <ModalShell
+          title="Step notes"
+          subtitle="Notes for this step."
+          onClose={() => setIsStepNotesOpen(false)}
+          closing={isStepNotesClosing}
+          overlayStyle={modalOverlayStyle}
+          dialogStyle={getModalDialogStyle()}
         >
-          <div
-            className={
-              'w-full max-w-md rounded-lg border u-border u-surface p-4 shadow-xl max-h-[90vh] overflow-y-auto motion-dialog ' +
-              (isStepNotesClosing ? 'motion-dialog--closing' : '')
-            }
-            style={modalShift ? { transform: `translateY(-${modalShift}px)` } : undefined}
-          >
-            <h3 className="text-sm font-semibold u-text">Step notes</h3>
-            <p className="mt-1 text-[0.75rem] u-text-muted">Notes for this step.</p>
-            <div className="mt-3">
-              <textarea
-                className="w-full min-h-[6rem] rounded border u-border u-surface px-2 py-1 text-xs u-text"
-                autoFocus
-                value={stepNotesDraft}
-                onChange={e => setStepNotesDraft(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    const id = stepNotesStepIdRef.current;
-                    if (!id) return;
-                    setSessionSteps(prev =>
-                      prev.map(s => (s.id === id ? { ...s, notes: stepNotesDraft.trim() } : s))
-                    );
-                    setIsStepNotesOpen(false);
-                  }
-                }}
-              />
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                className="px-2 py-1 rounded border u-border u-surface text-xs u-text-muted"
-                onClick={() => setIsStepNotesOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95"
-                onClick={() => {
+          <div className="mt-1">
+            <textarea
+              className="w-full min-h-[6rem] rounded border u-border u-surface px-2 py-1 text-xs u-text"
+              autoFocus
+              value={stepNotesDraft}
+              onChange={e => setStepNotesDraft(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
                   const id = stepNotesStepIdRef.current;
                   if (!id) return;
                   setSessionSteps(prev =>
                     prev.map(s => (s.id === id ? { ...s, notes: stepNotesDraft.trim() } : s))
                   );
                   setIsStepNotesOpen(false);
-                }}
-              >
-                Save
-              </button>
-            </div>
+                }
+              }}
+            />
           </div>
-        </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              className="px-2 py-1 rounded border u-border u-surface text-xs u-text-muted"
+              onClick={() => setIsStepNotesOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95"
+              onClick={() => {
+                const id = stepNotesStepIdRef.current;
+                if (!id) return;
+                setSessionSteps(prev =>
+                  prev.map(s => (s.id === id ? { ...s, notes: stepNotesDraft.trim() } : s))
+                );
+                setIsStepNotesOpen(false);
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </ModalShell>
       )}
       
     </div>
