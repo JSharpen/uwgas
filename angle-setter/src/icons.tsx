@@ -5,6 +5,26 @@ export type IconProps = SVGProps<SVGSVGElement> & {
   className?: string;
 };
 
+/** Close / dismiss (X) */
+export function IconClose({ className, ...rest }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      aria-hidden="true"
+      {...rest}
+    >
+      <path
+        d="M7 7l10 10m0-10L7 17"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /** Three vertical dots ("kebab" menu) */
 export function IconKebab({ className, ...rest }: IconProps) {
   return (

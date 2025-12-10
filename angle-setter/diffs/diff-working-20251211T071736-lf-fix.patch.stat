@@ -1,0 +1,16 @@
+﻿warning: in the working copy of 'angle-setter/eslint.config.js', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/App.tsx', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/components/CalibrationWizard.tsx', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/components/MiniSelect.tsx', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/icons.tsx', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/index.css', CRLF will be replaced by LF the next time Git touches it
+ angle-setter/eslint.config.js                     |   3 +
+ angle-setter/src/App.tsx                          | 271 ++++++++++++----------
+ angle-setter/src/components/CalibrationWizard.tsx |  49 ++--
+ angle-setter/src/components/ImportExportPanel.tsx |   9 +-
+ angle-setter/src/components/MiniSelect.tsx        |   5 +-
+ angle-setter/src/components/ThemeLab.tsx          |  19 +-
+ angle-setter/src/icons.tsx                        |  20 ++
+ angle-setter/src/index.css                        |  81 ++++++-
+ angle-setter/src/primitives.css                   | 159 ++++++++++++-
+ 9 files changed, 443 insertions(+), 173 deletions(-)

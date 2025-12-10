@@ -11,7 +11,7 @@
 
 //================Imports=================
 import * as React from 'react';
-import { IconKebab, IconTrash, IconSortAsc, IconSortDesc } from './icons';
+import { IconKebab, IconTrash, IconSortAsc, IconSortDesc, IconClose } from './icons';
 import CalibrationWizard from './components/CalibrationWizard';
 import ImportExportPanel from './components/ImportExportPanel';
 import GlossaryPage from './components/GlossaryPage';
@@ -39,6 +39,7 @@ import {
   computeWheelResults,
   computeTonHeights,
 } from './math/tormek';
+import { BTN, BTN_MUTED } from './ui/buttons';
 
 const RESIDUAL_SYMBOL = 'ε';
 // =============== Helpers ===============
@@ -248,6 +249,8 @@ function ModalShell({
   dialogStyle?: React.CSSProperties;
   closing?: boolean;
 }) {
+  const hasSubtitle = Boolean(subtitle);
+
   return (
     <div
       className={
@@ -263,22 +266,22 @@ function ModalShell({
         }
         style={dialogStyle}
       >
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-sm font-semibold u-text panel-header">{title}</h3>
-            {subtitle ? <p className="text-[0.75rem] u-text-muted">{subtitle}</p> : null}
-          </div>
+        <div className="modal-shell__header">
+          <h3 className="modal-shell__title">{title}</h3>
           <button
             type="button"
-            className="text-neutral-400 hover:text-neutral-200"
+            className={BTN.close}
             onClick={onClose}
             aria-label="Close"
           >
-            X
+            <IconClose className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="mt-4">{children}</div>
+        <div className="modal-shell__body">
+          {hasSubtitle ? <p className="modal-shell__lede">{subtitle}</p> : null}
+          <div>{children}</div>
+        </div>
 
         {footer ? <div className="mt-4">{footer}</div> : null}
       </div>
@@ -580,6 +583,8 @@ function App() {
   const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
     _load('t_sessionSteps', [])
   );
+  const [removingStepIds, setRemovingStepIds] = React.useState<Set<string>>(new Set());
+  const stepRemoveTimersRef = React.useRef<Map<string, number>>(new Map());
   const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(() =>
     _load('t_sessionPresets', [])
   );
@@ -640,6 +645,13 @@ function App() {
     const val = _load<'hn' | 'hr'>('t_heightMode', 'hn');
     return val === 'hr' ? 'hr' : 'hn';
   });
+
+  React.useEffect(() => {
+    return () => {
+      stepRemoveTimersRef.current.forEach(t => window.clearTimeout(t));
+      stepRemoveTimersRef.current.clear();
+    };
+  }, []);
 
   // Step notes modal state
   const [isStepNotesOpen, setIsStepNotesOpen] = React.useState(false);
@@ -877,6 +889,20 @@ const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
 
   React.useEffect(() => {
     _save('t_sessionSteps', sessionSteps);
+  }, [sessionSteps]);
+
+  React.useEffect(() => {
+    setRemovingStepIds(prev => {
+      let changed = false;
+      const next = new Set(prev);
+      prev.forEach(id => {
+        if (!sessionSteps.some(s => s.id === id)) {
+          next.delete(id);
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
   }, [sessionSteps]);
 
   React.useEffect(() => {
@@ -1464,6 +1490,29 @@ const updateStep = (id: string, patch: Partial<SessionStep>) => {
   );
 };
 
+const requestDeleteStep = (id: string) => {
+  setRemovingStepIds(prev => {
+    if (prev.has(id)) return prev;
+    const next = new Set(prev);
+    next.add(id);
+    return next;
+  });
+
+  if (stepRemoveTimersRef.current.has(id)) return;
+
+  const timer = window.setTimeout(() => {
+    setSessionSteps(prev => prev.filter(s => s.id !== id));
+    setRemovingStepIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    stepRemoveTimersRef.current.delete(id);
+  }, 650);
+
+  stepRemoveTimersRef.current.set(id, timer);
+};
+
 const moveStep = (index: number, delta: number) => {
   setSessionSteps(prev => {
     const next = [...prev];
@@ -1642,47 +1691,32 @@ const handleLoadPreset = (presetId: string) => {
     <div className="min-h-dvh u-bg p-4 flex flex-col gap-4">
       <h1 className="text-lg font-semibold">UWGAS Dev build</h1>
 
-<div className="flex gap-2 text-sm mb-2">
-  <button
-    type="button"
-    className={
-      'px-2 py-1 rounded border ' +
-      (view === 'calculator'
-        ? 'border-accent bg-accent-tint'
-        : 'border-neutral-700 bg-neutral-900')
-    }
-    onClick={() => setView('calculator')}
-  >
-    Calculator
-  </button>
+      <div className="flex gap-2 text-sm mb-2">
+        <button
+          type="button"
+          className={view === 'calculator' ? BTN.tabPrimary : BTN.tabGhost}
+          onClick={() => setView('calculator')}
+        >
+          Calculator
+        </button>
 
-  <button
-    type="button"
-    className={
-      'px-2 py-1 rounded border ' +
-      (view === 'wheels'
-        ? 'border-accent bg-accent-tint'
-        : 'border-neutral-700 bg-neutral-900')
-    }
-    onClick={() => setView('wheels')}
-  >
-    Wheel Manager
-  </button>
+        <button
+          type="button"
+          className={view === 'wheels' ? BTN.tabPrimary : BTN.tabGhost}
+          onClick={() => setView('wheels')}
+        >
+          Wheel Manager
+        </button>
 
-  <button
-    type="button"
-    className={
-      'px-2 py-1 rounded border ' +
-      (view === 'settings'
-        ? 'border-accent bg-accent-tint'
-        : 'border-neutral-700 bg-neutral-900')
-    }
-    onClick={() => setView('settings')}
-    >
-      Settings
-    </button>
-  </div>
-  
+        <button
+          type="button"
+          className={view === 'settings' ? BTN.tabPrimary : BTN.tabGhost}
+          onClick={() => setView('settings')}
+        >
+          Settings
+        </button>
+      </div>
+
         {view === 'calculator' && (
         <div className="flex flex-col gap-4">
           {/* Global controls */}
@@ -1766,9 +1800,12 @@ const handleLoadPreset = (presetId: string) => {
 
           {/*Progression View*/}
           <section className="panel-card motion-panel flex flex-col gap-0">
-            <div className="panel-card__header flex flex-wrap items-center gap-3">
+            <div className="panel-card__header grid items-center gap-3" style={{ gridTemplateColumns: 'auto minmax(0, 1fr) auto' }}>
               <h2 className="text-sm font-semibold u-text panel-header">Progression</h2>
-              <div className="flex items-center gap-3 ml-auto">
+              <div
+                className="w-full min-w-0"
+                style={{ maxWidth: 'min(32rem, calc(100% - 10rem))' }}
+              >
                 <MiniSelect
                   value={selectedPresetId || ''}
                   options={[
@@ -1786,7 +1823,7 @@ const handleLoadPreset = (presetId: string) => {
                     }
                   }}
                   align="right"
-                  widthClass="min-w-[8rem]"
+                  widthClass="w-full min-w-[8rem]"
                   menuWidthClass="w-48"
                   emptyLabel="No presets saved"
                   renderOption={opt => (
@@ -1796,24 +1833,22 @@ const handleLoadPreset = (presetId: string) => {
                         <div className="dropdown-item__meta text-[0.7rem]">{opt.meta}</div>
                       ) : null}
                     </>
-                  )}
-                  renderLabel={opt => (opt ? opt.label : 'Select preset')}
-                />
-
-                {/*Edit <-> Back toggle*/}
+              )}
+              renderLabel={opt => (opt ? opt.label : 'Select preset')}
+            />
+          </div>
+              <div className="flex items-center gap-3 justify-end">
                 <button
                   type="button"
-                  className="w-12 px-2 py-1 text-center rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs"
+                  className={`${BTN.base} w-12`}
                   onClick={() => setIsWheelConfigOpen(open => !open)}
-                >
-                  {isWheelConfigOpen ? 'Back' : 'Edit'}
-                </button>
-
-                {/*Kebab menu Progression*/}
+            >
+              {isWheelConfigOpen ? 'Back' : 'Edit'}
+            </button>
                 <div ref={progressionMenuRef} className="relative">
                   <button
                     type="button"
-                    className="w-8 h-8 flex items-center justify-center rounded bg-transparent text-xs text-neutral-300 focus-visible:outline-none active:bg-transparent"
+                    className={`${BTN.iconPlain} text-neutral-300`}
                     style={{ WebkitTapHighlightColor: 'transparent' }}
                     title="Progression menu"
                     onClick={() => {
@@ -1824,12 +1859,11 @@ const handleLoadPreset = (presetId: string) => {
                       }
                     }}
                   >
-                    <IconKebab className="w-4 h-4" />
+                    <IconKebab className="w-5 h-5" />
                   </button>
-
                   {isProgressionMenuVisible && (
                     <div
-                      className="absolute right-0 mt-1 w-52 rounded border u-border u-surface shadow-lg text-xs z-30"
+                      className="absolute right-0 mt-1 w-52 rounded border u-border u-surface shadow-lg text-xs z-30 overflow-hidden"
                       style={{
                         animation: `${isProgressionMenuClosing ? 'menuFadeSlideOut 100ms ease-in forwards' : 'menuFadeSlideIn 100ms ease-out forwards'}`,
                         transformOrigin: 'top right',
@@ -1876,7 +1910,7 @@ const handleLoadPreset = (presetId: string) => {
                     <div className="flex flex-col gap-3">
                       {sessionSteps.map((step, index) => {
                         const wheel =
-                          wheels.find(w => w.id === step.wheelId) || {
+                      wheels.find(w => w.id === step.wheelId) || {
                             id: '',
                             name: 'Select wheel...',
                             D: 0,
@@ -1886,18 +1920,26 @@ const handleLoadPreset = (presetId: string) => {
                             isHoning: false,
                           };
                         const isHoning = wheel.isHoning;
+                        const isRemoving = removingStepIds.has(step.id);
+
+                        const removingStyle: React.CSSProperties | undefined = isRemoving
+                          ? {
+                              animation: 'stepRemove 520ms cubic-bezier(0.33, 1, 0.68, 1) forwards',
+                            }
+                          : undefined;
 
                         return (
-                              <div
-                                key={step.id}
-                                className="card-elevated flex flex-col motion-list-item"
-                                style={
-                                  {
-                                    '--motion-order': index,
-                                    minHeight: progressionCardMinHeight,
-                                  } as React.CSSProperties
-                                }
-                              >
+                          <div
+                            key={step.id}
+                            className={`card-elevated flex flex-col motion-list-item ${isRemoving ? 'step-removing' : ''}`}
+                            style={
+                              {
+                                '--motion-order': index,
+                                minHeight: progressionCardMinHeight,
+                                ...removingStyle,
+                              } as React.CSSProperties
+                            }
+                          >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
                             <div className="card-elevated__header wheel-card__header flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 min-h-[44px]">
                               {/* LEFT: step badge + grind direction + wheel select */}
@@ -1986,13 +2028,11 @@ const handleLoadPreset = (presetId: string) => {
                                 {/* Delete step button*/}
                                 <button
                                   type="button"
-                                  className="text-danger hover:text-danger active:scale-95 transition-transform ml-1"
-                                  onClick={() =>
-                                    setSessionSteps(prev => prev.filter(s => s.id !== step.id))
-                                  }
+                                  className={`${BTN.iconPlain} text-danger ml-1`}
+                                  onClick={() => requestDeleteStep(step.id)}
                                   title="Delete step"
                                 >
-                                  <IconTrash className="w-4 h-4" />
+                                  <IconTrash className="w-5 h-5" />
                                 </button>
                               </div>
                             </div>
@@ -2052,7 +2092,7 @@ const handleLoadPreset = (presetId: string) => {
                                 <div className="flex flex-col gap-2 items-start h-full relative">
                                   <button
                                     type="button"
-                                    className="px-2 py-1 rounded border u-border u-surface text-xs u-text hover:bg-neutral-800 self-start shadow-sm"
+                                    className={`${BTN.base} self-start`}
                                     onClick={() => {
                                       stepNotesStepIdRef.current = step.id;
                                       setStepNotesDraft(step.notes || '');
@@ -2067,16 +2107,16 @@ const handleLoadPreset = (presetId: string) => {
                                 <div className="flex flex-col justify-center items-end h-full min-w-[52px]">
                                   <button
                                     type="button"
-                                    className="px-2 py-1.5 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform"
-                                    onClick={() => moveStep(index, -1)}
-                                    disabled={index === 0}
-                                    title="Move up"
-                                  >
+                                  className={BTN.icon}
+                                  onClick={() => moveStep(index, -1)}
+                                  disabled={index === 0}
+                                  title="Move up"
+                                >
                                     ↑
                                   </button>
                                   <button
                                     type="button"
-                                    className="px-2 py-1.5 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs disabled:opacity-40 active:scale-95 transition-transform mt-1"
+                                    className={`${BTN.icon} mt-1`}
                                     onClick={() => moveStep(index, 1)}
                                     disabled={index === sessionSteps.length - 1}
                                     title="Move down"
@@ -2091,10 +2131,10 @@ const handleLoadPreset = (presetId: string) => {
                     </div>
                   )}
 
-                  {/* Add step button — same width and spacing as cards */}
+                  {/* Add step button - same width and spacing as cards */}
                   <button
                     type="button"
-                    className="w-full px-2 py-1 rounded border border-accent bg-accent-tint text-xs text-center disabled:opacity-40"
+                    className={`${BTN.primary} w-full text-center`}
                     onClick={addStep}
                     disabled={wheels.length === 0}
                   >
@@ -2132,17 +2172,12 @@ const handleLoadPreset = (presetId: string) => {
       )}
       
 {view === 'wheels' && (
-  <section className="panel-card motion-panel flex flex-col gap-0 max-w-3xl mx-auto">
-    <div className="panel-card__header flex flex-wrap items-center justify-between gap-2">
-      <div>
-        <h2 className="text-sm font-semibold u-text panel-header">Wheel Manager</h2>
-        <p className="text-xs u-text-muted">
-          Configure your grinding and honing wheels here. These settings are shared with the calculator view.
-        </p>
-      </div>
+  <section className="panel-card panel-card--strong motion-panel flex flex-col gap-0 max-w-3xl mx-auto">
+    <div className="panel-card__header flex items-center gap-2">
+      <h2 className="text-sm font-semibold u-text panel-header">Wheel Manager</h2>
       <button
         type="button"
-        className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95"
+        className={`${BTN.primaryFlat} ml-auto`}
         onClick={addWheel}
       >
         + Add Wheel
@@ -2179,7 +2214,7 @@ const handleLoadPreset = (presetId: string) => {
         </label>
         <button
           type="button"
-          className="w-8 h-8 inline-flex items-center justify-center rounded border u-border u-surface text-xs hover:bg-neutral-900"
+          className={BTN.iconGhost}
           aria-label={`Toggle ${wheelSortField === 'name' ? 'name' : 'diameter'} sort ${wheelSortDir === 'asc' ? 'ascending' : 'descending'}`}
           onClick={() => setWheelSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'))}
         >
@@ -2233,7 +2268,7 @@ const handleLoadPreset = (presetId: string) => {
                         <div className="flex items-center justify-center gap-2 shrink-0 h-full">
                           <button
                             type="button"
-                            className="px-2 py-1 rounded border u-border u-surface text-xs u-text hover:bg-neutral-900 active:scale-95 transition-transform"
+                            className={BTN.base}
                             onClick={() => openEditWheelModal(w)}
                           >
                             Details
@@ -2303,7 +2338,7 @@ const handleLoadPreset = (presetId: string) => {
           <div className="mt-4 flex justify-end gap-2">
             <button
               type="button"
-              className="text-danger text-xs border border-danger rounded px-3 py-1 hover:bg-danger-tint"
+              className={BTN.danger}
               onClick={() => {
                 if (!editingWheelId) return;
                 deleteWheel(editingWheelId);
@@ -2313,14 +2348,14 @@ const handleLoadPreset = (presetId: string) => {
             </button>
             <button
               type="button"
-              className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300"
+              className={BTN.ghost}
               onClick={closeEditWheelModal}
             >
               Cancel
             </button>
             <button
               type="button"
-              className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
+              className={BTN.primary}
               disabled={saveDisabled}
               onClick={() => {
                 if (!editingWheelId || !editingWheelDraft) return;
@@ -2354,7 +2389,7 @@ const handleLoadPreset = (presetId: string) => {
     <div className="mt-4 flex justify-end gap-2">
       <button
         type="button"
-        className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300"
+        className={BTN.ghost}
         onClick={closeAddWheelModal}
       >
         Cancel
@@ -2362,7 +2397,7 @@ const handleLoadPreset = (presetId: string) => {
 
       <button
         type="button"
-        className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
+        className={BTN.primary}
         disabled={isAddWheelSaveDisabled}
         onClick={handleSaveNewWheel}
       >
@@ -2602,7 +2637,7 @@ const handleLoadPreset = (presetId: string) => {
                           <div className="flex gap-1">
                             <button
                               type="button"
-                              className="px-2 py-1 rounded border border-accent bg-accent-tint text-[0.7rem] text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                              className={BTN.primary}
                               disabled={renameDisabled}
                               onClick={handleCommitPresetRename}
                             >
@@ -2610,7 +2645,7 @@ const handleLoadPreset = (presetId: string) => {
                             </button>
                             <button
                               type="button"
-                              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
+                              className={BTN.ghost}
                               onClick={handleCancelPresetRename}
                             >
                               Cancel
@@ -2620,7 +2655,7 @@ const handleLoadPreset = (presetId: string) => {
                           <div className="flex flex-wrap gap-1 justify-end">
                             <button
                               type="button"
-                              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
+                              className={BTN.base}
                               onClick={() => {
                                 handleLoadPreset(preset.id);
                                 setIsPresetManagerOpen(false);
@@ -2630,14 +2665,14 @@ const handleLoadPreset = (presetId: string) => {
                             </button>
                             <button
                               type="button"
-                              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text active:scale-95"
+                              className={BTN.base}
                               onClick={() => handleBeginPresetRename(preset)}
                             >
                               Rename
                             </button>
                             <button
                               type="button"
-                              className="px-2 py-1 rounded border border-danger bg-danger-tint text-[0.7rem] text-danger hover:bg-red-900 active:scale-95"
+                              className={BTN.danger}
                               onClick={() => handleDeletePreset(preset.id)}
                             >
                               Delete
@@ -2685,7 +2720,7 @@ const handleLoadPreset = (presetId: string) => {
           <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                className="px-2 py-1 rounded border u-border u-surface text-xs u-text-muted"
+                className={BTN_MUTED}
                 onClick={() => {
                   setIsPresetDialogOpen(false);
                   setPresetNameDraft('');
@@ -2696,7 +2731,7 @@ const handleLoadPreset = (presetId: string) => {
 
               <button
                 type="button"
-                className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-transform"
+                className={BTN.primary}
                 onClick={handleSavePreset}
                 disabled={!presetNameTrimmed || sessionSteps.length === 0 || isPresetNameDuplicate}
               >
@@ -2738,14 +2773,14 @@ const handleLoadPreset = (presetId: string) => {
           <div className="mt-4 flex justify-end gap-2">
             <button
               type="button"
-              className="px-2 py-1 rounded border u-border u-surface text-xs u-text-muted"
+              className={BTN_MUTED}
               onClick={() => setIsStepNotesOpen(false)}
             >
               Cancel
             </button>
             <button
               type="button"
-              className="px-3 py-1 rounded border border-accent bg-accent-tint text-xs text-accent hover:bg-neutral-900 active:scale-95"
+              className={BTN.primary}
               onClick={() => {
                 const id = stepNotesStepIdRef.current;
                 if (!id) return;

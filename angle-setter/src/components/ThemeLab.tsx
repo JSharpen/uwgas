@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
+import { BTN } from '../ui/buttons';
 
 type ThemeToken = {
   key: string;
@@ -169,7 +170,7 @@ function ThemeLab(): React.ReactElement {
             </div>
             <button
               type="button"
-              className="px-2 py-1 rounded border u-border u-surface text-xs u-text"
+              className={BTN.base}
               onClick={() => setPicker(null)}
             >
               Close
@@ -214,7 +215,7 @@ function ThemeLab(): React.ReactElement {
             />
             <button
               type="button"
-              className="px-2 py-1 rounded border border-accent bg-accent-tint text-xs text-accent whitespace-nowrap"
+              className={`${BTN.primary} whitespace-nowrap`}
               onClick={() => {
                 navigator.clipboard
                   .writeText(tokens[picker.key] || '')
@@ -242,7 +243,7 @@ function ThemeLab(): React.ReactElement {
         <div className="flex gap-2">
           <button
             type="button"
-            className="px-3 py-1 rounded border u-border u-surface text-accent hover:bg-neutral-900 text-sm"
+            className={BTN.base}
             onClick={resetDefaults}
             disabled={!initialTokens}
           >
@@ -250,7 +251,7 @@ function ThemeLab(): React.ReactElement {
           </button>
           <button
             type="button"
-            className="px-3 py-1 rounded border border-accent bg-accent-tint text-accent hover:bg-neutral-900"
+            className={BTN.primary}
             onClick={copyCss}
           >
             Copy CSS
@@ -274,7 +275,7 @@ function ThemeLab(): React.ReactElement {
                 <div className="ml-auto flex flex-col gap-1 items-end">
                   <button
                     type="button"
-                  className="px-2 py-1 rounded border u-border u-surface text-xs u-text"
+                    className={BTN.base}
                     onClick={() => {
                       const initial = normalizeHex(tokens[token.key] || '#000000') || '#000000';
                       setHexInput(initial);
@@ -299,12 +300,8 @@ function ThemeLab(): React.ReactElement {
                   <div className="text-xs u-text-muted">Muted text</div>
                 </div>
                 <div className="flex gap-2">
-                  <button className="px-2 py-1 rounded border border-accent bg-accent-tint text-accent text-xs">
-                    Accent
-                  </button>
-                  <button className="px-2 py-1 rounded border border-danger bg-danger-tint text-danger text-xs">
-                    Danger
-                  </button>
+                  <button type="button" className={BTN.primary}>Accent</button>
+                  <button type="button" className={BTN.danger}>Danger</button>
                 </div>
               </div>
               <div className="p-3 rounded border u-border u-surface">

@@ -105,6 +105,56 @@ html, body {
   opacity: 0.8;
 }
 
+/* Modal shell */
+.modal-shell__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.modal-shell__title {
+  position: relative;
+  padding-left: 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--color-text);
+}
+
+.modal-shell__title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.3rem;
+  height: 70%;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    180deg,
+    var(--color-accent) 0%,
+    color-mix(in srgb, var(--color-accent-strong) 65%, transparent) 100%
+  );
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-border-strong) 40%, transparent);
+  opacity: 0.95;
+}
+
+.modal-shell__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.modal-shell__lede {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
 .panel-card {
   position: relative;
   isolation: auto;
@@ -229,8 +279,8 @@ html, body {
       transparent 60%,
       color-mix(in srgb, var(--color-accent) 10%, transparent) 100%
     );
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-left: 0.8rem;
+  padding-right: 0.65rem;
   border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 24%, var(--color-border-strong) 60%);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, #ffffff 18%, transparent),
@@ -523,6 +573,20 @@ button {
   to   { max-height: 0; opacity: 0; transform: translateY(-4px); }
 }
 
+.step-removing {
+  pointer-events: none;
+  overflow: hidden !important;
+  will-change: transform, opacity, max-height, margin;
+  animation: stepRemove 640ms var(--motion-ease-emphasized, cubic-bezier(0.25, 0.8, 0.3, 1)) forwards;
+}
+
+@keyframes stepRemove {
+  0%   { opacity: 1; transform: translateY(0) scale(1); max-height: 720px; margin-bottom: var(--card-stack-gap, 0.75rem); }
+  40%  { opacity: 0.9; transform: translateY(-4px) scale(0.99); max-height: 640px; }
+  70%  { opacity: 0.5; transform: translateY(-12px) scale(0.95); max-height: 300px; margin-bottom: calc(var(--card-stack-gap, 0.75rem) * 0.35); }
+  100% { opacity: 0; transform: translateY(-18px) scale(0.92); max-height: 0; margin-bottom: 0; }
+}
+
 .motion-panel {
   animation: fadeUp var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 }
@@ -600,6 +664,19 @@ button {
   border-color: var(--color-accent);
   background: color-mix(in srgb, var(--color-accent-strong) 50%, transparent);
   color: var(--color-text);
+}
+
+/* Unified focus treatment for form fields */
+input[type="text"]:focus-visible,
+input[type="number"]:focus-visible,
+input[type="email"]:focus-visible,
+input[type="password"]:focus-visible,
+input[type="search"]:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 0.5px var(--color-focus);
 }
 
 @media (prefers-reduced-motion: reduce) {

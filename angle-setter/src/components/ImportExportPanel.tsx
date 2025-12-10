@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { BTN } from '../ui/buttons';
 
 type ImportExportResult = { error?: string; summary?: string };
 type ImportSectionKey =
@@ -117,7 +118,7 @@ function ImportPanel({
             <span className="text-[0.75rem] u-text">Sections</span>
             <button
               type="button"
-              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text"
+              className={BTN.base}
               onClick={() => {
                 const next = !allImportChecked;
                 (Object.keys(importSections) as ImportSectionKey[]).forEach(k => {
@@ -185,7 +186,7 @@ function ImportPanel({
             />
             <button
               type="button"
-              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text"
+              className={BTN.base}
               onClick={() => fileInputRef.current?.click()}
             >
               Choose JSON to import
@@ -231,7 +232,7 @@ function ExportPanel({
             <span className="text-[0.75rem] u-text">Sections</span>
             <button
               type="button"
-              className="px-2 py-1 rounded border u-border u-surface text-[0.7rem] u-text"
+              className={BTN.base}
               onClick={() => {
                 const next = !allChecked;
                 (Object.keys(exportSections) as ImportSectionKey[]).forEach(k => {
@@ -275,7 +276,7 @@ function ExportPanel({
           />
           <button
             type="button"
-            className="self-start px-2 py-1 rounded border border-accent bg-accent-tint hover:bg-neutral-900 text-accent"
+            className={`${BTN.primary} self-start`}
             onClick={onDownload}
           >
             Download JSON

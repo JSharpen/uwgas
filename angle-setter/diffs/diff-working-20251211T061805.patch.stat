@@ -1,0 +1,17 @@
+﻿warning: in the working copy of 'angle-setter/src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/components/CalibrationWizard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/components/ImportExportPanel.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/components/MiniSelect.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/components/ThemeLab.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/icons.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/index.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'angle-setter/src/primitives.css', LF will be replaced by CRLF the next time Git touches it
+ angle-setter/src/App.tsx                          | 271 ++++++++++++----------
+ angle-setter/src/components/CalibrationWizard.tsx |  49 ++--
+ angle-setter/src/components/ImportExportPanel.tsx |   9 +-
+ angle-setter/src/components/MiniSelect.tsx        |   5 +-
+ angle-setter/src/components/ThemeLab.tsx          |  19 +-
+ angle-setter/src/icons.tsx                        |  20 ++
+ angle-setter/src/index.css                        |  81 ++++++-
+ angle-setter/src/primitives.css                   | 159 ++++++++++++-
+ 8 files changed, 440 insertions(+), 173 deletions(-)

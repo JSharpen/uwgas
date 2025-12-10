@@ -13,6 +13,7 @@ type MiniSelectProps = {
   emptyLabel?: string;
   renderOption?: (option: Option, isActive: boolean) => React.ReactNode;
   renderLabel?: (option: Option | undefined) => React.ReactNode;
+  liftOnOpen?: boolean;
 };
 
 function MiniSelect({
@@ -26,6 +27,7 @@ function MiniSelect({
   emptyLabel = 'No options',
   renderOption,
   renderLabel,
+  liftOnOpen = true,
 }: MiniSelectProps) {
   const [isMenuVisible, setIsMenuVisible] = React.useState(false);
   const [isMenuClosing, setIsMenuClosing] = React.useState(false);
@@ -34,6 +36,7 @@ function MiniSelect({
 
   // Lift the nearest card when the menu is open so the menu sits above neighboring cards.
   React.useEffect(() => {
+    if (!liftOnOpen) return;
     const host = rootRef.current?.closest<HTMLElement>('.card-elevated');
     if (!host) return;
     const prevZ = host.style.zIndex;
@@ -49,7 +52,7 @@ function MiniSelect({
       host.style.zIndex = prevZ;
       host.style.overflow = prevOverflow;
     };
-  }, [isMenuVisible]);
+  }, [isMenuVisible, liftOnOpen]);
 
   const selected = options.find(o => o.value === value) ?? options[0];
 

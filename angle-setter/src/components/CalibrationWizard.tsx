@@ -11,7 +11,7 @@ import type {
   Wheel,
 } from '../types/core';
 import { calibrateBase, estimateMaxAngleErrorDeg } from '../math/tormek';
-import { _nz } from '../utils/numbers';
+import { BTN } from '../ui/buttons';
 
 type CalibrationResultState = {
   hc: number;
@@ -71,6 +71,16 @@ function CalibrationWizard({
   onApplyCalibration,
 }: CalibrationWizardProps) {
   const lastSnapshotIdRef = React.useRef<string | null>(null);
+  const parseInputValue = React.useCallback((raw: any): number => {
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (trimmed === '') return NaN;
+      const n = Number(trimmed);
+      return Number.isFinite(n) ? n : NaN;
+    }
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : NaN;
+  }, []);
 
   const ensureCalibRowsLength = React.useCallback(
     (count: number) => {
@@ -91,15 +101,15 @@ function CalibrationWizard({
 
     if (!calibBase) missing.push('Base selection');
 
-    const DaVal = _nz(calibDa, NaN);
-    const DsVal = _nz(calibDs, NaN);
+    const DaVal = parseInputValue(calibDa);
+    const DsVal = parseInputValue(calibDs);
     if (!Number.isFinite(DaVal) || DaVal <= 0) missing.push('Axle diameter');
     if (!Number.isFinite(DsVal) || DsVal <= 0) missing.push('USB diameter');
 
     let validRowCount = 0;
     rowsToUse.forEach((row, idx) => {
-      const hnVal = _nz(row.hn, NaN);
-      const CAoVal = _nz(row.CAo, NaN);
+      const hnVal = parseInputValue(row.hn);
+      const CAoVal = parseInputValue(row.CAo);
       const rowLabel = idx + 1;
       if (!Number.isFinite(hnVal)) missing.push(`Row ${rowLabel} h?`);
       if (!Number.isFinite(CAoVal)) missing.push(`Row ${rowLabel} CAo`);
@@ -111,7 +121,7 @@ function CalibrationWizard({
     }
 
     return { missing, rowsToUse, DaVal, DsVal };
-  }, [calibBase, calibCount, calibDa, calibDs, calibRows]);
+  }, [calibBase, calibCount, calibDa, calibDs, calibRows, parseInputValue]);
 
   const handleRunCalibration = React.useCallback(() => {
     setCalibError(null);
@@ -136,8 +146,8 @@ function CalibrationWizard({
     const rowResiduals: { row: number; residual: number }[] = [];
     let usedIdx = 0;
     rowsToUse.forEach((row, idx) => {
-      const hnVal = _nz(row.hn, NaN);
-      const CAoVal = _nz(row.CAo, NaN);
+      const hnVal = parseInputValue(row.hn);
+      const CAoVal = parseInputValue(row.CAo);
       if (!Number.isFinite(hnVal) || !Number.isFinite(CAoVal)) return;
       const residual = result.diagnostics.residuals[usedIdx];
       rowResiduals.push({ row: idx + 1, residual });
@@ -191,16 +201,7 @@ function CalibrationWizard({
       angleErrorDeg: angleErr,
       rowResiduals,
     });
-  }, [
-    activeMachine,
-    calibBase,
-    global,
-    setCalibError,
-    setCalibResult,
-    setCalibSnapshots,
-    validateInputs,
-    wheels,
-  ]);
+  }, [activeMachine, calibBase, global, parseInputValue, setCalibError, setCalibResult, setCalibSnapshots, validateInputs, wheels]);
 
   const handleApplyCalibration = React.useCallback(() => {
     if (!calibResult) return;
@@ -420,13 +421,9 @@ function CalibrationWizard({
           <div className="flex gap-2">
             <button
               type="button"
-              className={
-                'px-2 py-1 rounded border transition-colors ' +
-                (computeInvalid
-                  ? 'border-neutral-700 bg-neutral-800 text-neutral-400 cursor-not-allowed'
-                  : 'border-emerald-500 bg-emerald-900/40 text-emerald-50 hover:bg-emerald-900')
-              }
+              className={BTN.primaryFlat}
               onClick={handleRunCalibration}
+              disabled={computeInvalid}
               aria-disabled={computeInvalid}
             >
               Compute hc &amp; o
@@ -434,7 +431,7 @@ function CalibrationWizard({
             {calibResult && (
               <button
                 type="button"
-                className="px-2 py-1 rounded border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-neutral-100 disabled:opacity-40"
+                className={BTN.base}
                 disabled={
                   !calibBase ||
                   (calibResult.angleErrorDeg != null && calibResult.angleErrorDeg > 0.2)
@@ -448,7 +445,7 @@ function CalibrationWizard({
           </div>
           <button
             type="button"
-            className="px-2 py-1 rounded border border-neutral-700 bg-neutral-950 hover:bg-neutral-900 text-neutral-200 disabled:opacity-40"
+            className={BTN.ghost}
             onClick={handleReset}
             disabled={!hasDraft}
           >
