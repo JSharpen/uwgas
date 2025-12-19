@@ -40,8 +40,10 @@ import {
   computeTonHeights,
 } from './math/tormek';
 import { BTN, BTN_MUTED } from './ui/buttons';
+import { APP_VERSION, APP_VERSION_DISPLAY } from './version';
 
-const RESIDUAL_SYMBOL = 'ε';
+const RESIDUAL_SYMBOL = '\u03b5';
+const STEP_REMOVE_DURATION_MS = 380; // keep in sync with list exit animation
 // =============== Helpers ===============
 
 // helpers moved to utils/state modules
@@ -129,7 +131,7 @@ function WheelFormFields({
       <div className="flex flex-col gap-1">
         <span className="text-xs u-text-muted">Wheel name</span>
         <input
-          className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+          className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm u-focus-ring"
           value={value.name}
           autoFocus={autoFocusName}
           onChange={e => onChange({ name: e.target.value })}
@@ -182,7 +184,7 @@ function WheelFormFields({
       <div className="flex flex-col gap-1">
         <span className="text-xs u-text-muted">Grit / abrasive</span>
         <input
-          className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
+          className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm u-focus-ring"
           value={value.grit ?? ''}
           onChange={e => onChange({ grit: e.target.value })}
           onKeyDown={blurOnEnter}
@@ -583,7 +585,10 @@ function App() {
   const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
     _load('t_sessionSteps', [])
   );
-  const [removingStepIds, setRemovingStepIds] = React.useState<Set<string>>(new Set());
+  const [removingStepIds, setRemovingStepIds] = React.useState<Set<string>>(
+    () => new Set()
+  );
+  const stepRefs = React.useRef<Map<string, HTMLDivElement>>(new Map());
   const stepRemoveTimersRef = React.useRef<Map<string, number>>(new Map());
   const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(() =>
     _load('t_sessionPresets', [])
@@ -645,13 +650,6 @@ function App() {
     const val = _load<'hn' | 'hr'>('t_heightMode', 'hn');
     return val === 'hr' ? 'hr' : 'hn';
   });
-
-  React.useEffect(() => {
-    return () => {
-      stepRemoveTimersRef.current.forEach(t => window.clearTimeout(t));
-      stepRemoveTimersRef.current.clear();
-    };
-  }, []);
 
   // Step notes modal state
   const [isStepNotesOpen, setIsStepNotesOpen] = React.useState(false);
@@ -874,6 +872,14 @@ const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
     wheelResults,
   ]);
 
+  // Cleanup pending step removal timers
+  React.useEffect(() => {
+    return () => {
+      stepRemoveTimersRef.current.forEach(timerId => window.clearTimeout(timerId));
+      stepRemoveTimersRef.current.clear();
+    };
+  }, []);
+
   // Persist basic state
   React.useEffect(() => {
     _save('t_global', global);
@@ -893,15 +899,18 @@ const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
 
   React.useEffect(() => {
     setRemovingStepIds(prev => {
+      if (prev.size === 0) return prev;
+      const next = new Set<string>();
       let changed = false;
-      const next = new Set(prev);
-      prev.forEach(id => {
-        if (!sessionSteps.some(s => s.id === id)) {
-          next.delete(id);
+      sessionSteps.forEach(s => {
+        if (prev.has(s.id)) {
+          next.add(s.id);
+        } else {
           changed = true;
         }
       });
-      return changed ? next : prev;
+      if (!changed && next.size === prev.size) return prev;
+      return next;
     });
   }, [sessionSteps]);
 
@@ -1490,7 +1499,22 @@ const updateStep = (id: string, patch: Partial<SessionStep>) => {
   );
 };
 
+const animateStepExit = (id: string, refMap: React.MutableRefObject<Map<string, HTMLDivElement>>) => {
+  const el = refMap.current.get(id);
+  if (!el) return;
+
+  const currentHeight = el.getBoundingClientRect().height || 0;
+  const computed = window.getComputedStyle(el);
+  const marginBottomPx = parseFloat(computed.marginBottom) || 0;
+
+  el.style.setProperty('--item-height', `${currentHeight}px`);
+  el.style.setProperty('--item-margin', `${marginBottomPx}px`);
+  el.classList.add('motion-list-item--removing');
+};
+
 const requestDeleteStep = (id: string) => {
+  animateStepExit(id, stepRefs);
+
   setRemovingStepIds(prev => {
     if (prev.has(id)) return prev;
     const next = new Set(prev);
@@ -1500,17 +1524,18 @@ const requestDeleteStep = (id: string) => {
 
   if (stepRemoveTimersRef.current.has(id)) return;
 
-  const timer = window.setTimeout(() => {
+  const timerId = window.setTimeout(() => {
     setSessionSteps(prev => prev.filter(s => s.id !== id));
     setRemovingStepIds(prev => {
+      if (!prev.has(id)) return prev;
       const next = new Set(prev);
       next.delete(id);
       return next;
     });
     stepRemoveTimersRef.current.delete(id);
-  }, 650);
+  }, STEP_REMOVE_DURATION_MS + 40); // slight buffer past animation
 
-  stepRemoveTimersRef.current.set(id, timer);
+  stepRemoveTimersRef.current.set(id, timerId);
 };
 
 const moveStep = (index: number, delta: number) => {
@@ -1689,6 +1714,11 @@ const handleLoadPreset = (presetId: string) => {
 
   return (
     <div className="min-h-dvh u-bg p-4 flex flex-col gap-4">
+      {view === 'settings' && (
+        <div className="app-watermark" aria-label={`App version ${APP_VERSION}`}>
+          v{APP_VERSION_DISPLAY}
+        </div>
+      )}
       <h1 className="text-lg font-semibold">UWGAS Dev build</h1>
 
       <div className="flex gap-2 text-sm mb-2">
@@ -1799,7 +1829,7 @@ const handleLoadPreset = (presetId: string) => {
           </section>
 
           {/*Progression View*/}
-          <section className="panel-card motion-panel flex flex-col gap-0">
+          <section className="panel-card panel-card--allow-overflow motion-panel flex flex-col gap-0">
             <div className="panel-card__header grid items-center gap-3" style={{ gridTemplateColumns: 'auto minmax(0, 1fr) auto' }}>
               <h2 className="text-sm font-semibold u-text panel-header">Progression</h2>
               <div
@@ -1848,7 +1878,7 @@ const handleLoadPreset = (presetId: string) => {
                 <div ref={progressionMenuRef} className="relative">
                   <button
                     type="button"
-                    className={`${BTN.iconPlain} text-neutral-300`}
+                    className={`${BTN.iconPlain} text-neutral-300 no-press-anim`}
                     style={{ WebkitTapHighlightColor: 'transparent' }}
                     title="Progression menu"
                     onClick={() => {
@@ -1865,8 +1895,8 @@ const handleLoadPreset = (presetId: string) => {
                     <div
                       className="absolute right-0 mt-1 w-52 rounded border u-border u-surface shadow-lg text-xs z-30 overflow-hidden"
                       style={{
-                        animation: `${isProgressionMenuClosing ? 'menuFadeSlideOut 100ms ease-in forwards' : 'menuFadeSlideIn 100ms ease-out forwards'}`,
                         transformOrigin: 'top right',
+                        animation: `${isProgressionMenuClosing ? 'menuFadeSlideOut 100ms ease-in forwards' : 'menuFadeSlideIn 100ms ease-out forwards'}`,
                       }}
                     >
                       {progressionMenuItems.map(item => (
@@ -1907,7 +1937,7 @@ const handleLoadPreset = (presetId: string) => {
 
                   {/* Steps list */}
                   {sessionSteps.length > 0 && (
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col card-stack">
                       {sessionSteps.map((step, index) => {
                         const wheel =
                       wheels.find(w => w.id === step.wheelId) || {
@@ -1921,24 +1951,30 @@ const handleLoadPreset = (presetId: string) => {
                           };
                         const isHoning = wheel.isHoning;
                         const isRemoving = removingStepIds.has(step.id);
-
                         const removingStyle: React.CSSProperties | undefined = isRemoving
-                          ? {
-                              animation: 'stepRemove 520ms cubic-bezier(0.33, 1, 0.68, 1) forwards',
-                            }
+                          ? ({
+                              '--motion-exit-duration': `${STEP_REMOVE_DURATION_MS}ms`,
+                            } as React.CSSProperties)
                           : undefined;
 
                         return (
                           <div
                             key={step.id}
-                            className={`card-elevated flex flex-col motion-list-item ${isRemoving ? 'step-removing' : ''}`}
+                            className={`card-elevated flex flex-col motion-list-item ${isRemoving ? 'motion-list-item--removing' : ''}`}
                             style={
                               {
-                                '--motion-order': index,
-                                minHeight: progressionCardMinHeight,
+                                '--motion-order': Math.min(index, 2), // cap stagger so entry delay stays consistent
+                                minHeight: isRemoving ? undefined : progressionCardMinHeight,
                                 ...removingStyle,
                               } as React.CSSProperties
                             }
+                            ref={el => {
+                              if (el) {
+                                stepRefs.current.set(step.id, el);
+                              } else {
+                                stepRefs.current.delete(step.id);
+                              }
+                            }}
                           >
                             {/* === Header bar: step badge + wheel selector + grind direction + delete === */}
                             <div className="card-elevated__header wheel-card__header flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 min-h-[44px]">
@@ -1961,20 +1997,20 @@ const handleLoadPreset = (presetId: string) => {
                                     })),
                                   ]}
                                   onChange={id => {
-                                    const newWheel = wheels.find(w => w.id === id);
-                                    if (!newWheel) return;
-                                    updateStep(step.id, {
-                                      wheelId: newWheel.id,
-                                      base: newWheel.isHoning ? 'front' : step.base,
-                                    });
-                                  }}
-                                  widthClass="min-w-[9rem] max-w-[9rem]"
-                                  menuWidthClass="w-44"
-                                  emptyLabel="No wheels defined"
-                                  renderOption={opt => (
-                                    <>
-                                      <div className="dropdown-item__title text-[0.75rem]">{opt.label}</div>
-                                      {opt.meta ? (
+                                const newWheel = wheels.find(w => w.id === id);
+                                if (!newWheel) return;
+                                updateStep(step.id, {
+                                  wheelId: newWheel.id,
+                                  base: newWheel.isHoning ? 'front' : step.base,
+                                });
+                              }}
+                              widthClass="min-w-[9rem] max-w-[9rem]"
+                              menuWidthClass="w-44"
+                              emptyLabel="No wheels defined"
+                              renderOption={opt => (
+                                <>
+                                  <div className="dropdown-item__title text-[0.75rem]">{opt.label}</div>
+                                  {opt.meta ? (
                                         <div className="dropdown-item__meta text-[0.7rem]">{opt.meta}</div>
                                       ) : null}
                                     </>
@@ -2427,88 +2463,92 @@ const handleLoadPreset = (presetId: string) => {
 
           {/* Machine constants view */}
           {settingsView === 'machine' && (
-            <section className="border u-border rounded-lg p-3 u-surface flex flex-col gap-2 max-w-xl motion-panel">
-              <h2 className="text-sm font-semibold u-text panel-header">Machine constants</h2>
-              <p className="text-xs u-text-muted mb-2">
-                Rear and front base geometry for the active machine. Calibration will update these
-                values; you can also tweak them manually.
-              </p>
-              {(() => {
-                const rearSnap = calibSnapshots.find(s => s.id === calibAppliedIds.rear) || null;
-                const frontSnap = calibSnapshots.find(s => s.id === calibAppliedIds.front) || null;
-                                const sortByDateDesc = (list: CalibrationSnapshot[]) =>
-                  [...list].sort((a, b) => {
-                    const da = Date.parse(a.createdAt || '') || 0;
-                    const db = Date.parse(b.createdAt || '') || 0;
-                    return db - da;
-                  });
-                const formatOption = (snap: CalibrationSnapshot, fallbackLabel: string) => {
-                  const label =
-                    snap.name?.trim() ||
-                    snap.createdAt?.slice(0, 10) ||
-                    fallbackLabel ||
-                    'Calibration';
-                  const resid = Number.isFinite(snap.diagnostics?.maxAbsResidualMm)
-                    ? `, ${RESIDUAL_SYMBOL} ${snap.diagnostics.maxAbsResidualMm.toFixed(3)} mm`
-                    : '';
-                  return {
-                    value: snap.id,
-                    label: `${(snap.baseTag || fallbackLabel)
-                      .toString()
-                      .replace(/^\w/, c => c.toUpperCase())} - ${label} (${snap.count} pts${resid})`,
+            <section className="panel-card panel-card--strong flex flex-col gap-0 max-w-xl motion-panel">
+              <div className="panel-card__header">
+                <h2 className="text-sm font-semibold u-text panel-header">Machine constants</h2>
+              </div>
+              <div className="panel-card__body flex flex-col gap-2">
+                <p className="text-xs u-text-muted">
+                  Rear and front base geometry for the active machine. Calibration will update these
+                  values; you can also tweak them manually.
+                </p>
+                {(() => {
+                  const rearSnap = calibSnapshots.find(s => s.id === calibAppliedIds.rear) || null;
+                  const frontSnap = calibSnapshots.find(s => s.id === calibAppliedIds.front) || null;
+                                  const sortByDateDesc = (list: CalibrationSnapshot[]) =>
+                    [...list].sort((a, b) => {
+                      const da = Date.parse(a.createdAt || '') || 0;
+                      const db = Date.parse(b.createdAt || '') || 0;
+                      return db - da;
+                    });
+                  const formatOption = (snap: CalibrationSnapshot, fallbackLabel: string) => {
+                    const label =
+                      snap.name?.trim() ||
+                      snap.createdAt?.slice(0, 10) ||
+                      fallbackLabel ||
+                      'Calibration';
+                    const resid = Number.isFinite(snap.diagnostics?.maxAbsResidualMm)
+                      ? `, ${RESIDUAL_SYMBOL} ${snap.diagnostics.maxAbsResidualMm.toFixed(3)} mm`
+                      : '';
+                    return {
+                      value: snap.id,
+                      label: `${(snap.baseTag || fallbackLabel)
+                        .toString()
+                        .replace(/^\w/, c => c.toUpperCase())} - ${label} (${snap.count} pts${resid})`,
+                    };
                   };
-                };
-                const rearOptions = [
-                  { value: '', label: 'Manual input' },
-                  ...sortByDateDesc(calibSnapshots.filter(s => s.base === 'rear')).map(s =>
-                    formatOption(s, 'Rear')
-                  ),
-                ];
-                const frontOptions = [
-                  { value: '', label: 'Manual input' },
-                  ...sortByDateDesc(calibSnapshots.filter(s => s.base === 'front')).map(s =>
-                    formatOption(s, 'Front')
-                  ),
-                ];
-                const rearDisplay = rearSnap ? { hc: rearSnap.hc, o: rearSnap.o } : constants.rear;
-                const frontDisplay = frontSnap
-                  ? { hc: frontSnap.hc, o: frontSnap.o }
-                  : constants.front;
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <BaseCard
-                      title="Rear base"
-                      snap={rearSnap}
-                      options={rearOptions}
-                      appliedId={calibAppliedIds.rear}
-                      display={rearDisplay}
-                      constantsInputMode={constantsInputMode}
-                      onChange={val => setCalibAppliedIds(prev => ({ ...prev, rear: val || '' }))}
-                      onChangeField={(field, value) =>
-                        setConstants(c => ({
-                          ...c,
-                          rear: { ...c.rear, [field]: _nz(value, c.rear[field]) },
-                        }))
-                      }
-                    />
-                    <BaseCard
-                      title="Front base"
-                      snap={frontSnap}
-                      options={frontOptions}
-                      appliedId={calibAppliedIds.front}
-                      display={frontDisplay}
-                      constantsInputMode={constantsInputMode}
-                      onChange={val => setCalibAppliedIds(prev => ({ ...prev, front: val || '' }))}
-                      onChangeField={(field, value) =>
-                        setConstants(c => ({
-                          ...c,
-                          front: { ...c.front, [field]: _nz(value, c.front[field]) },
-                        }))
-                      }
-                    />
-                  </div>
-                );
-              })()}
+                  const rearOptions = [
+                    { value: '', label: 'Manual input' },
+                    ...sortByDateDesc(calibSnapshots.filter(s => s.base === 'rear')).map(s =>
+                      formatOption(s, 'Rear')
+                    ),
+                  ];
+                  const frontOptions = [
+                    { value: '', label: 'Manual input' },
+                    ...sortByDateDesc(calibSnapshots.filter(s => s.base === 'front')).map(s =>
+                      formatOption(s, 'Front')
+                    ),
+                  ];
+                  const rearDisplay = rearSnap ? { hc: rearSnap.hc, o: rearSnap.o } : constants.rear;
+                  const frontDisplay = frontSnap
+                    ? { hc: frontSnap.hc, o: frontSnap.o }
+                    : constants.front;
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <BaseCard
+                        title="Rear base"
+                        snap={rearSnap}
+                        options={rearOptions}
+                        appliedId={calibAppliedIds.rear}
+                        display={rearDisplay}
+                        constantsInputMode={constantsInputMode}
+                        onChange={val => setCalibAppliedIds(prev => ({ ...prev, rear: val || '' }))}
+                        onChangeField={(field, value) =>
+                          setConstants(c => ({
+                            ...c,
+                            rear: { ...c.rear, [field]: _nz(value, c.rear[field]) },
+                          }))
+                        }
+                      />
+                      <BaseCard
+                        title="Front base"
+                        snap={frontSnap}
+                        options={frontOptions}
+                        appliedId={calibAppliedIds.front}
+                        display={frontDisplay}
+                        constantsInputMode={constantsInputMode}
+                        onChange={val => setCalibAppliedIds(prev => ({ ...prev, front: val || '' }))}
+                        onChangeField={(field, value) =>
+                          setConstants(c => ({
+                            ...c,
+                            front: { ...c.front, [field]: _nz(value, c.front[field]) },
+                          }))
+                        }
+                      />
+                    </div>
+                  );
+                })()}
+              </div>
             </section>
           )}
 

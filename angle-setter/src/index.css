@@ -216,6 +216,10 @@ html, body {
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-border) 70%, transparent);
 }
 
+.panel-card--allow-overflow {
+  overflow: visible;
+}
+
 .panel-card__body + .panel-card__body {
   border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
 }
@@ -311,11 +315,26 @@ html, body {
 }
 
 .card-stack {
-  gap: var(--card-stack-gap, 0.75rem);
+  gap: 0;
 }
 
 .card-grid {
   gap: var(--card-stack-gap, 0.75rem);
+}
+
+.card-stack > * {
+  margin-bottom: var(--card-stack-gap, 0.75rem);
+}
+
+.card-stack > *:last-child {
+  margin-bottom: 0;
+}
+
+.no-press-anim {
+  transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease !important;
+}
+.no-press-anim:active {
+  transform: none !important;
 }
 
 /* Menus (kebab / dropdown hover) */
@@ -355,13 +374,18 @@ html, body {
     0 16px 36px rgba(0, 0, 0, 0.18),
     0 6px 16px rgba(0, 0, 0, 0.14);
   border-radius: var(--radius-md);
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 18rem;
+  overflow: hidden; /* clip scrollbar corners */
+  display: flex;
+  flex-direction: column;
   position: absolute;
   z-index: 2000;
   margin-top: 0.25rem;
   animation: dropdownIn 160ms ease-out forwards;
+}
+.dropdown-menu__body {
+  max-height: 18rem;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .dropdown-menu--closing {
   animation: dropdownOut 140ms ease-in forwards;
@@ -516,6 +540,17 @@ button {
   font-family: inherit;
 }
 
+.app-watermark {
+  position: fixed;
+  top: 0.75rem;
+  right: 1rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  z-index: 3200;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -573,20 +608,6 @@ button {
   to   { max-height: 0; opacity: 0; transform: translateY(-4px); }
 }
 
-.step-removing {
-  pointer-events: none;
-  overflow: hidden !important;
-  will-change: transform, opacity, max-height, margin;
-  animation: stepRemove 640ms var(--motion-ease-emphasized, cubic-bezier(0.25, 0.8, 0.3, 1)) forwards;
-}
-
-@keyframes stepRemove {
-  0%   { opacity: 1; transform: translateY(0) scale(1); max-height: 720px; margin-bottom: var(--card-stack-gap, 0.75rem); }
-  40%  { opacity: 0.9; transform: translateY(-4px) scale(0.99); max-height: 640px; }
-  70%  { opacity: 0.5; transform: translateY(-12px) scale(0.95); max-height: 300px; margin-bottom: calc(var(--card-stack-gap, 0.75rem) * 0.35); }
-  100% { opacity: 0; transform: translateY(-18px) scale(0.92); max-height: 0; margin-bottom: 0; }
-}
-
 .motion-panel {
   animation: fadeUp var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 }
@@ -598,6 +619,37 @@ button {
 .motion-list-item {
   animation: fadeUp var(--motion-duration-medium) var(--motion-ease-smooth) both;
   animation-delay: calc(var(--motion-stagger-step) * var(--motion-order, 0));
+  will-change: transform, opacity;
+  transition:
+    opacity var(--motion-duration-medium) var(--motion-ease-smooth),
+    transform var(--motion-duration-medium) var(--motion-ease-smooth);
+}
+
+.motion-list-item--removing {
+  pointer-events: none;
+  backface-visibility: hidden;
+  overflow: hidden;
+  will-change: height, margin, opacity, transform;
+  animation: listItemOut var(--motion-exit-duration, var(--motion-duration-medium)) cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes listItemOut {
+  0% {
+    height: var(--item-height, auto);
+    margin-bottom: var(--item-margin, var(--card-stack-gap, 0.75rem));
+    opacity: 1;
+    transform: translateY(0);
+  }
+  60% {
+    opacity: 0.6;
+    transform: translateY(-6px);
+  }
+  100% {
+    height: 0;
+    margin-bottom: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }
 
 .motion-overlay {
@@ -654,9 +706,20 @@ button {
 .btn-toggle:focus-visible {
   border-color: var(--color-focus);
   box-shadow: 0 0 0 1px var(--color-focus);
+  background: var(--color-panel);
 }
 
-.btn-toggle:hover {
+@media (hover: hover) and (pointer: fine) {
+  .btn-toggle:hover:not(:focus-visible) {
+    background: var(--color-panel-strong);
+  }
+
+  .btn-toggle:focus-visible:hover {
+    background: var(--color-panel);
+  }
+}
+
+.btn-toggle:focus-visible:active {
   background: var(--color-panel-strong);
 }
 
@@ -675,8 +738,28 @@ input[type="search"]:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
   outline: none;
-  border-color: var(--color-focus);
-  box-shadow: 0 0 0 0.5px var(--color-focus);
+  border-color: var(--color-focus) !important;
+  box-shadow: 0 0 0 0.5px var(--color-focus) !important;
+}
+/* Mobile / broader focus fallback so all textboxes show the same highlight */
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-focus) !important;
+  box-shadow: 0 0 0 0.5px var(--color-focus) !important;
+}
+
+/* Shared focus helper class */
+.u-focus-ring:focus,
+.u-focus-ring:focus-visible {
+  outline: none;
+  border-color: var(--color-focus) !important;
+  box-shadow: 0 0 0 0.5px var(--color-focus) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -103,8 +103,8 @@ function ImportPanel({
   };
 
   return (
-    <section className="rounded border u-border u-surface p-3 motion-panel">
-      <div className="flex items-center justify-between mb-2">
+    <section className="panel-card panel-card--strong flex flex-col gap-0 motion-panel">
+      <div className="panel-card__header flex items-center justify-between">
         <h2 className="text-sm font-semibold u-text panel-header">Import</h2>
         <CollapseToggle
           open={open}
@@ -113,7 +113,7 @@ function ImportPanel({
         />
       </div>
       {open && (
-        <div className="flex flex-col gap-3 text-xs">
+        <div className="panel-card__body flex flex-col gap-3 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-[0.75rem] u-text">Sections</span>
             <button
@@ -217,8 +217,8 @@ function ExportPanel({
   const anyChecked = Object.values(exportSections).some(Boolean);
 
   return (
-    <section className="rounded border u-border u-surface p-3 motion-panel">
-      <div className="flex items-center justify-between mb-2">
+    <section className="panel-card panel-card--strong flex flex-col gap-0 motion-panel">
+      <div className="panel-card__header flex items-center justify-between">
         <h2 className="text-sm font-semibold u-text panel-header">Export</h2>
         <CollapseToggle
           open={open}
@@ -227,7 +227,7 @@ function ExportPanel({
         />
       </div>
       {open && (
-        <div className="flex flex-col gap-3 text-xs">
+        <div className="panel-card__body flex flex-col gap-3 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-[0.75rem] u-text">Sections</span>
             <button
@@ -300,37 +300,35 @@ function ImportExportPanel({
   const [status, setStatus] = React.useState<string | null>(null);
 
   return (
-    <section className="border u-border rounded-lg p-3 u-surface flex flex-col gap-3 max-w-xl motion-panel">
-      <div className="flex flex-col gap-4 text-xs">
-        <ImportPanel
-          onImportText={onImportText}
-          importSections={importSections}
-          importModes={importModes}
-          onToggleImportSection={onToggleImportSection}
-          onChangeImportMode={onChangeImportMode}
-          setStatus={setStatus}
-        />
+    <div className="flex flex-col gap-4 max-w-xl">
+      <ImportPanel
+        onImportText={onImportText}
+        importSections={importSections}
+        importModes={importModes}
+        onToggleImportSection={onToggleImportSection}
+        onChangeImportMode={onChangeImportMode}
+        setStatus={setStatus}
+      />
 
-        <ExportPanel
-          exportText={exportText}
-          exportSections={exportSections}
-          onToggleExportSection={onToggleExportSection}
-          onDownload={() => {
-            const blob = new Blob([exportText], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'uwgas-export.json';
-            a.click();
-            URL.revokeObjectURL(url);
-            setStatus('Downloaded export JSON.');
-          }}
-          setStatus={setStatus}
-        />
+      <ExportPanel
+        exportText={exportText}
+        exportSections={exportSections}
+        onToggleExportSection={onToggleExportSection}
+        onDownload={() => {
+          const blob = new Blob([exportText], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'uwgas-export.json';
+          a.click();
+          URL.revokeObjectURL(url);
+          setStatus('Downloaded export JSON.');
+        }}
+        setStatus={setStatus}
+      />
 
-        {status && <div className="text-[0.75rem] text-warning-soft">{status}</div>}
-      </div>
-    </section>
+      {status && <div className="text-[0.75rem] text-warning-soft">{status}</div>}
+    </div>
   );
 }
 

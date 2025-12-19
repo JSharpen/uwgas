@@ -247,15 +247,18 @@ function CalibrationWizard({
   const computeInvalid = validation.missing.length > 0;
 
   return (
-    <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-xl motion-panel">
-      <h2 className="text-sm font-semibold text-neutral-200">Calibration wizard (single base)</h2>
-      <p className="text-xs text-neutral-300">
-        Use this wizard to solve hc and o for one base. Pick the base, confirm axle/USB diameters,
-        then take 3–5 paired measurements at different heights: h (datum to USB top) and CAo
-        (outer-to-outer span from axle to USB—keep calipers square). Enter the pairs below; CA is
-        computed automatically and the wizard reports the solved constants plus an angle-error
-        estimate for your wheels.
-      </p>
+    <section className="panel-card panel-card--strong flex flex-col gap-0 max-w-xl motion-panel">
+      <div className="panel-card__header">
+        <h2 className="text-sm font-semibold u-text panel-header">Calibration wizard (single base)</h2>
+      </div>
+      <div className="panel-card__body flex flex-col gap-3">
+        <p className="text-xs u-text-muted">
+          Use this wizard to solve hc and o for one base. Pick the base, confirm axle/USB diameters,
+          then take 3-5 paired measurements at different heights: h (datum to USB top) and CAo
+          (outer-to-outer span from axle to USB-keep calipers square). Enter the pairs below; CA is
+          computed automatically and the wizard reports the solved constants plus an angle-error
+          estimate for your wheels.
+        </p>
 
       {/* Base selection */}
       <div className="flex items-center gap-3 text-xs justify-end text-left">
@@ -289,7 +292,7 @@ function CalibrationWizard({
       <div className="flex items-center gap-3 text-xs justify-end text-left">
         <span className="text-neutral-300 whitespace-nowrap">Name (optional):</span>
         <input
-          className="w-40 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs"
+          className="w-40 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs u-focus-ring"
           value={calibName}
           onChange={e => setCalibName(e.target.value)}
           placeholder="e.g. New wheel setup"
@@ -501,6 +504,7 @@ function CalibrationWizard({
             </div>
           </div>
         )}
+      </div>
       </div>
     </section>
   );

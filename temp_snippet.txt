@@ -1,0 +1,61 @@
+        A,
+        betaDeg: beta,
+        Dj,
+        Ds,
+        constants: activeMachine.constants,
+      } as const;
+
+      const hnPlus = computeTonHeights({ ...baseInput, betaDeg: beta + delta }).hn;
+      const hnMinus = computeTonHeights({ ...baseInput, betaDeg: beta - delta }).hn;
+      const dHn_dBeta = (hnPlus - hnMinus) / (2 * delta);
+
+      if (Math.abs(dHn_dBeta) < 1e-6) {
+        map[key] = null;
+        continue;
+      }
+
+      map[key] = Math.abs(residualMm / dHn_dBeta);
+    }
+
+    return map;
+  }, [
+    activeMachine.constants,
+    activeMachine.jigDiameter,
+    activeMachine.usbDiameter,
+    appliedCalibrationByBase.front,
+    appliedCalibrationByBase.rear,
+    global.projection,
+    global.targetAngle,
+    wheelResults,
+  ]);
+
+  // Persist basic state
+  React.useEffect(() => {
+    _save('t_global', global);
+  }, [global]);
+
+  React.useEffect(() => {
+    _save('t_constants', constants);
+  }, [constants]);
+
+  React.useEffect(() => {
+    _save('t_wheels', wheels);
+  }, [wheels]);
+
+  React.useEffect(() => {
+    _save('t_sessionSteps', sessionSteps);
+  }, [sessionSteps]);
+
+  React.useEffect(() => {
+    _save('t_sessionPresets', sessionPresets);
+  }, [sessionPresets]);
+
+  React.useEffect(() => {
+    _save('t_heightMode', heightMode);
+  }, [heightMode]);
+
+  React.useEffect(() => {
+    _save('t_calibSnapshots', calibSnapshots);
+  }, [calibSnapshots]);
+
+  React.useEffect(() => {

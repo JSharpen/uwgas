@@ -33,24 +33,32 @@ function MiniSelect({
   const [isMenuClosing, setIsMenuClosing] = React.useState(false);
   const menuCloseTimerRef = React.useRef<number | null>(null);
   const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const cleanupRefs = React.useRef<(() => void)[]>([]);
 
   // Lift the nearest card when the menu is open so the menu sits above neighboring cards.
   React.useEffect(() => {
-    if (!liftOnOpen) return;
-    const host = rootRef.current?.closest<HTMLElement>('.card-elevated');
-    if (!host) return;
-    const prevZ = host.style.zIndex;
-    const prevOverflow = host.style.overflow;
-    if (isMenuVisible) {
-      host.style.zIndex = '3000';
-      host.style.overflow = 'visible';
-    } else {
-      host.style.zIndex = prevZ;
-      host.style.overflow = prevOverflow;
-    }
+    // We hoist overflow on both the card and its containing panel to allow menus to escape.
+    if (!liftOnOpen || !isMenuVisible) return;
+    const hostCard = rootRef.current?.closest<HTMLElement>('.card-elevated');
+    const hostPanel = rootRef.current?.closest<HTMLElement>('.panel-card');
+    const cleanups: (() => void)[] = [];
+    const apply = (el: HTMLElement | null | undefined) => {
+      if (!el) return;
+      const prevZ = el.style.zIndex;
+      const prevOverflow = el.style.overflow;
+      el.style.zIndex = '3000';
+      el.style.overflow = 'visible';
+      cleanups.push(() => {
+        el.style.zIndex = prevZ;
+        el.style.overflow = prevOverflow;
+      });
+    };
+    apply(hostCard);
+    apply(hostPanel);
+    cleanupRefs.current = cleanups;
     return () => {
-      host.style.zIndex = prevZ;
-      host.style.overflow = prevOverflow;
+      cleanupRefs.current.forEach(fn => fn());
+      cleanupRefs.current = [];
     };
   }, [isMenuVisible, liftOnOpen]);
 
@@ -186,35 +194,37 @@ function MiniSelect({
             isMenuClosing ? 'dropdown-menu--closing' : 'dropdown-menu--opening'
           } ${menuWidthClass ?? 'w-32'}`}
         >
-          {options.length === 0 ? (
-            <div className="dropdown-empty text-[0.7rem]">{emptyLabel}</div>
-          ) : (
-            options.map(opt => {
-              const isActive = opt.value === value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className={`dropdown-item ${isActive ? 'dropdown-item--active' : ''}`}
-                  disabled={opt.disabled}
-                  onClick={() => {
-                    if (opt.disabled) return;
-                    onChange(opt.value);
-                    closeMenu();
-                  }}
-                >
-                  {renderOption ? (
-                    renderOption(opt, isActive)
-                  ) : (
-                    <>
-                      <div className="dropdown-item__title">{opt.label}</div>
-                      {opt.meta ? <div className="dropdown-item__meta">{opt.meta}</div> : null}
-                    </>
-                  )}
-                </button>
-              );
-            })
-          )}
+          <div className="dropdown-menu__body">
+            {options.length === 0 ? (
+              <div className="dropdown-empty text-[0.7rem]">{emptyLabel}</div>
+            ) : (
+              options.map(opt => {
+                const isActive = opt.value === value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`dropdown-item ${isActive ? 'dropdown-item--active' : ''}`}
+                    disabled={opt.disabled}
+                    onClick={() => {
+                      if (opt.disabled) return;
+                      onChange(opt.value);
+                      closeMenu();
+                    }}
+                  >
+                    {renderOption ? (
+                      renderOption(opt, isActive)
+                    ) : (
+                      <>
+                        <div className="dropdown-item__title">{opt.label}</div>
+                        {opt.meta ? <div className="dropdown-item__meta">{opt.meta}</div> : null}
+                      </>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
     </div>

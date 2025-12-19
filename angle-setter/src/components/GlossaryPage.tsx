@@ -11,16 +11,20 @@ function GlossaryPage(): React.ReactElement {
   ];
 
   return (
-    <section className="border border-neutral-700 rounded-lg p-3 bg-neutral-900/30 flex flex-col gap-3 max-w-3xl motion-panel">
-      <div>
-        <h2 className="text-sm font-semibold text-neutral-200">Glossary & diagrams</h2>
-        <p className="text-xs text-neutral-300">
-          Symbols and terms used throughout the app. (Space reserved for diagrams and formulas.)
-        </p>
+    <section className="panel-card panel-card--strong flex flex-col gap-0 max-w-3xl motion-panel">
+      <div className="panel-card__header">
+        <h2 className="text-sm font-semibold u-text panel-header">Glossary & diagrams</h2>
       </div>
-      <GlossaryCard items={terms} />
-      <div className="rounded border border-dashed border-neutral-700 bg-neutral-950/40 p-4 text-xs text-neutral-400 motion-card">
-        Diagram placeholder: add schematic of bases, hc/o vectors, and measurement references.
+      <div className="panel-card__body flex flex-col gap-3">
+        <div>
+          <p className="text-xs u-text-muted">
+            Symbols and terms used throughout the app. (Space reserved for diagrams and formulas.)
+          </p>
+        </div>
+        <GlossaryCard items={terms} />
+        <div className="rounded border border-dashed border-neutral-700 bg-neutral-950/40 p-4 text-xs text-neutral-400 motion-card">
+          Diagram placeholder: add schematic of bases, hc/o vectors, and measurement references.
+        </div>
       </div>
     </section>
   );

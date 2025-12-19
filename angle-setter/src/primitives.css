@@ -41,11 +41,6 @@
     transform 120ms ease;
 }
 
-.u-btn:hover {
-  background: color-mix(in srgb, var(--color-panel-strong) 85%, var(--color-panel) 15%);
-  border-color: color-mix(in srgb, var(--color-border-strong) 60%, var(--color-border) 40%);
-}
-
 .u-btn:active {
   transform: scale(0.98);
 }
@@ -56,6 +51,14 @@
 
 .u-btn:focus-visible {
   border-color: var(--color-focus);
+  box-shadow: none;
+}
+.u-btn:focus-visible:not(:active) {
+  border-color: inherit;
+  box-shadow: none;
+}
+.u-btn:focus-visible:not(:active) {
+  border-color: inherit;
   box-shadow: none;
 }
 
@@ -89,25 +92,10 @@
   border-color: color-mix(in srgb, var(--color-border) 70%, transparent);
 }
 
-.u-btn-ghost:hover {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-panel-strong) 25%, #ffffff 10%) 0%,
-      color-mix(in srgb, var(--color-panel-strong) 70%, transparent) 100%
-    );
-  border-color: color-mix(in srgb, var(--color-border-strong) 55%, transparent);
-}
-
 .u-btn-plain {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
-}
-
-.u-btn-plain:hover {
-  background: transparent;
-  border-color: transparent;
 }
 
 .u-btn-plain:focus-visible {
@@ -133,12 +121,6 @@
     transform 120ms ease;
 }
 
-.u-btn-close:hover {
-  background: color-mix(in srgb, var(--color-panel-strong) 40%, transparent);
-  border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
-  color: var(--color-text);
-}
-
 .u-btn-close:active {
   transform: scale(0.97);
 }
@@ -162,16 +144,6 @@
   color: var(--color-text);
 }
 
-.u-btn-primary:hover {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-accent-strong) 32%, #ffffff 12%) 0%,
-      color-mix(in srgb, var(--color-accent-strong) 40%, var(--color-panel) 60%) 100%
-    );
-  border-color: color-mix(in srgb, var(--color-accent-strong) 70%, var(--color-border) 30%);
-}
-
 .u-btn-danger {
   border-color: color-mix(in srgb, var(--color-danger) 65%, var(--color-border) 35%);
   background:
@@ -183,13 +155,51 @@
   color: var(--color-danger);
 }
 
-.u-btn-danger:hover {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-danger) 18%, #ffffff 12%) 0%,
-      color-mix(in srgb, var(--color-danger) 26%, var(--color-panel)) 100%
-    );
+@media (hover: hover) and (pointer: fine) {
+  .u-btn:hover:not(:focus-visible) {
+    background: color-mix(in srgb, var(--color-panel-strong) 85%, var(--color-panel) 15%);
+    border-color: color-mix(in srgb, var(--color-border-strong) 60%, var(--color-border) 40%);
+  }
+
+  .u-btn-ghost:hover:not(:focus-visible) {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-panel-strong) 25%, #ffffff 10%) 0%,
+        color-mix(in srgb, var(--color-panel-strong) 70%, transparent) 100%
+      );
+    border-color: color-mix(in srgb, var(--color-border-strong) 55%, transparent);
+  }
+
+  .u-btn-plain:hover:not(:focus-visible) {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .u-btn-close:hover:not(:focus-visible) {
+    background: color-mix(in srgb, var(--color-panel-strong) 40%, transparent);
+    border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
+    color: var(--color-text);
+  }
+
+  .u-btn-primary:hover:not(:focus-visible) {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-accent-strong) 32%, #ffffff 12%) 0%,
+        color-mix(in srgb, var(--color-accent-strong) 40%, var(--color-panel) 60%) 100%
+      );
+    border-color: color-mix(in srgb, var(--color-accent-strong) 70%, var(--color-border) 30%);
+  }
+
+  .u-btn-danger:hover:not(:focus-visible) {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-danger) 18%, #ffffff 12%) 0%,
+        color-mix(in srgb, var(--color-danger) 26%, var(--color-panel)) 100%
+      );
+  }
 }
 
 .u-btn-ghost:disabled,
@@ -300,8 +310,10 @@
   font-size: 0.78rem;
 }
 
-.dropdown-trigger:hover {
-  background: var(--color-panel-strong);
+@media (hover: hover) and (pointer: fine) {
+  .dropdown-trigger:hover {
+    background: var(--color-panel-strong);
+  }
 }
 
 .dropdown-trigger--open {
@@ -361,8 +373,10 @@
   transition: background-color 120ms ease, color 120ms ease;
 }
 
-.dropdown-item:hover {
-  background: var(--color-panel-strong);
+@media (hover: hover) and (pointer: fine) {
+  .dropdown-item:hover {
+    background: var(--color-panel-strong);
+  }
 }
 
 .dropdown-item--active {
