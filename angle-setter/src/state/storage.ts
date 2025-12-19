@@ -11,7 +11,7 @@ import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS } from './defaults';
 
 export const PERSIST_VERSION = 3;
 
-export function _save(k: string, v: any) {
+export function _save(k: string, v: unknown) {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(k, JSON.stringify(v));
@@ -74,28 +74,38 @@ export function parsePersistedState(raw: string): AppPersistedState | null {
     const parsed = JSON.parse(raw);
     if (!isObject(parsed)) return null;
 
-    const version = Number((parsed as any).version) || 1;
+    const parsedObj = parsed as Record<string, unknown>;
+    const version = Number(parsedObj.version) || 1;
     if (!isFinite(version) || version < 1) return null;
+
+    const globalRaw = parsedObj.global;
+    const constantsRaw = parsedObj.constants;
+    const wheelsRaw = parsedObj.wheels;
+    const sessionStepsRaw = parsedObj.sessionSteps;
+    const sessionPresetsRaw = parsedObj.sessionPresets;
+    const heightModeRaw = parsedObj.heightMode;
+    const snapshotsRaw = parsedObj.calibSnapshots;
+    const appliedIdsRaw = parsedObj.calibAppliedIds;
 
     const result: AppPersistedState = {
       version,
-      global: isObject((parsed as any).global) ? (parsed as any).global as GlobalState : DEFAULT_GLOBAL,
-      constants: isObject((parsed as any).constants)
-        ? (parsed as any).constants as MachineConstants
+      global: isObject(globalRaw) ? (globalRaw as GlobalState) : DEFAULT_GLOBAL,
+      constants: isObject(constantsRaw)
+        ? (constantsRaw as MachineConstants)
         : DEFAULT_CONSTANTS,
-      wheels: Array.isArray((parsed as any).wheels) ? (parsed as any).wheels as Wheel[] : [],
-      sessionSteps: Array.isArray((parsed as any).sessionSteps)
-        ? (parsed as any).sessionSteps as SessionStep[]
+      wheels: Array.isArray(wheelsRaw) ? (wheelsRaw as Wheel[]) : [],
+      sessionSteps: Array.isArray(sessionStepsRaw)
+        ? (sessionStepsRaw as SessionStep[])
         : [],
-      sessionPresets: Array.isArray((parsed as any).sessionPresets)
-        ? (parsed as any).sessionPresets as SessionPreset[]
+      sessionPresets: Array.isArray(sessionPresetsRaw)
+        ? (sessionPresetsRaw as SessionPreset[])
         : [],
-      heightMode: (parsed as any).heightMode === 'hr' ? 'hr' : 'hn',
-      calibSnapshots: Array.isArray((parsed as any).calibSnapshots)
-        ? (parsed as any).calibSnapshots as CalibrationSnapshot[]
+      heightMode: heightModeRaw === 'hr' ? 'hr' : 'hn',
+      calibSnapshots: Array.isArray(snapshotsRaw)
+        ? (snapshotsRaw as CalibrationSnapshot[])
         : [],
-      calibAppliedIds: isObject((parsed as any).calibAppliedIds)
-        ? (parsed as any).calibAppliedIds as { rear: string; front: string }
+      calibAppliedIds: isObject(appliedIdsRaw)
+        ? (appliedIdsRaw as { rear: string; front: string })
         : { rear: '', front: '' },
     };
 

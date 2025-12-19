@@ -71,7 +71,7 @@ function CalibrationWizard({
   onApplyCalibration,
 }: CalibrationWizardProps) {
   const lastSnapshotIdRef = React.useRef<string | null>(null);
-  const parseInputValue = React.useCallback((raw: any): number => {
+  const parseInputValue = React.useCallback((raw: unknown): number => {
     if (typeof raw === 'string') {
       const trimmed = raw.trim();
       if (trimmed === '') return NaN;
@@ -201,7 +201,7 @@ function CalibrationWizard({
       angleErrorDeg: angleErr,
       rowResiduals,
     });
-  }, [activeMachine, calibBase, global, parseInputValue, setCalibError, setCalibResult, setCalibSnapshots, validateInputs, wheels]);
+  }, [activeMachine, calibBase, calibName, global, parseInputValue, setCalibError, setCalibResult, setCalibSnapshots, validateInputs, wheels]);
 
   const handleApplyCalibration = React.useCallback(() => {
     if (!calibResult) return;
@@ -511,4 +511,3 @@ function CalibrationWizard({
 }
 
 export default CalibrationWizard;
-

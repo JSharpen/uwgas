@@ -329,25 +329,50 @@ function ExpandToggle({
   );
 }
 
-function normalizeWheel(raw: any): Wheel {
-  const base: BaseSide = raw?.baseForHn === 'front' ? 'front' : 'rear';
-  const dVal = Number(raw?.D);
-  const angleOffset = typeof raw?.angleOffset === 'number' ? raw.angleOffset : 0;
-  const grit = typeof raw?.grit === 'string' ? raw.grit : '';
-  const dText = typeof raw?.DText === 'string' ? raw.DText : undefined;
+type PartialConstants = {
+  rear?: Partial<MachineConstants['rear']>;
+  front?: Partial<MachineConstants['front']>;
+};
+
+type RawAppliedIds = Partial<Record<BaseSide, unknown>>;
+
+function normalizeWheel(raw: unknown): Wheel {
+  const data = (raw as Record<string, unknown>) ?? {};
+  const base: BaseSide = data.baseForHn === 'front' ? 'front' : 'rear';
+  const dVal = Number(data.D);
+  const angleOffset = typeof data.angleOffset === 'number' ? data.angleOffset : 0;
+  const grit = typeof data.grit === 'string' ? data.grit : '';
+  const dText = typeof data.DText === 'string' ? data.DText : undefined;
+  const idSource = data.id;
 
   return {
     id:
-      typeof raw?.id === 'string' && raw.id
-        ? raw.id
+      typeof idSource === 'string' && idSource
+        ? idSource
         : `wheel-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    name: typeof raw?.name === 'string' ? raw.name : '',
+    name: typeof data.name === 'string' ? data.name : '',
     D: Number.isFinite(dVal) ? dVal : NaN,
     DText: dText,
     angleOffset,
     baseForHn: base,
-    isHoning: Boolean(raw?.isHoning),
+    isHoning: Boolean(data.isHoning),
     grit,
+  };
+}
+
+function normalizeSessionStep(raw: unknown): SessionStep {
+  const data = (raw as Record<string, unknown>) ?? {};
+  const idSource = data.id;
+
+  return {
+    id:
+      typeof idSource === 'string' && idSource
+        ? idSource
+        : `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    wheelId: typeof data.wheelId === 'string' ? data.wheelId : '',
+    base: data.base === 'front' ? 'front' : 'rear',
+    angleOffset: typeof data.angleOffset === 'number' ? data.angleOffset : 0,
+    notes: typeof data.notes === 'string' ? data.notes : '',
   };
 }
 
@@ -369,38 +394,49 @@ type ExportSections = {
 type ImportSections = ExportSections;
 type ImportModes = Record<keyof ImportSections, 'merge' | 'overwrite'>;
 
-function normalizeCalibrationSnapshots(items: any[]): CalibrationSnapshot[] {
-  return items.map((snap, idx) => {
-    const base: BaseSide = snap?.base === 'front' ? 'front' : 'rear';
-    const name = typeof snap?.name === 'string' ? snap.name : '';
+function normalizeCalibrationSnapshots(items: unknown[]): CalibrationSnapshot[] {
+  return items.map((value, idx) => {
+    const snap = (value as Record<string, unknown>) ?? {};
+    const base: BaseSide = snap.base === 'front' ? 'front' : 'rear';
+    const name = typeof snap.name === 'string' ? snap.name : '';
     const baseTag =
-      typeof snap?.baseTag === 'string' && snap.baseTag.trim()
-        ? snap.baseTag.trim()
-        : base;
-    const hc = typeof snap?.hc === 'number' ? snap.hc : NaN;
-    const o = typeof snap?.o === 'number' ? snap.o : NaN;
-    const diagnostics =
-      snap?.diagnostics && Array.isArray(snap.diagnostics.residuals)
-        ? {
-            residuals: snap.diagnostics.residuals.map((r: any) => Number(r) || 0),
-            maxAbsResidualMm: Number(snap.diagnostics.maxAbsResidualMm) || 0,
-          }
-        : { residuals: [], maxAbsResidualMm: 0 };
-    const angleErrorDeg =
-      typeof snap?.angleErrorDeg === 'number' ? snap.angleErrorDeg : null;
-    const count = Number(snap?.count) || diagnostics.residuals.length || 0;
-    const Da = Number(snap?.Da) || 0;
-    const Ds = Number(snap?.Ds) || 0;
-    const createdAt =
-      typeof snap?.createdAt === 'string' ? snap.createdAt : new Date().toISOString();
-    const measurements = Array.isArray(snap?.measurements)
-      ? snap.measurements.map((m: any) => ({
-          hn: typeof m?.hn === 'string' ? m.hn : String(m?.hn ?? ''),
-          CAo: typeof m?.CAo === 'string' ? m.CAo : String(m?.CAo ?? ''),
-        }))
+      typeof snap.baseTag === 'string' && snap.baseTag.trim() ? snap.baseTag.trim() : base;
+    const hc = typeof snap.hc === 'number' ? snap.hc : NaN;
+    const o = typeof snap.o === 'number' ? snap.o : NaN;
+
+    const diagnosticsRaw = isObject(snap.diagnostics) ? snap.diagnostics : null;
+    const residuals = Array.isArray(diagnosticsRaw?.residuals)
+      ? diagnosticsRaw.residuals.map(r => {
+          const n = Number(r);
+          return Number.isFinite(n) ? n : 0;
+        })
       : [];
+    const diagnostics: CalibrationDiagnostics = {
+      residuals,
+      maxAbsResidualMm: Number(diagnosticsRaw?.maxAbsResidualMm) || 0,
+    };
+
+    const angleErrorDeg = typeof snap.angleErrorDeg === 'number' ? snap.angleErrorDeg : null;
+    const count = Number(snap.count) || diagnostics.residuals.length || 0;
+    const Da = Number(snap.Da) || 0;
+    const Ds = Number(snap.Ds) || 0;
+    const createdAt =
+      typeof snap.createdAt === 'string' ? snap.createdAt : new Date().toISOString();
+    const measurementsRaw = Array.isArray(snap.measurements) ? snap.measurements : [];
+    const measurements = measurementsRaw.map(measurement => {
+      const mObj = (measurement as Record<string, unknown>) ?? {};
+      const hnRaw = mObj.hn;
+      const CAoRaw = mObj.CAo;
+      return {
+        hn: typeof hnRaw === 'string' ? hnRaw : String(hnRaw ?? ''),
+        CAo: typeof CAoRaw === 'string' ? CAoRaw : String(CAoRaw ?? ''),
+      };
+    });
     return {
-      id: snap?.id || `calib-${Date.now()}-${idx}`,
+      id:
+        typeof snap.id === 'string' && snap.id
+          ? snap.id
+          : `calib-${Date.now()}-${idx}`,
       base,
       hc,
       o,
@@ -873,10 +909,11 @@ const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
   ]);
 
   // Cleanup pending step removal timers
-  React.useEffect(() => {
+React.useEffect(() => {
+    const timers = stepRemoveTimersRef.current;
     return () => {
-      stepRemoveTimersRef.current.forEach(timerId => window.clearTimeout(timerId));
-      stepRemoveTimersRef.current.clear();
+      timers.forEach(timerId => window.clearTimeout(timerId));
+      timers.clear();
     };
   }, []);
 
@@ -1114,51 +1151,57 @@ const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
   const exportText = React.useMemo(() => JSON.stringify(exportBundle, null, 2), [exportBundle]);
   const handleImportText = React.useCallback(
     (raw: string) => {
-      let parsed: any;
+      let parsed: unknown;
       try {
         parsed = JSON.parse(raw);
       } catch {
         return { error: 'Import failed: invalid JSON.' };
       }
       if (!isObject(parsed)) return { error: 'Import failed: expected a JSON object.' };
+      const parsedObj = parsed as Record<string, unknown>;
 
       // Normalise incoming sections
-      const nextGlobal = isObject(parsed.global)
-        ? { ...DEFAULT_GLOBAL, ...(parsed.global as Partial<GlobalState>) }
+      const nextGlobal = isObject(parsedObj.global)
+        ? { ...DEFAULT_GLOBAL, ...(parsedObj.global as Partial<GlobalState>) }
         : DEFAULT_GLOBAL;
 
-      const nextConstants = isObject(parsed.constants)
+      const parsedConstants = isObject(parsedObj.constants)
+        ? (parsedObj.constants as PartialConstants)
+        : null;
+      const nextConstants: MachineConstants = parsedConstants
         ? {
             rear: {
-              hc: _nz((parsed.constants as any).rear?.hc, DEFAULT_CONSTANTS.rear.hc),
-              o: _nz((parsed.constants as any).rear?.o, DEFAULT_CONSTANTS.rear.o),
+              hc: _nz(parsedConstants.rear?.hc, DEFAULT_CONSTANTS.rear.hc),
+              o: _nz(parsedConstants.rear?.o, DEFAULT_CONSTANTS.rear.o),
             },
             front: {
-              hc: _nz((parsed.constants as any).front?.hc, DEFAULT_CONSTANTS.front.hc),
-              o: _nz((parsed.constants as any).front?.o, DEFAULT_CONSTANTS.front.o),
+              hc: _nz(parsedConstants.front?.hc, DEFAULT_CONSTANTS.front.hc),
+              o: _nz(parsedConstants.front?.o, DEFAULT_CONSTANTS.front.o),
             },
           }
         : DEFAULT_CONSTANTS;
 
-      const nextWheels = Array.isArray(parsed.wheels)
-        ? parsed.wheels.map(normalizeWheel)
+      const nextWheels = Array.isArray(parsedObj.wheels)
+        ? parsedObj.wheels.map(normalizeWheel)
         : [];
 
-      const nextSteps = Array.isArray(parsed.sessionSteps)
-        ? (parsed.sessionSteps as SessionStep[])
+      const nextSteps = Array.isArray(parsedObj.sessionSteps)
+        ? parsedObj.sessionSteps.map(normalizeSessionStep)
         : [];
 
-      const nextPresets = Array.isArray(parsed.sessionPresets)
-        ? (parsed.sessionPresets as SessionPreset[])
+      const nextPresets = Array.isArray(parsedObj.sessionPresets)
+        ? (parsedObj.sessionPresets as SessionPreset[])
         : [];
 
-      const nextHeightMode = parsed.heightMode === 'hr' ? 'hr' : 'hn';
+      const nextHeightMode = parsedObj.heightMode === 'hr' ? 'hr' : 'hn';
 
       const nextSnapshots = normalizeCalibrationSnapshots(
-        Array.isArray(parsed.calibSnapshots) ? parsed.calibSnapshots : []
+        Array.isArray(parsedObj.calibSnapshots) ? parsedObj.calibSnapshots : []
       );
 
-      const appliedRaw = isObject(parsed.calibAppliedIds) ? (parsed.calibAppliedIds as any) : null;
+      const appliedRaw = isObject(parsedObj.calibAppliedIds)
+        ? (parsedObj.calibAppliedIds as RawAppliedIds)
+        : null;
       const nextApplied = {
         rear: typeof appliedRaw?.rear === 'string' ? appliedRaw.rear : '',
         front: typeof appliedRaw?.front === 'string' ? appliedRaw.front : '',
@@ -1196,12 +1239,12 @@ const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
         } else {
           setConstants(prev => ({
             rear: {
-              hc: _nz((nextConstants as any).rear?.hc, prev.rear.hc),
-              o: _nz((nextConstants as any).rear?.o, prev.rear.o),
+              hc: _nz(nextConstants.rear.hc, prev.rear.hc),
+              o: _nz(nextConstants.rear.o, prev.rear.o),
             },
             front: {
-              hc: _nz((nextConstants as any).front?.hc, prev.front.hc),
-              o: _nz((nextConstants as any).front?.o, prev.front.o),
+              hc: _nz(nextConstants.front.hc, prev.front.hc),
+              o: _nz(nextConstants.front.o, prev.front.o),
             },
           }));
           appliedSummary.push('constants: merge');
@@ -1225,8 +1268,14 @@ const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
           appliedSummary.push(`steps: overwrite (${nextSteps.length})`);
         } else {
           const keyed = new Map<string, SessionStep>();
-          sessionSteps.forEach((s, idx) => keyed.set((s as any).id || `cur-${idx}`, s));
-          nextSteps.forEach((s, idx) => keyed.set((s as any).id || `new-${idx}`, s));
+          sessionSteps.forEach((s, idx) => {
+            const id = typeof s.id === 'string' && s.id ? s.id : `cur-${idx}`;
+            keyed.set(id, s);
+          });
+          nextSteps.forEach((s, idx) => {
+            const id = typeof s.id === 'string' && s.id ? s.id : `new-${idx}`;
+            keyed.set(id, s);
+          });
           const merged = Array.from(keyed.values());
           setSessionSteps(merged);
           appliedSummary.push(`steps: merge -> ${merged.length}`);
@@ -1299,9 +1348,14 @@ const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
       calibAppliedIds.rear,
       calibAppliedIds.front,
       calibSnapshots,
-      constants,
-      global,
-      heightMode,
+      setCalibAppliedIds,
+      setCalibSnapshots,
+      setConstants,
+      setGlobal,
+      setHeightMode,
+      setSessionPresets,
+      setSessionSteps,
+      setWheels,
       importModes,
       importSections,
       sessionPresets,
@@ -2841,9 +2895,5 @@ const handleLoadPreset = (presetId: string) => {
 }
 
 export default App;
-
-
-
-
 
 

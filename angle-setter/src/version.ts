@@ -7,9 +7,10 @@ export const APP_NAME = meta.name ?? 'angle-setter';
 export const APP_VERSION = meta.version ?? '0.0.0';
 
 // Optional build metadata (e.g., commits since last deploy) injected at build time via Vite env.
+type ViteEnv = { VITE_BUILD_META?: string };
 const metaEnv =
-  typeof import.meta !== 'undefined' && typeof (import.meta as any).env === 'object'
-    ? (import.meta as any).env
+  typeof import.meta !== 'undefined' && typeof (import.meta as { env?: unknown }).env === 'object'
+    ? ((import.meta as { env: unknown }).env as ViteEnv)
     : undefined;
 const envBuildMeta = metaEnv?.VITE_BUILD_META;
 const buildMeta =
