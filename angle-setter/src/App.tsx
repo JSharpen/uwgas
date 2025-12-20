@@ -664,6 +664,7 @@ function App() {
   const [view, setView] = React.useState<'calculator' | 'wheels' | 'settings'>(
     'calculator'
   );
+  const showDevHeader = import.meta.env.DEV;
   const [settingsView, setSettingsView] = React.useState<
     'machine' | 'calibration' | 'import' | 'glossary'
   >('machine');
@@ -1773,7 +1774,7 @@ const handleLoadPreset = (presetId: string) => {
           v{APP_VERSION_DISPLAY}
         </div>
       )}
-      <h1 className="text-lg font-semibold">UWGAS Dev build</h1>
+      {showDevHeader && <h1 className="text-lg font-semibold">UWGAS Dev build</h1>}
 
       <div className="flex gap-2 text-sm mb-2">
         <button
@@ -2895,5 +2896,3 @@ const handleLoadPreset = (presetId: string) => {
 }
 
 export default App;
-
-
