@@ -8,6 +8,7 @@ export type Wheel = {
   angleOffset: number; // β° at wheel level (default)
   baseForHn: BaseSide; // default base for this wheel
   isHoning: boolean;
+  grit?: string; // optional grit or abrasive label
 };
 
 export type SessionStep = {
@@ -15,6 +16,7 @@ export type SessionStep = {
   wheelId: string;
   base: BaseSide;
   angleOffset: number; // β° at step level
+  notes: string;
 };
 
 export type PresetStepRef = {
@@ -22,6 +24,7 @@ export type PresetStepRef = {
   wheelName: string;
   base: BaseSide;
   angleOffset: number;
+  notes?: string;
 };
 
 export type SessionPreset = {
@@ -61,6 +64,9 @@ export type AppPersistedState = {
   wheels: Wheel[];
   sessionSteps: SessionStep[];
   sessionPresets: SessionPreset[];
+  heightMode?: 'hn' | 'hr';
+  calibSnapshots?: CalibrationSnapshot[];
+  calibAppliedIds?: { rear: string; front: string };
 };
 
 export type TonInput = {
@@ -105,4 +111,20 @@ export type CalibrationResult = {
   hc: number;
   o: number;
   diagnostics: CalibrationDiagnostics;
+};
+
+export type CalibrationSnapshot = {
+  id: string;
+  base: BaseSide;
+  baseTag?: string; // optional user-visible tag for base
+  name?: string; // optional user-supplied label
+  hc: number;
+  o: number;
+  diagnostics: CalibrationDiagnostics;
+  angleErrorDeg: number | null;
+  count: number;
+  Da: number;
+  Ds: number;
+  createdAt: string;
+  measurements: CalibrationMeasurement[];
 };

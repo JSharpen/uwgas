@@ -1,5 +1,6 @@
 import type {
   AppPersistedState,
+  CalibrationSnapshot,
   GlobalState,
   MachineConstants,
   SessionPreset,
@@ -8,9 +9,9 @@ import type {
 } from '../types/core';
 import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS } from './defaults';
 
-export const PERSIST_VERSION = 1;
+export const PERSIST_VERSION = 3;
 
-export function _save(k: string, v: any) {
+export function _save(k: string, v: unknown) {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(k, JSON.stringify(v));
@@ -40,6 +41,12 @@ export function readPersistedState(): AppPersistedState {
     wheels: _load<Wheel[]>('t_wheels', DEFAULT_WHEELS),
     sessionSteps: _load<SessionStep[]>('t_sessionSteps', []),
     sessionPresets: _load<SessionPreset[]>('t_sessionPresets', []),
+    heightMode: _load<'hn' | 'hr'>('t_heightMode', 'hn'),
+    calibSnapshots: _load<CalibrationSnapshot[]>('t_calibSnapshots', []),
+    calibAppliedIds: _load<{ rear: string; front: string }>('t_calibAppliedIds', {
+      rear: '',
+      front: '',
+    }),
   };
 }
 
@@ -49,6 +56,9 @@ export function writePersistedState(state: AppPersistedState) {
   _save('t_wheels', state.wheels);
   _save('t_sessionSteps', state.sessionSteps);
   _save('t_sessionPresets', state.sessionPresets);
+  if (state.heightMode) _save('t_heightMode', state.heightMode);
+  if (state.calibSnapshots) _save('t_calibSnapshots', state.calibSnapshots);
+  if (state.calibAppliedIds) _save('t_calibAppliedIds', state.calibAppliedIds);
 }
 
 export function exportStateToString(state: AppPersistedState): string {
@@ -64,22 +74,39 @@ export function parsePersistedState(raw: string): AppPersistedState | null {
     const parsed = JSON.parse(raw);
     if (!isObject(parsed)) return null;
 
-    const version = Number((parsed as any).version) || 1;
+    const parsedObj = parsed as Record<string, unknown>;
+    const version = Number(parsedObj.version) || 1;
     if (!isFinite(version) || version < 1) return null;
+
+    const globalRaw = parsedObj.global;
+    const constantsRaw = parsedObj.constants;
+    const wheelsRaw = parsedObj.wheels;
+    const sessionStepsRaw = parsedObj.sessionSteps;
+    const sessionPresetsRaw = parsedObj.sessionPresets;
+    const heightModeRaw = parsedObj.heightMode;
+    const snapshotsRaw = parsedObj.calibSnapshots;
+    const appliedIdsRaw = parsedObj.calibAppliedIds;
 
     const result: AppPersistedState = {
       version,
-      global: isObject((parsed as any).global) ? (parsed as any).global as GlobalState : DEFAULT_GLOBAL,
-      constants: isObject((parsed as any).constants)
-        ? (parsed as any).constants as MachineConstants
+      global: isObject(globalRaw) ? (globalRaw as GlobalState) : DEFAULT_GLOBAL,
+      constants: isObject(constantsRaw)
+        ? (constantsRaw as MachineConstants)
         : DEFAULT_CONSTANTS,
-      wheels: Array.isArray((parsed as any).wheels) ? (parsed as any).wheels as Wheel[] : [],
-      sessionSteps: Array.isArray((parsed as any).sessionSteps)
-        ? (parsed as any).sessionSteps as SessionStep[]
+      wheels: Array.isArray(wheelsRaw) ? (wheelsRaw as Wheel[]) : [],
+      sessionSteps: Array.isArray(sessionStepsRaw)
+        ? (sessionStepsRaw as SessionStep[])
         : [],
-      sessionPresets: Array.isArray((parsed as any).sessionPresets)
-        ? (parsed as any).sessionPresets as SessionPreset[]
+      sessionPresets: Array.isArray(sessionPresetsRaw)
+        ? (sessionPresetsRaw as SessionPreset[])
         : [],
+      heightMode: heightModeRaw === 'hr' ? 'hr' : 'hn',
+      calibSnapshots: Array.isArray(snapshotsRaw)
+        ? (snapshotsRaw as CalibrationSnapshot[])
+        : [],
+      calibAppliedIds: isObject(appliedIdsRaw)
+        ? (appliedIdsRaw as { rear: string; front: string })
+        : { rear: '', front: '' },
     };
 
     // Fallback defaults for missing keys

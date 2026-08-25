@@ -5,11 +5,13 @@ function GrindDirToggle({
   isHoning,
   canToggle,
   onToggle,
+  showLabel = false,
 }: {
   base: BaseSide;
   isHoning: boolean;
   canToggle: boolean; // edit-mode control
   onToggle: () => void;
+  showLabel?: boolean;
 }) {
   const label = base === 'rear' ? 'R' : 'F'; // Rear / Front
 
@@ -37,10 +39,10 @@ function GrindDirToggle({
       'border-neutral-700 bg-neutral-900 text-neutral-500 opacity-60 cursor-not-allowed';
   } else if (base === 'rear') {
     // Edge leading
-    stateClasses = 'border-emerald-500 bg-emerald-900/40 text-emerald-200';
+    stateClasses = 'border-accent bg-accent-tint text-accent';
   } else {
     // Edge trailing
-    stateClasses = 'border-sky-500 bg-sky-900/40 text-sky-200';
+    stateClasses = 'border-sky-400 bg-sky-900/40 text-sky-200';
   }
 
   return (
@@ -53,7 +55,7 @@ function GrindDirToggle({
       }}
       className={baseClasses + ' ' + stateClasses}
     >
-      {label}
+      {showLabel ? `Base ${label}` : label}
     </button>
   );
 }

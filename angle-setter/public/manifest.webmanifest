@@ -1,0 +1,32 @@
+{
+  "name": "Angle Setter",
+  "short_name": "AngleSetter",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "description": "USB height calculator and progression planner for Tormek sharpening setups.",
+  "icons": [
+    {
+      "src": "./Icon64x64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "./Icon128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "./Icon256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "./Icon512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

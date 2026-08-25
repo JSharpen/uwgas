@@ -1,14 +1,17 @@
 {
   "name": "angle-setter",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.9.0",
   "type": "module",
+  "homepage": "https://jsharpen.github.io/uwgas/",
   "scripts": {
     "dev": "vite",
+    "console": "./angle-dev-console.sh",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"(no tests defined yet)\" && exit 0",
     "preview": "vite preview",
-    "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
@@ -28,7 +31,6 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "gh-pages": "^6.3.0",
     "globals": "^16.5.0",
-    "gh-pages": "^6.2.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.17",
     "typescript": "~5.9.3",
