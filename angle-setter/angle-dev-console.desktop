@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Angle Setter Dev Console
+Comment=UWGAS Angle Setter Development Console
+Exec=/home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/angle-dev-console.sh
+Path=/home/jordancarruthers/Documents/GitHub/uwgas/angle-setter
+Terminal=true
+Icon=utilities-terminal
+Categories=Development;
+

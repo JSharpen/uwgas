@@ -6,6 +6,7 @@
   "homepage": "https://jsharpen.github.io/uwgas/",
   "scripts": {
     "dev": "vite",
+    "console": "./angle-dev-console.sh",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

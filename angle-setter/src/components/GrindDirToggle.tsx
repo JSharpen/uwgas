@@ -5,11 +5,13 @@ function GrindDirToggle({
   isHoning,
   canToggle,
   onToggle,
+  showLabel = false,
 }: {
   base: BaseSide;
   isHoning: boolean;
   canToggle: boolean; // edit-mode control
   onToggle: () => void;
+  showLabel?: boolean;
 }) {
   const label = base === 'rear' ? 'R' : 'F'; // Rear / Front
 
@@ -53,7 +55,7 @@ function GrindDirToggle({
       }}
       className={baseClasses + ' ' + stateClasses}
     >
-      {label}
+      {showLabel ? `Base ${label}` : label}
     </button>
   );
 }
