@@ -665,6 +665,8 @@ git_commit_and_push_dev() {
 }
 
 git_promote_dev_to_main() {
+    local cli_flag="${1:-}"
+
     cd "$GIT_ROOT" || exit 1
     update_live_status
 
@@ -678,12 +680,14 @@ git_promote_dev_to_main() {
         return 1
     fi
 
-    echo -en "${C_YELLOW}Are you sure you want to merge 'dev' into 'main'? (y/N):${C_RESET} "
-    read -r confirm
-    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        echo -e "${TAG_INFO} Operation cancelled."
-        cd "$PROJECT_DIR" || true
-        return 0
+    if [[ "$cli_flag" != "-y" && "$cli_flag" != "--yes" && "$cli_flag" != "--auto" ]]; then
+        echo -en "${C_YELLOW}Are you sure you want to merge 'dev' into 'main'? (y/N):${C_RESET} "
+        read -r confirm
+        if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+            echo -e "${TAG_INFO} Operation cancelled."
+            cd "$PROJECT_DIR" || true
+            return 0
+        fi
     fi
 
     # Ensure we are on dev branch before running validation
@@ -1129,6 +1133,7 @@ if [[ $# -gt 0 ]]; then
         check)        run_deploy_precheck ;;
         deploy)       run_deploy_protocol ;;
         commit)       git_commit_and_push_dev "$@" ;;
+        promote|merge) git_promote_dev_to_main "$@" ;;
         help|--help|-h)
             echo "Usage: ./angle-dev-console.sh [command] [options]"
             echo ""
@@ -1148,6 +1153,7 @@ if [[ $# -gt 0 ]]; then
             echo "  deploy      Run prechecks and deploy to GitHub Pages"
             echo "  commit      Interactive commit with auto-detected Job ID & message"
             echo "  commit -y   1-command auto-commit and push with detected Job ID & message"
+            echo "  promote     Verify checks, merge dev -> main, and push to origin"
             ;;
         *)
             echo "Unknown command: $cmd"
