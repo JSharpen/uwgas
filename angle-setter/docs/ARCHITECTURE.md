@@ -7,7 +7,7 @@
 
 ## 📐 Mathematical Model (Dutchman / Ton Trigonometry)
 
-UWGAS implements the exact geometric model developed by Dutchman and Ton for Tormek-style wet sharpeners.
+UWGAS implements the exact geometric model developed by Dutchman and Ton for Tormek-style wet sharpeners. For worked test vectors and verification tables, see [`docs/MATH_REFERENCE.md`](MATH_REFERENCE.md).
 
 ```
        [USB Bar (top)]
@@ -23,7 +23,7 @@ UWGAS implements the exact geometric model developed by Dutchman and Ton for Tor
              |
              hc (datum offset)
              |
-       [Machine Base]
+       [Machine Base Datum]
 ```
 
 ### Geometric Parameters & Symbols
@@ -36,7 +36,7 @@ UWGAS implements the exact geometric model developed by Dutchman and Ton for Tor
 | $D_j$ | Jig Diameter | Diameter of the jig collar/bar resting against the USB (mm) |
 | $D_s$ | USB Diameter | Diameter of the Universal Support Bar (typically 12.0 mm) |
 | $\beta$ (`betaDeg`) | Target Angle | Target grinding bevel angle per side (degrees) |
-| $\Delta\beta$ | Angle Offset / MicroBump | Incremental angle adjustments applied globally or per-step (degrees) |
+| $\Delta\beta$ | Angle Offset | Incremental angle adjustment applied per-step (degrees) |
 | $h_c$ | Vertical Constant | Height offset from machine base datum to axle centre line (mm) |
 | $o$ | Horizontal Offset | Horizontal offset between axle centre line and USB mount base (mm) |
 | $h_n$ | Base Height | Measured distance from machine datum base to the top of the USB (mm) |
@@ -57,7 +57,7 @@ UWGAS implements the exact geometric model developed by Dutchman and Ton for Tor
    $$\phi = \arctan\left(\frac{CJ}{jg}\right)$$
 
 5. **Effective Bevel Angle in Radians ($\beta_{\text{total}}$):**
-   $$\beta_{\text{total}} = \text{deg2rad}(\beta + \text{microBump} + \text{angleOffset})$$
+   $$\beta_{\text{total}} = \text{deg2rad}(\beta + \text{angleOffset})$$
 
 6. **Distance from Wheel Centre to USB Centre ($CA$ - Dutchman Law of Cosines):**
    $$CA = \sqrt{CG^2 + R^2 + 2 \cdot CG \cdot R \cdot \sin(\beta_{\text{total}} - \phi)}$$
@@ -99,9 +99,20 @@ State is managed client-side and saved to `localStorage` with versioned migratio
 ### Schema Definition (`AppPersistedState`)
 
 ```typescript
+export type CalcMode = 'height' | 'projection';
+
+export type GlobalState = {
+  projection: number;             // A (used when calcMode is 'height')
+  usbDiameter: number;            // Ds
+  targetAngle: number;            // β per side
+  jig: { Dj: number };            // jig diameter
+  calcMode?: CalcMode;            // 'height' (default) or 'projection'
+  fixedUsbHeight?: number;        // legacy fallback fixed USB height (mm)
+};
+
 export type AppPersistedState = {
   version: number;                // Incremented on schema changes
-  global: GlobalState;            // A, Ds, targetAngle, jig (Dj), microBump
+  global: GlobalState;            // Global calculator settings & active solver mode
   constants: MachineConstants;    // { rear: { hc, o }, front: { hc, o } }
   wheels: Wheel[];                // Array of available wheels (D, grit, honing flag, etc.)
   sessionSteps: SessionStep[];    // Active progression sequence
@@ -112,6 +123,21 @@ export type AppPersistedState = {
 };
 ```
 
+### Dual Solver Architectural Flow
+1. **Height Solver Mode (`calcMode: 'height'`)**:
+   - Inputs: Projection $A$, Target Angle $\beta$, step offsets $\Delta\beta$.
+   - Output: Calculated USB heights ($h_n$ base datum, $h_r$ wheel surface).
+2. **Projection Solver Mode (`calcMode: 'projection'`)**:
+   - Inputs: Fixed USB Height ($h_n$ or $h_r$), Target Angle $\beta$, step offsets $\Delta\beta$.
+   - Output: Calculated required knife projection $A$ per wheel with reachability boundary checks.
+
+### Schema Version History & Migrations
+
+| Schema Version | Release | Changes & Fallback Migrations |
+| :--- | :--- | :--- |
+| **`PERSIST_VERSION = 1`** | `v0.9.0` | Initial baseline: `global`, `constants`, `wheels`, `sessionSteps`, `sessionPresets`, `calibSnapshots`, `calibAppliedIds`. |
+| **`PERSIST_VERSION = 2`** | `v1.0.0 (Target)` | Multi-Machine Profiles: `machines: MachineConfig[]`, active machine pointer `activeMachineId: string`. Legacy `constants` will migrate to default machine. |
+
 ### Migration Rules
 - When updating schema properties, never remove existing fields without providing a migration fallback in `_load()`.
 - Always increment `PERSIST_VERSION` in `src/state/storage.ts` when adding non-backwards-compatible attributes.
@@ -119,12 +145,12 @@ export type AppPersistedState = {
 
 ---
 
-## 🧱 Component Hierarchy & Modularization Map
+## 🧱 Component Hierarchy & Architecture Map
 
 ```
 src/
 ├── main.tsx                    # Entry point & theme initializer
-├── App.tsx                     # Main layout & orchestrator (Under Refactoring)
+├── App.tsx                     # Main layout orchestrator (~500 lines)
 ├── icons.tsx                   # SVG icon system
 ├── version.ts                  # App version & build metadata
 ├── math/
@@ -138,8 +164,23 @@ src/
 ├── ui/
 │   └── buttons.ts              # Standardized button variants & utility classes
 ├── hooks/
-│   └── useModalLayout.ts       # Modal backdrop, ESC listener, and click-outside handler
+│   └── useModalLayout.ts       # Modal backdrop, ESC listener, virtual keyboard offset
+├── utils/
+│   ├── dom.ts                  # DOM helpers (blurOnEnter)
+│   ├── numbers.ts              # Numerical coercion (_nz)
+│   └── normalizers.ts          # Robust state & snapshot normalizers
 └── components/
+    ├── calculator/
+    │   ├── GlobalSetupCard.tsx    # Projection A, Angle β steppers, quick chips, MicroBump
+    │   └── ProgressionEditor.tsx  # Step cards, base toggle, offsets, delete animation, notes
+    ├── wheels/
+    │   ├── WheelManagerView.tsx   # Wheel catalog, sorting, grouping, modal triggers
+    │   └── WheelFormFields.tsx    # Reusable wheel attribute inputs
+    ├── presets/
+    │   ├── PresetManagerModal.tsx # Preset list, renaming, loading, deletion
+    │   └── SavePresetDialog.tsx   # Save current progression dialog
+    ├── settings/
+    │   └── MachineConstantsCard.tsx # Front & rear base geometry and calibration bindings
     ├── CalibrationWizard.tsx   # Calibration multi-step solver & measurement inputs
     ├── ProgressionView.tsx     # Active sharpening sequence & wheel result cards
     ├── ImportExportPanel.tsx   # JSON backup, restore, & factory reset
@@ -147,6 +188,8 @@ src/
     ├── GlossaryCard.tsx        # Collapsible terminology cards
     ├── GrindDirToggle.tsx      # Leading / Trailing base selector
     ├── MiniSelect.tsx          # Custom lightweight dropdown UI
+    ├── ModalShell.tsx          # Accessible modal wrapper
+    ├── ExpandToggle.tsx        # Chevron collapsible button
     └── ThemeLab.tsx            # Live CSS variable customizer & color tokens
 ```
 
@@ -164,4 +207,3 @@ The styling uses **Tailwind CSS v4** with a custom CSS variable design token lay
   - Minimum touch target: $44\text{px} \times 44\text{px}$ for interactive elements.
   - Large-scale high-contrast monospace fonts for numerical readouts ($h_n, h_r$).
   - Full keyboard navigation support (Enter/Escape modal handling, number incrementers).
-

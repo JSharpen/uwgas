@@ -53,14 +53,12 @@ export function normalizeSessionStep(raw: unknown): SessionStep {
     typeof obj.angleOffset === 'number' && Number.isFinite(obj.angleOffset)
       ? obj.angleOffset
       : 0;
-  const notes = typeof obj.notes === 'string' ? obj.notes : '';
 
   return {
     id,
     wheelId,
     base,
     angleOffset,
-    notes,
   };
 }
 

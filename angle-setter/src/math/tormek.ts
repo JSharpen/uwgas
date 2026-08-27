@@ -1,10 +1,12 @@
-import type{
+import type {
   BaseSide,
   CalibrationDiagnostics,
   CalibrationMeasurement,
   CalibrationResult,
   GlobalState,
   MachineConfig,
+  ProjectionInput,
+  ProjectionOutput,
   TonInput,
   TonOutput,
   Wheel,
@@ -30,7 +32,6 @@ export function computeTonHeights(input: TonInput): TonOutput {
     Dj,
     Ds,
     constants,
-    microBumpDeg = 0,
     angleOffsetDeg = 0,
   } = input;
 
@@ -49,7 +50,7 @@ export function computeTonHeights(input: TonInput): TonOutput {
   // f: angle between tangent and CG
   const phi = Math.atan(CJ / jg);
   // Total effective β
-  const betaTotalDeg = betaDeg + microBumpDeg + angleOffsetDeg;
+  const betaTotalDeg = betaDeg + angleOffsetDeg;
   const betaRad = deg2rad(betaTotalDeg);
 
   // Ton F9: CA = distance wheel centre ↔ USB centre
@@ -77,6 +78,55 @@ export function computeTonHeights(input: TonInput): TonOutput {
   return { hr, hn, betaEffDeg };
 }
 
+/**
+ * Exact closed-form inverse Dutchman solver for projection A.
+ * Solves for the required knife projection A given a fixed USB bar position (hn or hr).
+ */
+export function computeRequiredProjection(input: ProjectionInput): ProjectionOutput {
+  const {
+    base,
+    D,
+    targetBetaDeg,
+    Dj,
+    Ds,
+    constants,
+    fixedUsb,
+    angleOffsetDeg = 0,
+  } = input;
+
+  const R = D / 2;
+  const betaTotalDeg = targetBetaDeg + angleOffsetDeg;
+  const betaRad = deg2rad(betaTotalDeg);
+  const CJ = Dj / 2 + Ds / 2;
+
+  let CA = 0;
+  if (fixedUsb.mode === 'hn') {
+    const baseConst = base === 'rear' ? constants.rear : constants.front;
+    const O = baseConst.o;
+    const hc = baseConst.hc;
+    const y = fixedUsb.value + hc - Ds / 2;
+    CA = Math.sqrt(Math.max(y * y + O * O, 0));
+  } else {
+    // hr mode: distance from wheel surface to USB top
+    CA = fixedUsb.value + R - Ds / 2;
+  }
+
+  const diff = R * Math.cos(betaRad) - CJ;
+  const termUnderRoot = CA * CA - diff * diff;
+
+  if (termUnderRoot < 0 || !Number.isFinite(termUnderRoot)) {
+    return { A: null, jg: null, CA, isReachable: false };
+  }
+
+  const jg = -R * Math.sin(betaRad) + Math.sqrt(termUnderRoot);
+  if (jg <= 0 || !Number.isFinite(jg)) {
+    return { A: null, jg: null, CA, isReachable: false };
+  }
+
+  const A = jg + Ds / 2;
+  return { A, jg, CA, isReachable: true };
+}
+
 export function computeWheelResults(
   wheels: Wheel[],
   sessionSteps: SessionStep[] | null,
@@ -87,7 +137,11 @@ export function computeWheelResults(
   const Ds = _nz(machine.usbDiameter);
   const Dj = _nz(machine.jigDiameter);
   const beta = _nz(global.targetAngle);
-  const mb = global.microBump?.enabled ? _nz(global.microBump.bumpDeg) : 0;
+  const isProjectionMode = global.calcMode === 'projection';
+  const fixedUsbMode = global.fixedUsbMode === 'hr' ? 'hr' : 'hn';
+  const rearFixedHeight = _nz(global.fixedUsbRear, _nz(global.fixedUsbHeight, 150.0));
+  const frontFixedHeight = _nz(global.fixedUsbFront, _nz(global.fixedUsbHeight, 85.0));
+
   const items: { step?: SessionStep; wheel: Wheel }[] = [];
 
   if (sessionSteps && sessionSteps.length) {
@@ -105,7 +159,69 @@ export function computeWheelResults(
     const baseForHn: BaseSide = wheel.isHoning
       ? 'front'
       : step?.base ?? wheel.baseForHn;
+    const angleOffset = _nz(step?.angleOffset ?? wheel.angleOffset);
 
+    const orientationLabel = baseForHn === 'rear'
+      ? 'Edge leading (rear base)'
+      : 'Edge trailing (front base)';
+
+    if (isProjectionMode) {
+      const baseFixedHeight = baseForHn === 'rear' ? rearFixedHeight : frontFixedHeight;
+
+      const projOutput = computeRequiredProjection({
+        base: baseForHn,
+        D: _nz(wheel.D),
+        targetBetaDeg: beta,
+        Dj,
+        Ds,
+        constants: machine.constants,
+        fixedUsb: { mode: fixedUsbMode, value: baseFixedHeight },
+        angleOffsetDeg: angleOffset,
+      });
+
+      if (!projOutput.isReachable || projOutput.A === null) {
+        return {
+          wheel,
+          baseForHn,
+          orientationLabel,
+          betaEffDeg: beta + angleOffset,
+          hrWheel: fixedUsbMode === 'hr' ? baseFixedHeight : 0,
+          hnBase: fixedUsbMode === 'hn' ? baseFixedHeight : 0,
+          requiredProjectionA: null,
+          isReachable: false,
+          step,
+        };
+      }
+
+      // Compute exact Ton heights corresponding to this solved projection
+      const common: TonInput = {
+        base: baseForHn,
+        D: _nz(wheel.D),
+        A: projOutput.A,
+        betaDeg: beta,
+        Dj,
+        Ds,
+        constants: machine.constants,
+        angleOffsetDeg: angleOffset,
+      };
+
+      const hrRear = computeTonHeights({ ...common, base: 'rear' });
+      const hBase = computeTonHeights(common);
+
+      return {
+        wheel,
+        baseForHn,
+        orientationLabel,
+        betaEffDeg: hBase.betaEffDeg,
+        hrWheel: hrRear.hr,
+        hnBase: hBase.hn,
+        requiredProjectionA: projOutput.A,
+        isReachable: true,
+        step,
+      };
+    }
+
+    // Height mode (default)
     const common: TonInput = {
       base: baseForHn,
       D: _nz(wheel.D),
@@ -114,16 +230,11 @@ export function computeWheelResults(
       Dj,
       Ds,
       constants: machine.constants,
-      microBumpDeg: mb,
-      angleOffsetDeg: _nz(step?.angleOffset ?? wheel.angleOffset),
+      angleOffsetDeg: angleOffset,
     };
 
     const hrRear = computeTonHeights({ ...common, base: 'rear' });
     const hBase = computeTonHeights(common);
-
-    const orientationLabel = baseForHn === 'rear'
-      ? 'Edge leading (rear base)'
-      : 'Edge trailing (front base)';
 
     return {
       wheel,
@@ -132,6 +243,8 @@ export function computeWheelResults(
       betaEffDeg: hBase.betaEffDeg,
       hrWheel: hrRear.hr,
       hnBase: hBase.hn,
+      requiredProjectionA: A,
+      isReachable: true,
       step,
     };
   });

@@ -153,13 +153,13 @@ function MiniSelect({
   return (
     <div
       ref={rootRef}
-      className={`dropdown text-xs flex-shrink-0 ${isMenuVisible ? 'dropdown--open' : ''} ${
-        widthClass ?? ''
+      className={`dropdown text-xs ${widthClass ?? 'flex-shrink-0'} ${
+        isMenuVisible ? 'dropdown--open' : ''
       }`}
     >
       <button
         type="button"
-        className={`dropdown-trigger dropdown-trigger--sm ${
+        className={`dropdown-trigger dropdown-trigger--sm w-full flex items-center justify-between gap-1.5 min-w-0 ${
           isMenuVisible ? 'dropdown-trigger--open' : ''
         }`}
         aria-label={ariaLabel}
@@ -171,10 +171,15 @@ function MiniSelect({
           }
         }}
       >
-        <span className="truncate">{renderLabel ? renderLabel(selected) : selected?.label ?? ''}</span>
+        <span className="truncate min-w-0 flex-1 text-left">
+          {renderLabel ? renderLabel(selected) : selected?.label ?? ''}
+        </span>
         <svg
           viewBox="0 0 24 24"
-          className={'w-3 h-3 transition-transform ' + (isMenuVisible ? 'rotate-180' : 'rotate-0')}
+          className={
+            'w-3 h-3 shrink-0 transition-transform ' +
+            (isMenuVisible ? 'rotate-180' : 'rotate-0')
+          }
           aria-hidden="true"
         >
           <path

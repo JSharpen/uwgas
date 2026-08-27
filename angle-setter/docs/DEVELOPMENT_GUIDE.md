@@ -56,9 +56,15 @@ The project includes an interactive terminal console (`angle-dev-console.sh`) de
 
 When starting or resuming work on this repository, all AI assistants MUST adhere to the following rules:
 
-### 1. Job Tracking & Dynamic Catch-Up Protocol (CRITICAL)
+### 1. Session Start Discovery Protocol (CRITICAL)
+Every new AI session MUST first read:
+1. **`docs/PROJECT_PLAN.md`**: To inspect the **Active Job Schedule & Backlog** table, check what is `[IN PROGRESS]`, `[READY]`, or `[PROPOSED]`, and read the recent Decision Log.
+2. **`docs/CHANGELOG.md`**: To see the granular history of code changes, new components, and features added in previous sessions.
+3. **`docs/ARCHITECTURE.md`**: To verify math formulas, state schemas, and component boundaries before modifying code.
+
+### 2. Job Tracking & Autonomous Logging Protocol
 Whenever a user discusses a feature, proposed improvement, bug fix, or architectural change:
-1. **Immediate Job Logging**: If an idea or feature is proposed or discussed (even if not worked on immediately), add it as an entry in `docs/PROJECT_PLAN.md` under the **Active Job Schedule & Backlog** table.
+1. **Immediate Job Logging**: If an idea or feature is proposed or discussed (even if not worked on immediately), add it as an entry in `docs/PROJECT_PLAN.md` under the **Active Job Schedule & Backlog** table with status `[PROPOSED]` or `[READY]`.
 2. **Standard Job Statuses**:
    - `[PROPOSED]`: Discussed/requested idea; awaiting design refinement or prioritization.
    - `[READY]`: Scoped and approved; ready for implementation.
@@ -66,11 +72,8 @@ Whenever a user discusses a feature, proposed improvement, bug fix, or architect
    - `[BLOCKED]`: Waiting on user input, physical measurement, or dependency.
    - `[COMPLETED]`: Fully implemented, verified with tests, and built.
    - `[DEFERRED]`: Shelved for future milestones.
-3. **Catch-Up & Dynamic Suggestions**: When a user starts a new chat or asks *"What's on the schedule?"* or *"Where are we up to?"*, the agent MUST read `docs/PROJECT_PLAN.md`, summarize the active/proposed jobs, and make proactive recommendations on what to tackle next based on priority.
-
-### 2. Consistency & Roadmap Sync
-- **Always read `docs/PROJECT_PLAN.md`**: Before proposing or executing architectural changes, review the current status, milestone goals, and recent decision log.
-- **Update the Plan**: When finishing a task or milestone, update its status to `[COMPLETED]` in `docs/PROJECT_PLAN.md` and log key architectural decisions in the Decision Log.
+3. **Changelog Updates**: Whenever code is created or modified, append a structured release or session entry in `docs/CHANGELOG.md` detailing the files and features affected.
+4. **Catch-Up & Dynamic Suggestions**: When a user starts a new chat or asks *"What's on the schedule?"* or *"Where are we up to?"*, the agent MUST read `docs/PROJECT_PLAN.md` and `docs/CHANGELOG.md`, summarize the recent work and open jobs, and make proactive recommendations on what to tackle next based on priority.
 
 ### 3. Math & Physics Integrity
 - All trigonometric calculations live in `src/math/tormek.ts`.
@@ -90,8 +93,8 @@ Whenever a user discusses a feature, proposed improvement, bug fix, or architect
 - Ensure all modal views listen to `Escape` key and click-outside dismissal (via `useModalLayout`).
 - Use standardized button styling classes from `src/ui/buttons.ts` (`BTN`, `BTN_MUTED`).
 
-### 6. Verification Before Completion
-Before ending a session:
+### 6. Verification Before Ending Session
+Before ending any session:
 1. Run `npm run typecheck` to confirm zero TypeScript errors.
 2. Run `npm run lint` to confirm zero ESLint violations.
 3. Verify that `npm run build` succeeds cleanly.
