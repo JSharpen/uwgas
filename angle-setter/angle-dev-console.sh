@@ -419,95 +419,153 @@ detect_suggested_commit_info() {
     local changelog_path="$PROJECT_DIR/docs/CHANGELOG.md"
     local project_plan_path="$PROJECT_DIR/docs/PROJECT_PLAN.md"
 
-    # Strategy 1: Parse docs/CHANGELOG.md (Active session header, job IDs, and bullet items)
-    if [[ -f "$changelog_path" ]]; then
-        local latest_section
-        latest_section="$(awk '/^## \[/{count++} count==1{print} count==2{exit}' "$changelog_path" 2>/dev/null || true)"
+    local raw_status
+    raw_status="$(git -C "$GIT_ROOT" status --porcelain 2>/dev/null || true)"
 
-        local session_title
-        session_title="$(echo "$latest_section" | grep -m 1 -oP '\(Session:\s*\K[^)]+' || true)"
+    # Strategy 1: ONLY inspect docs/CHANGELOG.md if it is modified/untracked in the CURRENT working tree
+    local changelog_in_status
+    changelog_in_status="$(echo "$raw_status" | grep -E '(docs/CHANGELOG\.md|angle-setter/docs/CHANGELOG\.md)' || true)"
 
-        # Extract all unique JOB-xxx IDs in the latest section
-        local changelog_jobs
-        changelog_jobs="$(echo "$latest_section" | grep -oP 'JOB-[0-9]{3}' | sort -u | paste -sd ',' - | sed 's/,/, /g' || true)"
-
-        # Extract all top-level bullet highlights (e.g. - **Title (`JOB-xxx`)**:)
-        local -a bullets=()
-        while IFS= read -r line; do
-            [[ -n "$line" ]] && bullets+=("$line")
-        done < <(echo "$latest_section" | grep -oP '^\s*-\s*\*\*\K[^*]+' | sed -E 's/\s*:\s*$//' || true)
-
-        if [[ -n "$changelog_jobs" ]]; then
-            SUGGESTED_JOB_ID="$changelog_jobs"
+    if [[ -n "$changelog_in_status" && -f "$changelog_path" ]]; then
+        local added_changelog_lines=""
+        if [[ "$changelog_in_status" =~ ^\?\? ]]; then
+            added_changelog_lines="$(cat "$changelog_path")"
+        else
+            added_changelog_lines="$(git -C "$GIT_ROOT" diff HEAD -- "$changelog_path" 2>/dev/null | grep -E '^\+[^+]' | sed 's/^+//' || true)"
         fi
 
-        if [[ -n "$session_title" ]]; then
-            SUGGESTED_MSG="$session_title"
-        elif [[ ${#bullets[@]} -gt 0 ]]; then
-            SUGGESTED_MSG="${bullets[0]}"
-        fi
+        if [[ -n "$added_changelog_lines" ]]; then
+            local session_title
+            session_title="$(echo "$added_changelog_lines" | grep -m 1 -oP '\(Session:\s*\K[^)]+' || true)"
 
-        if [[ ${#bullets[@]} -gt 0 ]]; then
-            SUGGESTED_BODY="Key Changes & Highlights:"$'\n'
-            for b in "${bullets[@]}"; do
-                SUGGESTED_BODY+="• ${b}"$'\n'
-            done
-        fi
-    fi
+            local changelog_jobs
+            changelog_jobs="$(echo "$added_changelog_lines" | grep -oP 'JOB-[0-9]{3}' | sort -u | paste -sd ',' - | sed 's/,/, /g' || true)"
 
-    # Strategy 2: Fallback to docs/PROJECT_PLAN.md ([IN PROGRESS] or active jobs)
-    if [[ -z "$SUGGESTED_JOB_ID" || -z "$SUGGESTED_MSG" ]] && [[ -f "$project_plan_path" ]]; then
-        local in_prog_line
-        in_prog_line="$(grep -P '\|\s*\*\*JOB-[0-9]+\*\*\s*\|[^|]+\|\s*`?\[IN PROGRESS\]`?' "$project_plan_path" 2>/dev/null | head -n 1 || true)"
+            local -a bullets=()
+            while IFS= read -r line; do
+                [[ -n "$line" ]] && bullets+=("$line")
+            done < <(echo "$added_changelog_lines" | grep -oP '^\s*-\s*\*\*\K[^*]+' | sed -E 's/\s*:\s*$//' || true)
 
-        if [[ -n "$in_prog_line" ]]; then
-            local plan_job
-            plan_job="$(echo "$in_prog_line" | grep -oP 'JOB-[0-9]{3}')"
-            local plan_title
-            plan_title="$(echo "$in_prog_line" | cut -d'|' -f3 | sed 's/^[ \t]*//;s/[ \t]*$//')"
-            local plan_desc
-            plan_desc="$(echo "$in_prog_line" | cut -d'|' -f6 | sed 's/^[ \t]*//;s/[ \t]*$//')"
+            [[ -n "$changelog_jobs" ]] && SUGGESTED_JOB_ID="$changelog_jobs"
+            [[ -n "$session_title" ]] && SUGGESTED_MSG="$session_title"
+            if [[ -z "$SUGGESTED_MSG" && ${#bullets[@]} -gt 0 ]]; then
+                SUGGESTED_MSG="${bullets[0]}"
+            fi
 
-            [[ -z "$SUGGESTED_JOB_ID" ]] && SUGGESTED_JOB_ID="$plan_job"
-            [[ -z "$SUGGESTED_MSG" ]] && SUGGESTED_MSG="$plan_title"
-            if [[ -z "$SUGGESTED_BODY" && -n "$plan_desc" ]]; then
-                SUGGESTED_BODY="Task Overview:"$'\n'"• ${plan_desc}"$'\n'
+            if [[ ${#bullets[@]} -gt 0 ]]; then
+                SUGGESTED_BODY="Key Changes & Highlights:"$'\n'
+                for b in "${bullets[@]}"; do
+                    SUGGESTED_BODY+="• ${b}"$'\n'
+                done
             fi
         fi
     fi
 
-    # Strategy 3: Scan git diff for JOB-xxx references if still empty
+    # Strategy 2: Check docs/PROJECT_PLAN.md only if modified in current commit OR has active [IN PROGRESS]
+    if [[ -z "$SUGGESTED_JOB_ID" || -z "$SUGGESTED_MSG" ]] && [[ -f "$project_plan_path" ]]; then
+        local plan_in_status
+        plan_in_status="$(echo "$raw_status" | grep -E '(docs/PROJECT_PLAN\.md|angle-setter/docs/PROJECT_PLAN\.md)' || true)"
+
+        if [[ -n "$plan_in_status" ]]; then
+            local added_plan_lines
+            added_plan_lines="$(git -C "$GIT_ROOT" diff HEAD -- "$project_plan_path" 2>/dev/null | grep -E '^\+[^+]' | sed 's/^+//' || true)"
+            local plan_job
+            plan_job="$(echo "$added_plan_lines" | grep -m 1 -oP 'JOB-[0-9]{3}' || true)"
+            local plan_title
+            plan_title="$(echo "$added_plan_lines" | grep -m 1 -P '\|\s*\*\*JOB-[0-9]+\*\*' | cut -d'|' -f3 | sed 's/^[ \t]*//;s/[ \t]*$//' || true)"
+
+            [[ -z "$SUGGESTED_JOB_ID" && -n "$plan_job" ]] && SUGGESTED_JOB_ID="$plan_job"
+            [[ -z "$SUGGESTED_MSG" && -n "$plan_title" ]] && SUGGESTED_MSG="$plan_title"
+        else
+            local in_prog_line
+            in_prog_line="$(grep -P '\|\s*\*\*JOB-[0-9]+\*\*\s*\|[^|]+\|\s*`?\[IN PROGRESS\]`?' "$project_plan_path" 2>/dev/null | head -n 1 || true)"
+            if [[ -n "$in_prog_line" ]]; then
+                local inprog_job
+                inprog_job="$(echo "$in_prog_line" | grep -oP 'JOB-[0-9]{3}')"
+                local inprog_title
+                inprog_title="$(echo "$in_prog_line" | cut -d'|' -f3 | sed 's/^[ \t]*//;s/[ \t]*$//')"
+
+                [[ -z "$SUGGESTED_JOB_ID" && -n "$inprog_job" ]] && SUGGESTED_JOB_ID="$inprog_job"
+                [[ -z "$SUGGESTED_MSG" && -n "$inprog_title" ]] && SUGGESTED_MSG="$inprog_title"
+            fi
+        fi
+    fi
+
+    # Strategy 3: Scan current uncommitted git diff for JOB-xxx tags
     if [[ -z "$SUGGESTED_JOB_ID" ]]; then
         local diff_job
-        diff_job="$(git -C "$GIT_ROOT" diff --cached --unified=0 2>/dev/null | grep -m 1 -oP 'JOB-[0-9]{3}' || true)"
-        if [[ -z "$diff_job" ]]; then
-            diff_job="$(git -C "$GIT_ROOT" diff --unified=0 2>/dev/null | grep -m 1 -oP 'JOB-[0-9]{3}' || true)"
-        fi
-        if [[ -n "$diff_job" ]]; then
-            SUGGESTED_JOB_ID="$diff_job"
-        fi
+        diff_job="$(git -C "$GIT_ROOT" diff HEAD --unified=0 2>/dev/null | grep -m 1 -oP 'JOB-[0-9]{3}' || true)"
+        [[ -n "$diff_job" ]] && SUGGESTED_JOB_ID="$diff_job"
     fi
 
-    # Strategy 4: Fallback summary generated from changed filenames
-    if [[ -z "$SUGGESTED_MSG" ]]; then
-        local changed_summary
-        changed_summary="$(git -C "$GIT_ROOT" status --porcelain 2>/dev/null | awk '{print $2}' | xargs -n 1 basename 2>/dev/null | grep -vE '(\.md|\.desktop|\.sh|\.pid|\.txt)$' | head -n 3 | tr '\n' ', ' | sed 's/, $//' || true)"
-        if [[ -n "$changed_summary" ]]; then
-            SUGGESTED_MSG="Update ${changed_summary}"
-        else
-            SUGGESTED_MSG="Workspace updates and improvements"
-        fi
-    fi
+    # Strategy 4: Generate precise subject and itemized body from current modified files
+    if [[ -z "$SUGGESTED_MSG" || -z "$SUGGESTED_BODY" ]]; then
+        local has_components=0
+        local has_math=0
+        local has_state=0
+        local has_tooling=0
+        local has_docs=0
+        local has_legacy_cleanup=0
 
-    # Fallback body from git status file list if body is still empty
-    if [[ -z "$SUGGESTED_BODY" ]]; then
-        local changed_file_lines
-        changed_file_lines="$(git -C "$GIT_ROOT" status --porcelain 2>/dev/null | head -n 10 || true)"
-        if [[ -n "$changed_file_lines" ]]; then
-            SUGGESTED_BODY="Modified Files:"$'\n'
-            while IFS= read -r fline; do
-                [[ -n "$fline" ]] && SUGGESTED_BODY+="• ${fline}"$'\n'
-            done <<< "$changed_file_lines"
+        local -a changed_areas=()
+        local -a file_body_items=()
+
+        while read -r st fpath; do
+            [[ -z "$fpath" ]] && continue
+            local fname
+            fname="$(basename "$fpath")"
+
+            if [[ "$fpath" =~ (angle-dev-console|package\.json|vite\.config|\.gitignore|\.desktop) ]]; then
+                has_tooling=1
+                file_body_items+=("Dev Console & Tooling: [${st}] ${fname}")
+            elif [[ "$fpath" =~ src/math/ ]]; then
+                has_math=1
+                file_body_items+=("Math Engine: [${st}] ${fname}")
+            elif [[ "$fpath" =~ src/components/ ]]; then
+                has_components=1
+                file_body_items+=("UI Components: [${st}] ${fname}")
+            elif [[ "$fpath" =~ src/state/|src/types/ ]]; then
+                has_state=1
+                file_body_items+=("State & Types: [${st}] ${fname}")
+            elif [[ "$fpath" =~ (docs/|README|\.md) ]]; then
+                has_docs=1
+                file_body_items+=("Docs: [${st}] ${fname}")
+            elif [[ "$fpath" =~ legacy/|temp_|structure\.txt ]]; then
+                has_legacy_cleanup=1
+            else
+                file_body_items+=("General: [${st}] ${fname}")
+            fi
+        done <<< "$raw_status"
+
+        if [[ $has_legacy_cleanup -eq 1 ]]; then
+            local del_count
+            del_count="$(echo "$raw_status" | grep -cE '(legacy/|temp_|structure\.txt)' || true)"
+            file_body_items+=("Legacy Cleanup: removed ${del_count} deprecated legacy files")
+        fi
+
+        [[ $has_tooling -eq 1 ]] && changed_areas+=("Dev Console & Tooling")
+        [[ $has_components -eq 1 ]] && changed_areas+=("UI Components")
+        [[ $has_math -eq 1 ]] && changed_areas+=("Math Engine")
+        [[ $has_state -eq 1 ]] && changed_areas+=("State Management")
+        [[ $has_docs -eq 1 ]] && changed_areas+=("Docs")
+        [[ $has_legacy_cleanup -eq 1 ]] && changed_areas+=("Legacy Cleanup")
+
+        if [[ -z "$SUGGESTED_MSG" ]]; then
+            if [[ ${#changed_areas[@]} -gt 0 ]]; then
+                local joined_areas
+                printf -v joined_areas '%s, ' "${changed_areas[@]}"
+                joined_areas="${joined_areas%, }"
+                SUGGESTED_MSG="Update ${joined_areas}"
+            else
+                SUGGESTED_MSG="Workspace updates and improvements"
+            fi
+        fi
+
+        if [[ -z "$SUGGESTED_BODY" ]]; then
+            SUGGESTED_BODY="Changes in this commit:"$'\n'
+            for item in "${file_body_items[@]}"; do
+                SUGGESTED_BODY+="• ${item}"$'\n'
+            done
         fi
     fi
 }
@@ -909,6 +967,7 @@ run_deploy_precheck() {
 }
 
 run_deploy_protocol() {
+    local cli_flag="${1:-}"
     cd "$PROJECT_DIR" || exit 1
     echo -e "${C_YELLOW}${C_BOLD}UWGAS GitHub Pages Deployment Protocol${C_RESET}"
     echo ""
@@ -921,12 +980,14 @@ run_deploy_protocol() {
 
     echo ""
     echo -e "${C_YELLOW}All quality and build gates PASSED.${C_RESET}"
-    echo -en "${C_WHITE}${C_BOLD}Type 'deploy' to confirm deployment to GitHub Pages (or press Enter to cancel):${C_RESET} "
-    read -r confirm
+    if [[ "$cli_flag" != "-y" && "$cli_flag" != "--yes" && "$cli_flag" != "--auto" ]]; then
+        echo -en "${C_WHITE}${C_BOLD}Type 'deploy' to confirm deployment to GitHub Pages (or press Enter to cancel):${C_RESET} "
+        read -r confirm
 
-    if [[ "$confirm" != "deploy" ]]; then
-        echo -e "${TAG_INFO} Deploy cancelled by user."
-        return 0
+        if [[ "$confirm" != "deploy" && "$confirm" != "y" && "$confirm" != "Y" ]]; then
+            echo -e "${TAG_INFO} Deploy cancelled by user."
+            return 0
+        fi
     fi
 
     echo ""
@@ -942,6 +1003,47 @@ run_deploy_protocol() {
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deploy FAILED" >> "$DEPLOY_LOG"
         return 1
     fi
+}
+
+run_full_release() {
+    local cli_flag="${1:-}"
+    echo -e "${C_CYAN}${C_BOLD}==============================================================================${C_RESET}"
+    echo -e "${C_WHITE}${C_BOLD}                   UWGAS FULL RELEASE & DEPLOY PIPELINE                       ${C_RESET}"
+    echo -e "${C_CYAN}------------------------------------------------------------------------------${C_RESET}"
+    echo -e "  Sequence: ${C_YELLOW}1. Commit (dev)${C_RESET} → ${C_MAGENTA}2. Merge (dev -> main)${C_RESET} → ${C_GREEN}3. Deploy (GitHub Pages)${C_RESET}"
+    echo -e "${C_CYAN}==============================================================================${C_RESET}"
+    echo ""
+
+    update_live_status
+    if [[ "$STATE_GIT_DIRTY" -eq 1 ]]; then
+        echo -e "${TAG_INFO} Step 1/3: Committing uncommitted changes on 'dev'..."
+        if ! git_commit_and_push_dev "$cli_flag"; then
+            echo -e "${TAG_FAIL} Commit step cancelled or failed. Release aborted."
+            return 1
+        fi
+    else
+        echo -e "${TAG_OK} Step 1/3: Working tree is clean on 'dev'."
+    fi
+
+    echo ""
+    echo -e "${TAG_INFO} Step 2/3: Promoting 'dev' to 'main'..."
+    if ! git_promote_dev_to_main "$cli_flag"; then
+        echo -e "${TAG_FAIL} Merge to 'main' cancelled or failed. Release aborted."
+        return 1
+    fi
+
+    echo ""
+    echo -e "${TAG_INFO} Step 3/3: Deploying to GitHub Pages..."
+    if ! run_deploy_protocol "$cli_flag"; then
+        echo -e "${TAG_FAIL} GitHub Pages deployment failed."
+        return 1
+    fi
+
+    echo ""
+    echo -e "${C_GREEN}${C_BOLD}==============================================================================${C_RESET}"
+    echo -e "  ${TAG_OK} ${C_WHITE}${C_BOLD}Full Release Pipeline Completed Successfully!${C_RESET}"
+    echo -e "  ${C_BOLD}Live Site URL:${C_RESET} ${C_CYAN}https://jsharpen.github.io/uwgas/${C_RESET}"
+    echo -e "${C_GREEN}${C_BOLD}==============================================================================${C_RESET}"
 }
 
 # ------------------------------------------------------------------------------
@@ -1020,11 +1122,12 @@ menu_quality() {
         echo -e "  ${C_CYAN}[3]${C_RESET} Build Production Bundle (tsc -b && vite build)"
         echo -e "  ${C_CYAN}[4]${C_RESET} Full Deploy Precheck Suite (clean tree + lint + typecheck + build)"
         echo -e "  ${C_CYAN}[5]${C_RESET} Build & Deploy to GitHub Pages (gh-pages)"
+        echo -e "  ${C_GREEN}[6]${C_RESET} ${C_BOLD}Full Release Pipeline${C_RESET} ${C_DIM}(Commit dev → Merge main → Deploy Pages)${C_RESET}"
         echo ""
         echo -e "  ${C_YELLOW}[r]${C_RESET} Refresh Status"
         echo -e "  ${C_YELLOW}[0]${C_RESET} Back to Main Menu"
         echo ""
-        echo -en "${C_WHITE}${C_BOLD}Select option (0-5, r):${C_RESET} "
+        echo -en "${C_WHITE}${C_BOLD}Select option (0-6, r):${C_RESET} "
         read -r choice
 
         case "$choice" in
@@ -1033,6 +1136,7 @@ menu_quality() {
             3) run_build; pause ;;
             4) run_deploy_precheck; pause ;;
             5) run_deploy_protocol; pause ;;
+            6) run_full_release; pause ;;
             r|R) continue ;;
             0) break ;;
             *) echo -e "${TAG_WARN} Invalid choice."; sleep 1 ;;
@@ -1134,6 +1238,7 @@ if [[ $# -gt 0 ]]; then
         deploy)       run_deploy_protocol ;;
         commit)       git_commit_and_push_dev "$@" ;;
         promote|merge) git_promote_dev_to_main "$@" ;;
+        release)      run_full_release "$@" ;;
         help|--help|-h)
             echo "Usage: ./angle-dev-console.sh [command] [options]"
             echo ""
@@ -1154,6 +1259,8 @@ if [[ $# -gt 0 ]]; then
             echo "  commit      Interactive commit with auto-detected Job ID & message"
             echo "  commit -y   1-command auto-commit and push with detected Job ID & message"
             echo "  promote     Verify checks, merge dev -> main, and push to origin"
+            echo "  release     Full pipeline: Commit dev → Merge main → Deploy Pages"
+            echo "  release -y  1-command non-interactive full release & deployment"
             ;;
         *)
             echo "Unknown command: $cmd"
