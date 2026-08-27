@@ -108,7 +108,7 @@ export default function App() {
   >('machine');
 
   const showDevHeader = import.meta.env.DEV;
-  const [isSetupPanelOpen, setIsSetupPanelOpen] = React.useState(false);
+  const [isSetupPanelOpen, setIsSetupPanelOpen] = React.useState(true);
   const [isWheelConfigOpen, setIsWheelConfigOpen] = React.useState(false);
 
   // Preset dialogs state
@@ -248,7 +248,6 @@ export default function App() {
 
   const targetAngleSymbol = 'θ';
   const effectiveAngleSymbol = 'γ';
-  const progressionCardMinHeight = 130;
   const progressionBodyPaddingX = 'px-3';
   const progressionBodyPaddingY = 'py-2';
   const progressionBodyGap = 'gap-2';
@@ -331,7 +330,6 @@ export default function App() {
       wheelId: firstWheel.id,
       base: firstWheel.isHoning ? 'front' : firstWheel.baseForHn,
       angleOffset: 0,
-      notes: '',
     };
     setSessionSteps(prev => [...prev, newStep]);
   };
@@ -347,7 +345,6 @@ export default function App() {
         wheelId: grindWheel.id,
         base: 'rear',
         angleOffset: 0,
-        notes: 'Primary bevel shaping / sharpening',
       });
     }
     if (honeWheel && honeWheel.id !== grindWheel?.id) {
@@ -356,7 +353,6 @@ export default function App() {
         wheelId: honeWheel.id,
         base: 'front',
         angleOffset: 0.2, // standard +0.2° honing bump
-        notes: 'Honing & deburring (+0.2° micro-bevel)',
       });
     }
 
@@ -428,7 +424,6 @@ export default function App() {
         wheelId: wheel.id,
         base: ref.base,
         angleOffset: ref.angleOffset,
-        notes: ref.notes ?? '',
       });
     }
 
@@ -456,7 +451,6 @@ export default function App() {
           wheelName: wheel.name,
           base: step.base,
           angleOffset: step.angleOffset,
-          notes: step.notes,
         } as PresetStepRef;
       })
       .filter((x): x is PresetStepRef => x !== null);
@@ -752,28 +746,19 @@ export default function App() {
             setGlobal={setGlobal}
             isSetupPanelOpen={isSetupPanelOpen}
             setIsSetupPanelOpen={setIsSetupPanelOpen}
+            heightMode={heightMode}
+            setHeightMode={setHeightMode}
             targetAngleSymbol={targetAngleSymbol}
           />
 
           {/* Progression Section */}
-          <section className="panel-card panel-card--allow-overflow motion-panel flex flex-col gap-0">
+          <section className="panel-card panel-card--allow-overflow motion-panel flex flex-col gap-0 max-w-xl">
             <div
               className="panel-card__header grid items-center gap-2"
               style={{ gridTemplateColumns: 'auto minmax(0, 1fr) auto' }}
             >
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-semibold u-text panel-header">Progression</h2>
-                {/* Direct Height Mode Toggle Pill */}
-                <button
-                  type="button"
-                  title={`Currently showing ${
-                    heightMode === 'hn' ? 'Datum Base Height (hn)' : 'Wheel Top Height (hr)'
-                  }. Click to toggle.`}
-                  className="px-2 py-0.5 text-[0.7rem] rounded-full border border-neutral-700 bg-neutral-900 text-accent font-mono font-medium hover:border-accent"
-                  onClick={() => setHeightMode(m => (m === 'hn' ? 'hr' : 'hn'))}
-                >
-                  {heightMode === 'hn' ? 'Mode: hn (base)' : 'Mode: hr (wheel)'}
-                </button>
               </div>
 
               {/* Presets dropdown */}
@@ -815,7 +800,7 @@ export default function App() {
                   className={`${BTN.base} px-3 text-xs`}
                   onClick={() => setIsWheelConfigOpen(open => !open)}
                 >
-                  {isWheelConfigOpen ? 'Done' : 'Edit Steps'}
+                  {isWheelConfigOpen ? 'Done' : 'Edit'}
                 </button>
 
                 <div ref={progressionMenuRef} className="relative">
@@ -940,12 +925,12 @@ export default function App() {
                   <ProgressionView
                     wheelResults={wheelResults}
                     heightMode={heightMode}
+                    calcMode={global.calcMode}
                     angleSymbol={effectiveAngleSymbol}
                     angleErrorById={estimatedAngleErrorByResultId}
                     bodyPaddingX={progressionBodyPaddingX}
                     bodyPaddingY={progressionBodyPaddingY}
                     bodyGap={progressionBodyGap}
-                    cardMinHeight={progressionCardMinHeight}
                   />
                 )}
               </div>

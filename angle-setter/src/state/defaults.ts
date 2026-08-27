@@ -4,7 +4,11 @@ export const DEFAULT_GLOBAL: GlobalState = {
   usbDiameter: 11.98,
   targetAngle: 16,
   jig: { Dj: 12 },
-  microBump: { enabled: false, bumpDeg: 0 },
+  calcMode: 'height',
+  fixedUsbHeight: 150.0,
+  fixedUsbRear: 150.0,
+  fixedUsbFront: 85.0,
+  fixedUsbMode: 'hn',
 };
 
 export const DEFAULT_CONSTANTS: MachineConstants = {

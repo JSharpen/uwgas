@@ -20,13 +20,16 @@ Powered by the mathematically proven **Dutchman / Ton** trigonometry model, UWGA
 
 ---
 
-## 📚 Project Documentation
+## 📚 Project Documentation & AI Continuity
 
-To maintain continuity across development sessions and AI pair-programming chats, the project maintains structured documentation:
+To maintain complete consistency and continuity across human development sessions and AI pair-programming chats, the project maintains structured documentation:
 
-- 📋 **[Project Plan & Living Roadmap](docs/PROJECT_PLAN.md)**: Current status, milestone phases, task checklists, and session decision logs.
-- 📐 **[Technical Architecture & Math Model](docs/ARCHITECTURE.md)**: Detailed Dutchman/Ton trigonometry equations, machine calibration solver, state schema, and component hierarchy.
-- 🛠️ **[Development Guide & AI Context](docs/DEVELOPMENT_GUIDE.md)**: Environment setup, dev console usage, Git branching workflow (`dev` $\rightarrow$ `main`), and coding conventions.
+- 🤖 **[AGENTS.md](AGENTS.md)**: Universal instructions for AI coding assistants and discovery protocol.
+- 📋 **[Project Plan & Active Job Schedule](docs/PROJECT_PLAN.md)**: Live job tracker, milestone phases, task checklists, and issue logs.
+- 📜 **[Changelog & Session Logs](docs/CHANGELOG.md)**: Granular record of all code changes, new features, and session history.
+- 📐 **[Technical Architecture & State Model](docs/ARCHITECTURE.md)**: Component hierarchy, state schema persistence, and migration rules.
+- 🧪 **[Mathematical Reference & Test Bench](docs/MATH_REFERENCE.md)**: Exact Dutchman/Ton geometric formulas and golden-master test vectors.
+- 🛠️ **[Development Guide & Workflow](docs/DEVELOPMENT_GUIDE.md)**: Environment setup, dev console usage, and Git branching (`dev` $\rightarrow$ `main`).
 
 ---
 

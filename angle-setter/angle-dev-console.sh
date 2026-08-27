@@ -23,8 +23,8 @@ export GIT_DISCOVERY_ACROSS_FILESYSTEM=1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$SCRIPT_DIR"
 
-# Auto-spawn terminal emulator if launched from GUI (e.g. double-clicked in Dolphin)
-if [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
+# Auto-spawn terminal emulator only if launched from GUI without args (e.g. double-clicked in Dolphin)
+if { [[ ! -t 0 ]] || [[ ! -t 1 ]]; } && [[ $# -eq 0 ]] && [[ -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
     if command -v konsole >/dev/null 2>&1; then
         exec konsole --workdir "$PROJECT_DIR" -e bash "$0" "$@"
     elif command -v xdg-terminal-exec >/dev/null 2>&1; then
@@ -395,6 +395,7 @@ git_start_work() {
 
     if ! git checkout dev; then
         echo -e "${TAG_FAIL} Failed to checkout 'dev' branch."
+        cd "$PROJECT_DIR" || true
         return 1
     fi
 
@@ -404,47 +405,263 @@ git_start_work() {
     else
         echo -e "${TAG_WARN} Git pull encountered issues or remote is not configured."
     fi
+    cd "$PROJECT_DIR" || true
+}
+
+# ------------------------------------------------------------------------------
+# 5.5 Autonomous Job & Commit Auto-Detection
+# ------------------------------------------------------------------------------
+detect_suggested_commit_info() {
+    SUGGESTED_JOB_ID=""
+    SUGGESTED_MSG=""
+    SUGGESTED_BODY=""
+
+    local changelog_path="$PROJECT_DIR/docs/CHANGELOG.md"
+    local project_plan_path="$PROJECT_DIR/docs/PROJECT_PLAN.md"
+
+    # Strategy 1: Parse docs/CHANGELOG.md (Active session header, job IDs, and bullet items)
+    if [[ -f "$changelog_path" ]]; then
+        local latest_section
+        latest_section="$(awk '/^## \[/{count++} count==1{print} count==2{exit}' "$changelog_path" 2>/dev/null || true)"
+
+        local session_title
+        session_title="$(echo "$latest_section" | grep -m 1 -oP '\(Session:\s*\K[^)]+' || true)"
+
+        # Extract all unique JOB-xxx IDs in the latest section
+        local changelog_jobs
+        changelog_jobs="$(echo "$latest_section" | grep -oP 'JOB-[0-9]{3}' | sort -u | paste -sd ',' - | sed 's/,/, /g' || true)"
+
+        # Extract all top-level bullet highlights (e.g. - **Title (`JOB-xxx`)**:)
+        local -a bullets=()
+        while IFS= read -r line; do
+            [[ -n "$line" ]] && bullets+=("$line")
+        done < <(echo "$latest_section" | grep -oP '^\s*-\s*\*\*\K[^*]+' | sed -E 's/\s*:\s*$//' || true)
+
+        if [[ -n "$changelog_jobs" ]]; then
+            SUGGESTED_JOB_ID="$changelog_jobs"
+        fi
+
+        if [[ -n "$session_title" ]]; then
+            SUGGESTED_MSG="$session_title"
+        elif [[ ${#bullets[@]} -gt 0 ]]; then
+            SUGGESTED_MSG="${bullets[0]}"
+        fi
+
+        if [[ ${#bullets[@]} -gt 0 ]]; then
+            SUGGESTED_BODY="Key Changes & Highlights:"$'\n'
+            for b in "${bullets[@]}"; do
+                SUGGESTED_BODY+="• ${b}"$'\n'
+            done
+        fi
+    fi
+
+    # Strategy 2: Fallback to docs/PROJECT_PLAN.md ([IN PROGRESS] or active jobs)
+    if [[ -z "$SUGGESTED_JOB_ID" || -z "$SUGGESTED_MSG" ]] && [[ -f "$project_plan_path" ]]; then
+        local in_prog_line
+        in_prog_line="$(grep -P '\|\s*\*\*JOB-[0-9]+\*\*\s*\|[^|]+\|\s*`?\[IN PROGRESS\]`?' "$project_plan_path" 2>/dev/null | head -n 1 || true)"
+
+        if [[ -n "$in_prog_line" ]]; then
+            local plan_job
+            plan_job="$(echo "$in_prog_line" | grep -oP 'JOB-[0-9]{3}')"
+            local plan_title
+            plan_title="$(echo "$in_prog_line" | cut -d'|' -f3 | sed 's/^[ \t]*//;s/[ \t]*$//')"
+            local plan_desc
+            plan_desc="$(echo "$in_prog_line" | cut -d'|' -f6 | sed 's/^[ \t]*//;s/[ \t]*$//')"
+
+            [[ -z "$SUGGESTED_JOB_ID" ]] && SUGGESTED_JOB_ID="$plan_job"
+            [[ -z "$SUGGESTED_MSG" ]] && SUGGESTED_MSG="$plan_title"
+            if [[ -z "$SUGGESTED_BODY" && -n "$plan_desc" ]]; then
+                SUGGESTED_BODY="Task Overview:"$'\n'"• ${plan_desc}"$'\n'
+            fi
+        fi
+    fi
+
+    # Strategy 3: Scan git diff for JOB-xxx references if still empty
+    if [[ -z "$SUGGESTED_JOB_ID" ]]; then
+        local diff_job
+        diff_job="$(git -C "$GIT_ROOT" diff --cached --unified=0 2>/dev/null | grep -m 1 -oP 'JOB-[0-9]{3}' || true)"
+        if [[ -z "$diff_job" ]]; then
+            diff_job="$(git -C "$GIT_ROOT" diff --unified=0 2>/dev/null | grep -m 1 -oP 'JOB-[0-9]{3}' || true)"
+        fi
+        if [[ -n "$diff_job" ]]; then
+            SUGGESTED_JOB_ID="$diff_job"
+        fi
+    fi
+
+    # Strategy 4: Fallback summary generated from changed filenames
+    if [[ -z "$SUGGESTED_MSG" ]]; then
+        local changed_summary
+        changed_summary="$(git -C "$GIT_ROOT" status --porcelain 2>/dev/null | awk '{print $2}' | xargs -n 1 basename 2>/dev/null | grep -vE '(\.md|\.desktop|\.sh|\.pid|\.txt)$' | head -n 3 | tr '\n' ', ' | sed 's/, $//' || true)"
+        if [[ -n "$changed_summary" ]]; then
+            SUGGESTED_MSG="Update ${changed_summary}"
+        else
+            SUGGESTED_MSG="Workspace updates and improvements"
+        fi
+    fi
+
+    # Fallback body from git status file list if body is still empty
+    if [[ -z "$SUGGESTED_BODY" ]]; then
+        local changed_file_lines
+        changed_file_lines="$(git -C "$GIT_ROOT" status --porcelain 2>/dev/null | head -n 10 || true)"
+        if [[ -n "$changed_file_lines" ]]; then
+            SUGGESTED_BODY="Modified Files:"$'\n'
+            while IFS= read -r fline; do
+                [[ -n "$fline" ]] && SUGGESTED_BODY+="• ${fline}"$'\n'
+            done <<< "$changed_file_lines"
+        fi
+    fi
 }
 
 git_commit_and_push_dev() {
+    local cli_flag="${1:-}"
+    local cli_custom_msg="${2:-}"
+
     cd "$GIT_ROOT" || exit 1
     update_live_status
 
     if [[ "$STATE_GIT_DIRTY" -eq 0 ]]; then
         echo -e "${TAG_INFO} Working tree is clean. Nothing to commit."
+        cd "$PROJECT_DIR" || true
         return 0
     fi
 
-    echo -e "${C_BOLD}Changed files to be committed:${C_RESET}"
+    local current_branch="${STATE_GIT_BRANCH:-dev}"
+
+    echo -e "${C_BOLD}Changed files to be committed (${C_MAGENTA}${current_branch}${C_RESET}${C_BOLD}):${C_RESET}"
     git status -s
     echo ""
 
-    echo -en "${C_YELLOW}Enter commit message (leave blank to cancel):${C_RESET} "
-    read -r commit_msg
+    # Auto-detect Job ID, Subject & Body dynamically from docs & git changes
+    detect_suggested_commit_info
 
-    if [[ -z "$commit_msg" ]]; then
-        echo -e "${TAG_WARN} Commit cancelled."
-        return 0
+    local job_id="$SUGGESTED_JOB_ID"
+    local commit_msg="$SUGGESTED_MSG"
+    local commit_body="$SUGGESTED_BODY"
+
+    # Handle direct non-interactive CLI flags (e.g. ./angle-dev-console.sh commit -y or commit "msg")
+    if [[ "$cli_flag" == "-y" || "$cli_flag" == "--yes" || "$cli_flag" == "--auto" ]]; then
+        echo -e "${TAG_INFO} Auto-committing with detailed metadata (-y)..."
+    elif [[ -n "$cli_flag" && -n "$cli_custom_msg" && "$cli_flag" =~ ^JOB-[0-9]+ ]]; then
+        job_id="$cli_flag"
+        commit_msg="$cli_custom_msg"
+        commit_body=""
+    elif [[ -n "$cli_flag" ]]; then
+        commit_msg="$cli_flag"
+        commit_body=""
+    else
+        # Interactive Mode
+        echo -e "${C_CYAN}${C_BOLD}Auto-Detected Commit Details:${C_RESET}"
+        if [[ -n "$SUGGESTED_JOB_ID" ]]; then
+            echo -e "  • ${C_BOLD}Job ID(s):${C_RESET} ${C_YELLOW}${SUGGESTED_JOB_ID}${C_RESET} ${C_DIM}(from docs/CHANGELOG.md / PROJECT_PLAN.md)${C_RESET}"
+        else
+            echo -e "  • ${C_BOLD}Job ID(s):${C_RESET} ${C_DIM}(none detected)${C_RESET}"
+        fi
+        echo -e "  • ${C_BOLD}Subject:${C_RESET}   ${C_WHITE}${SUGGESTED_MSG}${C_RESET}"
+        if [[ -n "$SUGGESTED_BODY" ]]; then
+            echo -e "  • ${C_BOLD}Detailed Highlights:${C_RESET}"
+            while IFS= read -r bline; do
+                [[ -n "$bline" ]] && echo -e "    ${C_DIM}${bline}${C_RESET}"
+            done <<< "$SUGGESTED_BODY"
+        fi
+        echo ""
+
+        # 1. Job ID prompt (press Enter to accept detected Job ID)
+        if [[ -n "$SUGGESTED_JOB_ID" ]]; then
+            echo -en "${C_YELLOW}Job ID [press Enter for '${SUGGESTED_JOB_ID}', or type 'none'/'custom']:${C_RESET} "
+            read -r input_job
+            if [[ -z "$input_job" ]]; then
+                job_id="$SUGGESTED_JOB_ID"
+            elif [[ "$input_job" =~ ^(none|no|n|-|skip)$ ]]; then
+                job_id=""
+            else
+                job_id="$(echo "$input_job" | tr -d '"'\''')"
+            fi
+        else
+            echo -en "${C_YELLOW}Enter optional Job ID (e.g. JOB-006, or press Enter to skip):${C_RESET} "
+            read -r input_job
+            job_id="$(echo "$input_job" | tr -d '"'\''')"
+        fi
+
+        # 2. Commit Message prompt (press Enter to accept detected message)
+        echo -en "${C_YELLOW}Commit subject [press Enter for '${SUGGESTED_MSG}', or type custom]:${C_RESET} "
+        read -r input_msg
+
+        if [[ -z "$input_msg" ]]; then
+            commit_msg="$SUGGESTED_MSG"
+        elif [[ "$input_msg" == "cancel" || "$input_msg" == "c" ]]; then
+            echo -e "${TAG_WARN} Commit cancelled."
+            cd "$PROJECT_DIR" || true
+            return 0
+        else
+            commit_msg="$input_msg"
+        fi
+
+        # Build final formatted subject
+        local final_msg="$commit_msg"
+        if [[ -n "$job_id" ]]; then
+            final_msg="[${job_id}] ${commit_msg}"
+        fi
+
+        echo ""
+        echo -e "${C_CYAN}------------------------------------------------------------------------------${C_RESET}"
+        echo -e "  ${C_BOLD}Commit Subject:${C_RESET} ${C_GREEN}\"${final_msg}\"${C_RESET}"
+        if [[ -n "$commit_body" ]]; then
+            echo -e "  ${C_BOLD}Commit Body:${C_RESET}"
+            while IFS= read -r bline; do
+                [[ -n "$bline" ]] && echo -e "    ${C_DIM}${bline}${C_RESET}"
+            done <<< "$commit_body"
+        fi
+        echo -e "${C_CYAN}------------------------------------------------------------------------------${C_RESET}"
+        echo -en "  ${C_YELLOW}Proceed with commit & push to origin/${current_branch}? [Y/n]:${C_RESET} "
+        read -r confirm_commit
+
+        if [[ "$confirm_commit" == "n" || "$confirm_commit" == "N" || "$confirm_commit" == "cancel" ]]; then
+            echo -e "${TAG_WARN} Commit cancelled."
+            cd "$PROJECT_DIR" || true
+            return 0
+        fi
     fi
 
-    echo -e "${TAG_INFO} Staging changes..."
+    local final_msg="$commit_msg"
+    if [[ -n "$job_id" ]]; then
+        final_msg="[${job_id}] ${commit_msg}"
+    fi
+
+    echo ""
+    echo -e "${TAG_INFO} Staging changes across repository..."
     git add -A
 
-    echo -e "${TAG_INFO} Committing..."
-    if git commit -m "$commit_msg"; then
-        echo -e "${TAG_OK} Committed: \"$commit_msg\""
+    echo -e "${TAG_INFO} Committing: \"$final_msg\"..."
+    local commit_success=0
+    if [[ -n "$commit_body" ]]; then
+        if git commit -m "$final_msg" -m "$commit_body"; then
+            commit_success=1
+        fi
+    else
+        if git commit -m "$final_msg"; then
+            commit_success=1
+        fi
+    fi
+
+    if [[ $commit_success -eq 1 ]]; then
+        echo -e "${TAG_OK} Committed successfully with detailed highlights!"
     else
         echo -e "${TAG_FAIL} Git commit failed."
+        cd "$PROJECT_DIR" || true
         return 1
     fi
 
-    echo -e "${TAG_INFO} Pushing to origin/dev..."
-    if git push origin dev; then
-        echo -e "${TAG_OK} Successfully pushed changes to origin/dev!"
+    echo -e "${TAG_INFO} Pushing to origin/${current_branch}..."
+    if git push origin "$current_branch"; then
+        echo -e "${TAG_OK} Successfully pushed changes to origin/${current_branch}!"
     else
-        echo -e "${TAG_FAIL} Failed to push to origin/dev."
+        echo -e "${TAG_FAIL} Failed to push to origin/${current_branch}."
+        echo -e "  ${C_DIM}Hint: Run 'git pull origin ${current_branch}' to sync remote updates first.${C_RESET}"
+        cd "$PROJECT_DIR" || true
         return 1
     fi
+
+    cd "$PROJECT_DIR" || true
 }
 
 git_promote_dev_to_main() {
@@ -456,7 +673,8 @@ git_promote_dev_to_main() {
     echo ""
 
     if [[ "$STATE_GIT_DIRTY" -eq 1 ]]; then
-        echo -e "${TAG_FAIL} You have uncommitted changes in 'dev'. Please commit or stash them first."
+        echo -e "${TAG_FAIL} You have uncommitted changes. Please commit or stash them first."
+        cd "$PROJECT_DIR" || true
         return 1
     fi
 
@@ -464,7 +682,18 @@ git_promote_dev_to_main() {
     read -r confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${TAG_INFO} Operation cancelled."
+        cd "$PROJECT_DIR" || true
         return 0
+    fi
+
+    # Ensure we are on dev branch before running validation
+    if [[ "$STATE_GIT_BRANCH" != "dev" ]]; then
+        echo -e "${TAG_INFO} Switching to 'dev' branch before validation..."
+        if ! git checkout dev; then
+            echo -e "${TAG_FAIL} Failed to checkout 'dev' branch."
+            cd "$PROJECT_DIR" || true
+            return 1
+        fi
     fi
 
     # Run quick quality validation before merging
@@ -483,6 +712,7 @@ git_promote_dev_to_main() {
     echo -e "${TAG_INFO} Step 2/5: Checking out 'main'..."
     if ! git checkout main; then
         echo -e "${TAG_FAIL} Failed to switch to 'main'."
+        cd "$PROJECT_DIR" || true
         return 1
     fi
 
@@ -492,12 +722,17 @@ git_promote_dev_to_main() {
     echo -e "${TAG_INFO} Step 4/5: Merging 'dev' into 'main'..."
     if ! git merge dev -m "Merge dev into main [Automated via Dev Console]"; then
         echo -e "${TAG_FAIL} Merge conflict encountered! Resolve conflicts manually."
+        cd "$PROJECT_DIR" || true
         return 1
     fi
 
     echo -e "${TAG_INFO} Step 5/5: Pushing 'main' to origin..."
     if ! git push origin main; then
         echo -e "${TAG_FAIL} Failed to push 'main' to origin."
+        echo -e "${TAG_INFO} Returning to 'dev' branch..."
+        git checkout dev 2>/dev/null || true
+        cd "$PROJECT_DIR" || true
+        return 1
     else
         echo -e "${TAG_OK} Successfully pushed merged 'main' to origin!"
     fi
@@ -505,6 +740,7 @@ git_promote_dev_to_main() {
     echo -e "${TAG_INFO} Returning to 'dev' branch..."
     git checkout dev
     echo -e "${TAG_OK} Release promote completed successfully!"
+    cd "$PROJECT_DIR" || true
 }
 
 git_recent_commits() {
@@ -552,6 +788,7 @@ save_diff_export() {
         echo -e "${TAG_OK} Saved ${mode} diff (${line_count} lines) to:"
         echo -e "  ${C_CYAN}${out_path}${C_RESET}"
     fi
+    cd "$PROJECT_DIR" || true
 }
 
 git_stash_wip() {
@@ -568,19 +805,20 @@ git_stash_wip() {
     echo -e "${TAG_INFO} Stashing changes: \"$label\"..."
     git stash push -u -m "$label"
     echo -e "${TAG_OK} Done."
+    cd "$PROJECT_DIR" || true
 }
 
 git_stash_pop() {
     cd "$GIT_ROOT" || exit 1
     echo -e "${TAG_INFO} Applying and removing most recent stash..."
     git stash pop
+    cd "$PROJECT_DIR" || true
 }
 
 git_stash_list() {
-    cd "$GIT_ROOT" || exit 1
-    echo -e "${C_BOLD}Saved Git Stashes:${C_RESET}"
+    echo -e "${C_BOLD}Saved Git Stashes (${GIT_ROOT}):${C_RESET}"
     echo ""
-    git stash list
+    git -C "$GIT_ROOT" stash list
 }
 
 # ------------------------------------------------------------------------------
@@ -890,9 +1128,9 @@ if [[ $# -gt 0 ]]; then
         build)        run_build ;;
         check)        run_deploy_precheck ;;
         deploy)       run_deploy_protocol ;;
-        commit)       git_commit_and_push_dev ;;
+        commit)       git_commit_and_push_dev "$@" ;;
         help|--help|-h)
-            echo "Usage: ./angle-dev-console.sh [command]"
+            echo "Usage: ./angle-dev-console.sh [command] [options]"
             echo ""
             echo "Commands:"
             echo "  (no args)   Launch interactive categorized menu"
@@ -908,7 +1146,8 @@ if [[ $# -gt 0 ]]; then
             echo "  build       Run production build"
             echo "  check       Run full deploy precheck matrix"
             echo "  deploy      Run prechecks and deploy to GitHub Pages"
-            echo "  commit      Prompt and push commit to dev branch"
+            echo "  commit      Interactive commit with auto-detected Job ID & message"
+            echo "  commit -y   1-command auto-commit and push with detected Job ID & message"
             ;;
         *)
             echo "Unknown command: $cmd"

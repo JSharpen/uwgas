@@ -16,7 +16,6 @@ export type SessionStep = {
   wheelId: string;
   base: BaseSide;
   angleOffset: number; // β° at step level
-  notes: string;
 };
 
 export type PresetStepRef = {
@@ -24,13 +23,11 @@ export type PresetStepRef = {
   wheelName: string;
   base: BaseSide;
   angleOffset: number;
-  notes?: string;
 };
 
 export type SessionPreset = {
   id: string;
   name: string;
-  notes?: string;
   createdAt: string;
   version: 1;
   steps: PresetStepRef[];
@@ -49,12 +46,18 @@ export type MachineConfig = {
   jigDiameter: number; // Dj for this machine
 };
 
+export type CalcMode = 'height' | 'projection';
+
 export type GlobalState = {
-  projection: number; // A
+  projection: number; // A (used when calcMode is 'height')
   usbDiameter: number; // Ds
   targetAngle: number; // β per side
   jig: { Dj: number }; // jig diameter
-  microBump: { enabled: boolean; bumpDeg: number };
+  calcMode?: CalcMode; // 'height' (default) or 'projection'
+  fixedUsbHeight?: number; // legacy fallback fixed USB height (mm)
+  fixedUsbRear?: number; // fixed USB height for rear base (mm)
+  fixedUsbFront?: number; // fixed USB height for front base (mm)
+  fixedUsbMode?: 'hn' | 'hr'; // reference for fixed USB height: 'hn' (base) or 'hr' (wheel)
 };
 
 export type AppPersistedState = {
@@ -77,7 +80,6 @@ export type TonInput = {
   Dj: number; // jig diameter
   Ds: number; // USB diameter
   constants: MachineConstants;
-  microBumpDeg?: number; // optional additional angle bump
   angleOffsetDeg?: number; // per-wheel or per-step β°
 };
 
@@ -87,6 +89,24 @@ export type TonOutput = {
   betaEffDeg: number; // effective grinding angle
 };
 
+export type ProjectionInput = {
+  base: BaseSide;
+  D: number; // wheel diameter
+  targetBetaDeg: number; // target β (per side)
+  Dj: number; // jig diameter
+  Ds: number; // USB diameter
+  constants: MachineConstants;
+  fixedUsb: { mode: 'hn' | 'hr'; value: number };
+  angleOffsetDeg?: number; // per-wheel or per-step β°
+};
+
+export type ProjectionOutput = {
+  A: number | null; // calculated required projection (null if unreachable)
+  jg: number | null;
+  CA: number;
+  isReachable: boolean;
+};
+
 export type WheelResult = {
   wheel: Wheel;
   baseForHn: BaseSide;
@@ -94,6 +114,8 @@ export type WheelResult = {
   betaEffDeg: number;
   hrWheel: number;
   hnBase: number;
+  requiredProjectionA?: number | null;
+  isReachable?: boolean;
   step?: SessionStep;
 };
 

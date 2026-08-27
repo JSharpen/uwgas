@@ -34,9 +34,10 @@ export function _load<T>(k: string, def: T): T {
 }
 
 export function readPersistedState(): AppPersistedState {
+  const loadedGlobal = _load<Partial<GlobalState>>('t_global', DEFAULT_GLOBAL);
   return {
     version: PERSIST_VERSION,
-    global: _load<GlobalState>('t_global', DEFAULT_GLOBAL),
+    global: { ...DEFAULT_GLOBAL, ...loadedGlobal },
     constants: _load<MachineConstants>('t_constants', DEFAULT_CONSTANTS),
     wheels: _load<Wheel[]>('t_wheels', DEFAULT_WHEELS),
     sessionSteps: _load<SessionStep[]>('t_sessionSteps', []),
@@ -89,7 +90,9 @@ export function parsePersistedState(raw: string): AppPersistedState | null {
 
     const result: AppPersistedState = {
       version,
-      global: isObject(globalRaw) ? (globalRaw as GlobalState) : DEFAULT_GLOBAL,
+      global: isObject(globalRaw)
+        ? { ...DEFAULT_GLOBAL, ...(globalRaw as Partial<GlobalState>) }
+        : DEFAULT_GLOBAL,
       constants: isObject(constantsRaw)
         ? (constantsRaw as MachineConstants)
         : DEFAULT_CONSTANTS,

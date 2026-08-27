@@ -1,9 +1,10 @@
 import type React from 'react';
-import type { WheelResult } from '../types/core';
+import type { CalcMode, WheelResult } from '../types/core';
 
 type ProgressionViewProps = {
   wheelResults: WheelResult[];
   heightMode: 'hn' | 'hr';
+  calcMode?: CalcMode;
   angleSymbol: string;
   angleErrorById?: Record<string, number | null>;
   cardMinHeight?: number;
@@ -19,6 +20,7 @@ type ProgressionViewProps = {
 function ProgressionView({
   wheelResults,
   heightMode,
+  calcMode = 'height',
   angleSymbol,
   angleErrorById,
   cardMinHeight,
@@ -27,14 +29,14 @@ function ProgressionView({
   bodyGap = 'gap-2',
 }: ProgressionViewProps) {
   const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
+  const isProjectionMode = calcMode === 'projection';
 
   return (
-    <div className="grid card-grid md:grid-cols-2">
+    <div className="flex flex-col card-stack text-xs">
       {wheelResults.map((r, index) => {
         const key = r.step?.id ?? r.wheel.id;
         const angleOffset = r.step?.angleOffset ?? 0;
         const hasOffset = angleOffset !== 0;
-        const notesText = r.step?.notes?.trim() ?? '';
         const angleError = angleErrorById?.[key] ?? null;
         const angleValueClass = hasOffset
           ? angleOffset > 0
@@ -63,7 +65,7 @@ function ProgressionView({
         return (
           <div
             key={r.step?.id ?? r.wheel.id}
-            className="card-elevated overflow-hidden motion-list-item"
+            className="card-elevated flex flex-col motion-list-item overflow-hidden"
             style={
               {
                 '--motion-order': index,
@@ -72,86 +74,76 @@ function ProgressionView({
             }
           >
             {/* ===== Header bar ===== */}
-            <div className="card-elevated__header wheel-card__header flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 min-h-[44px]">
-              <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+            <div className="card-elevated__header wheel-card__header flex flex-nowrap items-center justify-between gap-1.5 px-2 py-1.5 min-h-[40px]">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 {/* Step badge */}
                 {r.step && (
-                  <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-50 -ml-1 shadow-sm">
+                  <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-50 shrink-0 shadow-sm">
                     {index + 1}
                   </div>
                 )}
                 {/* Wheel name */}
-                <span className="text-[0.7rem] text-neutral-100 font-medium truncate leading-none">
+                <span className="text-xs text-neutral-100 font-medium truncate leading-none min-w-0 flex-1">
                   {r.wheel.name}
                 </span>
               </div>
 
               {/* Right side: diameter display */}
-              <div className="flex items-center gap-1 flex-nowrap ml-auto text-[0.7rem] text-neutral-100 font-mono whitespace-nowrap">
-                <span>D=</span>
+              <div className="flex items-center gap-1 flex-nowrap shrink-0 text-xs text-neutral-100 font-mono whitespace-nowrap ml-2">
+                <span className="text-neutral-400 text-[0.7rem]">D=</span>
                 <span>{r.wheel.D?.toFixed(2)}</span>
-                <span>mm</span>
+                <span className="text-neutral-400 text-[0.7rem]">mm</span>
               </div>
             </div>
 
             {/* ===== Wheel Card Body ===== */}
             <div
-              className={`${bodyPaddingX} ${bodyPaddingY} flex flex-row flex-wrap items-stretch ${bodyGap} u-surface`}
+              className={`card-elevated__body ${bodyPaddingX} ${bodyPaddingY} flex items-center justify-between ${bodyGap} u-surface`}
             >
-              {heightMode === 'hn' ? (
-                <div className="border u-border rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0 u-surface">
-                  <div className="flex items-center text-[0.75rem] u-text-muted">
-                    <span>
-                      {r.step?.base === 'front'
-                        ? `Base F <-> USB top`
-                        : `Base R <-> USB top`}
-                    </span>
-                  </div>
-                  <div className="font-mono text-sm u-text">
-                    hn = {r.hnBase.toFixed(2)} mm
-                  </div>
-                  <div className="text-[0.7rem] u-text-muted">
-                    {angleSymbol} ={' '}
-                    <span className={angleValueClass}>
-                      {formatDeg(r.betaEffDeg)}°
-                    </span>
-                    {angleError != null && (
-                      <span className="ml-1 text-neutral-500">
-                        (calib ±{formatResidual(angleError)}°)
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="border u-border rounded p-2 flex flex-col gap-1 w-[9rem] min-h-[40px] self-start shrink-0 u-surface">
-                  <div className="flex items-center text-[0.75rem] u-text-muted">
-                    <span>{`Wheel <-> USB top`}</span>
-                  </div>
-                  <div className="font-mono text-sm u-text">
-                    hr = {r.hrWheel.toFixed(2)} mm
-                  </div>
-                  <div className="text-[0.7rem] u-text-muted">
-                    {angleSymbol} ={' '}
-                    <span className={angleValueClass}>
-                      {formatDeg(r.betaEffDeg)}°
-                    </span>
-                    {angleError != null && (
-                      <span className="ml-1 text-neutral-500">
-                        (calib ±{formatResidual(angleError)}°)
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Left: Height or Projection readout */}
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-[0.7rem] u-text-muted">
+                  {isProjectionMode
+                    ? heightMode === 'hr'
+                      ? r.step?.base === 'front'
+                        ? 'Required projection A (Front · Wheel)'
+                        : 'Required projection A (Rear · Wheel)'
+                      : r.step?.base === 'front'
+                      ? 'Required projection A (Front · Datum)'
+                      : 'Required projection A (Rear · Datum)'
+                    : heightMode === 'hn'
+                    ? r.step?.base === 'front'
+                      ? 'Datum (Front) ↔ USB top'
+                      : 'Datum (Rear) ↔ USB top'
+                    : 'Wheel ↔ USB top'}
+                </span>
+                <span className="font-mono text-base sm:text-lg font-bold u-text tracking-tight">
+                  {isProjectionMode ? (
+                    r.isReachable !== false && r.requiredProjectionA != null ? (
+                      `A = ${r.requiredProjectionA.toFixed(2)} mm`
+                    ) : (
+                      <span className="text-danger text-sm sm:text-base">Out of range</span>
+                    )
+                  ) : heightMode === 'hn' ? (
+                    `hn = ${r.hnBase.toFixed(2)} mm`
+                  ) : (
+                    `hr = ${r.hrWheel.toFixed(2)} mm`
+                  )}
+                </span>
+              </div>
 
-              {/* Notes panel (view mode) */}
-              <div className="flex-1 border u-border rounded p-2 min-h-[40px] u-surface">
-                {notesText ? (
-                  <div className="text-[0.8rem] u-text whitespace-pre-wrap break-words">
-                    {notesText}
-                  </div>
-                ) : (
-                  <div className="text-[0.8rem] u-text-muted">No notes</div>
+              {/* Right: Effective Angle & Tolerance */}
+              <div className="flex flex-col items-end gap-0.5 text-right shrink-0">
+                <span className="text-xs u-text-muted">
+                  {angleSymbol} ={' '}
+                  <span className={`font-semibold ${angleValueClass}`}>
+                    {formatDeg(r.betaEffDeg)}°
+                  </span>
+                </span>
+                {angleError != null && (
+                  <span className="text-[0.65rem] text-neutral-500">
+                    (calib ±{formatResidual(angleError)}°)
+                  </span>
                 )}
               </div>
             </div>

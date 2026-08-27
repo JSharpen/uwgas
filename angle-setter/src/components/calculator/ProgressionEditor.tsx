@@ -5,8 +5,6 @@ import { IconTrash } from '../../icons';
 import { blurOnEnter } from '../../utils/dom';
 import MiniSelect from '../MiniSelect';
 import GrindDirToggle from '../GrindDirToggle';
-import ModalShell from '../ModalShell';
-import useModalLayout from '../../hooks/useModalLayout';
 
 const STEP_REMOVE_DURATION_MS = 380;
 
@@ -38,22 +36,13 @@ export function ProgressionEditor({
   targetAngleSymbol = '\u03b2',
   progressionBodyPaddingX = 'px-3',
   progressionBodyPaddingY = 'py-2',
-  progressionBodyGap = 'gap-3',
-  progressionCardMinHeight = '6.5rem',
+  progressionBodyGap = 'gap-2',
+  progressionCardMinHeight,
 }: ProgressionEditorProps) {
-  const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
-    useModalLayout();
-
   const [removingStepIds, setRemovingStepIds] = React.useState<Set<string>>(
     () => new Set()
   );
   const stepRemoveTimersRef = React.useRef<Map<string, number>>(new Map());
-
-  // Step notes modal
-  const [isStepNotesVisible, setIsStepNotesVisible] = React.useState(false);
-  const [isStepNotesClosing, setIsStepNotesClosing] = React.useState(false);
-  const [stepNotesDraft, setStepNotesDraft] = React.useState('');
-  const stepNotesStepIdRef = React.useRef<string | null>(null);
 
   const requestDeleteStep = (id: string) => {
     if (removingStepIds.has(id)) return;
@@ -68,30 +57,6 @@ export function ProgressionEditor({
       stepRemoveTimersRef.current.delete(id);
     }, STEP_REMOVE_DURATION_MS);
     stepRemoveTimersRef.current.set(id, timer);
-  };
-
-  const handleOpenNotes = (step: SessionStep) => {
-    stepNotesStepIdRef.current = step.id;
-    setStepNotesDraft(step.notes || '');
-    setIsStepNotesVisible(true);
-    setIsStepNotesClosing(false);
-  };
-
-  const handleCloseNotes = () => {
-    setIsStepNotesClosing(true);
-    window.setTimeout(() => {
-      setIsStepNotesVisible(false);
-      setIsStepNotesClosing(false);
-      stepNotesStepIdRef.current = null;
-    }, 200);
-  };
-
-  const handleSaveNotes = () => {
-    const id = stepNotesStepIdRef.current;
-    if (id) {
-      onUpdateStep(id, { notes: stepNotesDraft.trim() });
-    }
-    handleCloseNotes();
   };
 
   return (
@@ -159,10 +124,11 @@ export function ProgressionEditor({
                 }
               >
                 {/* Header bar: step badge + wheel selector + D editor + delete */}
-                <div className="card-elevated__header wheel-card__header flex flex-wrap items-center gap-x-1 gap-y-1 px-2 py-1.5 min-h-[44px]">
-                  <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+                <div className="card-elevated__header wheel-card__header flex flex-nowrap items-center justify-between gap-1.5 px-2 py-1.5 min-h-[40px]">
+                  {/* Left: Step badge + Wheel selector (elastic) */}
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     {/* Step badge */}
-                    <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100 -ml-1 shadow-sm">
+                    <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-100 shrink-0 shadow-sm">
                       {index + 1}
                     </div>
 
@@ -185,8 +151,8 @@ export function ProgressionEditor({
                           base: newWheel.isHoning ? 'front' : step.base,
                         });
                       }}
-                      widthClass="min-w-[9rem] max-w-[11rem]"
-                      menuWidthClass="w-52"
+                      widthClass="flex-1 min-w-0"
+                      menuWidthClass="w-56 sm:w-64"
                       emptyLabel="No wheels defined"
                       renderOption={opt => (
                         <>
@@ -204,14 +170,14 @@ export function ProgressionEditor({
                     />
                   </div>
 
-                  {/* RIGHT: D editor + delete */}
-                  <div className="flex items-center gap-1 flex-nowrap ml-auto">
+                  {/* RIGHT: D editor + delete (fixed, shrink-0) */}
+                  <div className="flex items-center gap-1 flex-nowrap shrink-0 ml-1">
                     <label className="flex items-center gap-1 text-[0.7rem] text-neutral-300">
-                      <span>D</span>
+                      <span className="font-mono text-neutral-400 text-[0.7rem]">D</span>
                       <input
                         type="text"
                         inputMode="decimal"
-                        className="w-[64px] rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right text-[0.8rem] font-mono mr-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-[52px] sm:w-[58px] rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right text-xs font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={!wheel.id}
                         value={
                           wheel.DText !== undefined
@@ -242,48 +208,46 @@ export function ProgressionEditor({
                           onUpdateWheel(wheel.id, patch);
                         }}
                       />
-                      <span>mm</span>
+                      <span className="text-neutral-400 text-[0.7rem]">mm</span>
                     </label>
 
                     <button
                       type="button"
-                      className={`${BTN.iconPlain} text-danger ml-1`}
+                      className={`${BTN.iconPlain} text-danger w-6 h-6 p-0 flex items-center justify-center`}
                       onClick={() => requestDeleteStep(step.id)}
                       title="Delete step"
                     >
-                      <IconTrash className="w-5 h-5" />
+                      <IconTrash className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
-                {/* Body: base toggle / angle offset / notes / sort */}
+                {/* Body: base toggle / angle offset / sort */}
                 <div
-                  className={`${progressionBodyPaddingX} ${progressionBodyPaddingY} grid grid-cols-[1fr_1fr_auto] ${progressionBodyGap} items-stretch`}
+                  className={`card-elevated__body ${progressionBodyPaddingX} ${progressionBodyPaddingY} flex items-center justify-between ${progressionBodyGap}`}
                 >
-                  {/* Left column: base select (top) + angle offset (bottom) */}
-                  <div className="flex flex-col gap-2 h-full justify-between">
-                    <div className="flex items-center gap-2">
-                      <GrindDirToggle
-                        base={step.base}
-                        isHoning={isHoning}
-                        canToggle={!isHoning}
-                        showLabel
-                        onToggle={() =>
-                          onUpdateStep(step.id, {
-                            base: step.base === 'rear' ? 'front' : 'rear',
-                          })
-                        }
-                      />
-                    </div>
+                  {/* Left: base select + angle offset */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <GrindDirToggle
+                      base={step.base}
+                      isHoning={isHoning}
+                      canToggle={!isHoning}
+                      showLabel
+                      onToggle={() =>
+                        onUpdateStep(step.id, {
+                          base: step.base === 'rear' ? 'front' : 'rear',
+                        })
+                      }
+                    />
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-neutral-400 text-[0.7rem]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-neutral-400 text-xs">
                         {targetAngleSymbol} offset
                       </span>
                       <input
                         type="text"
                         inputMode="decimal"
-                        className="w-14 rounded border border-neutral-700 bg-neutral-950 px-2 py-0.5 text-right text-xs font-mono"
+                        className="w-14 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right text-xs font-mono"
                         value={step.angleOffset === 0 ? '' : step.angleOffset}
                         placeholder="0"
                         onFocus={e => {
@@ -303,30 +267,12 @@ export function ProgressionEditor({
                           }
                         }}
                       />
-                      <span className="text-neutral-400 text-[0.7rem]">°</span>
+                      <span className="text-neutral-400 text-xs">°</span>
                     </div>
                   </div>
 
-                  {/* Middle column: notes button */}
-                  <div className="flex flex-col gap-2 items-start h-full relative justify-center">
-                    <button
-                      type="button"
-                      className={`${BTN.base} self-start text-xs ${
-                        step.notes?.trim() ? 'border-accent text-accent font-medium' : ''
-                      }`}
-                      onClick={() => handleOpenNotes(step)}
-                    >
-                      {step.notes?.trim() ? 'Notes (edit)' : 'Add Notes'}
-                    </button>
-                    {step.notes?.trim() && (
-                      <p className="text-[0.65rem] text-neutral-400 line-clamp-1 italic">
-                        {step.notes}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Right column: sort controls */}
-                  <div className="flex flex-col justify-center items-end h-full min-w-[52px]">
+                  {/* Right: sort controls */}
+                  <div className="flex items-center gap-1">
                     <button
                       type="button"
                       className={BTN.icon}
@@ -338,7 +284,7 @@ export function ProgressionEditor({
                     </button>
                     <button
                       type="button"
-                      className={`${BTN.icon} mt-1`}
+                      className={BTN.icon}
                       onClick={() => onMoveStep(index, 1)}
                       disabled={index === sessionSteps.length - 1}
                       title="Move down"
@@ -361,45 +307,6 @@ export function ProgressionEditor({
             + Add step
           </button>
         </div>
-      )}
-
-      {/* Step Notes Modal */}
-      {isStepNotesVisible && (
-        <ModalShell
-          title="Step notes"
-          subtitle="Add notes or specific instructions for this sharpening step."
-          onClose={handleCloseNotes}
-          closing={isStepNotesClosing}
-          overlayStyle={modalOverlayStyle}
-          dialogStyle={getModalDialogStyle()}
-        >
-          <div className="mt-1 flex flex-col gap-3">
-            <textarea
-              className="w-full min-h-[6rem] rounded border u-border u-surface p-2 text-xs u-text focus:ring-1 focus:ring-accent"
-              autoFocus
-              value={stepNotesDraft}
-              onChange={e => setStepNotesDraft(e.target.value)}
-              placeholder="e.g. Light pressure only, 5 passes per side, deburr stroke..."
-            />
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className={BTN.ghost}
-                onClick={handleCloseNotes}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={BTN.primary}
-                onClick={handleSaveNotes}
-              >
-                Save Notes
-              </button>
-            </div>
-          </div>
-        </ModalShell>
       )}
     </div>
   );
