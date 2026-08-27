@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "echo \"(no tests defined yet)\" && exit 0",
     "preview": "vite preview",
+    "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
