@@ -22,6 +22,7 @@
 | **JOB-011** | Device, Screen Size & Density Optimization | `[PROPOSED]` | **MEDIUM** | Adaptive responsive scaling, pixel-density tuning, and display density presets (Compact / Standard / Touch-Spacious) across mobile, tablet, and bench displays. |
 | **JOB-012** | Projection Solver for Adjustable Jigs & Fixed USB | `[COMPLETED]` | **HIGH** | Exact closed-form inverse Dutchman solver calculating required knife projection $A$ for fixed USB bar ($h_n / h_r$) with header mode toggle and workshop steppers. |
 | **JOB-013** | Global Setup Full Collapse & Compact Summary Strip | `[COMPLETED]` | **MEDIUM** | Header collapse toggle collapses the entire inputs body; renders a compact one-line variable summary strip when collapsed with 1-click expand. |
+| **JOB-014** | Suggested Front USB Height & Custom Override for Projection Mode | `[COMPLETED]` | **HIGH** | Implemented suggested Front USB height matching Rear USB wheel distance ($CA$), high-contrast text display, custom setting checkbox override, and stepper removal. |
 
 ---
 
@@ -101,6 +102,7 @@ flowchart LR
 
 | Date | Topic / Change | Rationale / Notes |
 | :--- | :--- | :--- |
+| **2026-08-28** | Completed Suggested Front USB Height (`JOB-014`) | Added pure geometric solver matching axle-to-USB distance ($CA$) between front and rear bases in Projection Mode so projection $A$ remains identical across matched wheel operations without reclamping. Cleaned UI with high-contrast text readout, custom setting checkbox override, and removed front steppers. |
 | **2026-08-27** | Completed Projection Solver Mode (`JOB-012`) | Implemented exact closed-form algebraic inverse Dutchman solver to calculate required knife projection $A$ with fixed USB bar position ($h_n / h_r$). Added header toggle button and responsive workshop steppers. |
 | **2026-08-26** | Completed Phase 1 Core Usability & Decomposition | Decomposed `App.tsx` into modular components, added touch steppers, quick angle chips, MicroBump controls, $h_n \leftrightarrow h_r$ pill, and default progression auto-loader. Verified with clean build. |
 | **2026-08-25** | Active Job Schedule & Backlog Established | Introduced standardized job tracking (`JOB-xxx` IDs with explicit statuses) to maintain continuity across all AI agent sessions. |

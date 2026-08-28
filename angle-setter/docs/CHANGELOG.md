@@ -4,6 +4,28 @@
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.9.3] — 2026-08-28 (Session: Suggested Front USB Height & Custom Override)
+
+### 🚀 Added
+- **Suggested Front USB Height Solver (`JOB-014`)**:
+  - Implemented `computeSuggestedFrontUsbHeight` in `src/math/tormek.ts` to calculate the front USB bar datum height ($h_n$) or wheel height ($h_r$) that exactly matches the wheel center to USB center distance ($CA$) of the rear USB setting.
+  - Guarantees that when moving a knife from rear (grinding) to front (honing) with the same wheel diameter and target angle, the required projection $A$ is identical, saving setup and reclamping time.
+- **Dynamic Text Display & Custom Override Checkbox in Projection Mode**:
+  - Replaced the front USB input and stepper buttons with a clean, high-contrast monospace text readout displaying the suggested height value by default.
+  - Added a touch-friendly `Custom setting` checkbox. When enabled, exposes a numeric input to override the suggested value with a custom front height without cluttering stepper buttons.
+  - Updated collapsed summary strip in `GlobalSetupCard` to dynamically display the active front height with full reactivity.
+- **Global Setup Auto Front USB**: In Projection Mode, the Front USB height is now automatically suggested based on the rear USB height and wheel parameters.
+- **Custom Front USB Toggle**: Users can optionally check "Custom setting" in Projection Mode to manually override the suggested Front USB height.
+
+### ♻️ Changed
+- **Mobile Grid Layout Consistency**: Refactored the layout of `GlobalSetupCard` so both Height Mode and Projection Mode display a perfectly consistent 2x2 grid of half-width cards on mobile. Removed full-width text inputs and restyled the Reference Toggle and Advanced Diameters to fit seamlessly within the grid.
+
+### ⚙️ State & Schema Extensions
+- Extended `GlobalState` type and `DEFAULT_GLOBAL` with `useCustomFrontUsb?: boolean` (defaulting to `false`).
+- Integrated with `computeWheelResults` to resolve suggested vs custom front heights automatically.
+
+---
+
 ## [0.9.2] — 2026-08-27 (Session: Projection Solver & Fixed USB Mode)
 
 ### 🚀 Added

@@ -9,6 +9,7 @@ export const DEFAULT_GLOBAL: GlobalState = {
   fixedUsbRear: 150.0,
   fixedUsbFront: 85.0,
   fixedUsbMode: 'hn',
+  useCustomFrontUsb: false,
 };
 
 export const DEFAULT_CONSTANTS: MachineConstants = {
