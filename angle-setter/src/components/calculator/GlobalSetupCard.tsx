@@ -1,5 +1,7 @@
 import * as React from 'react';
-import type { GlobalState } from '../../types/core';
+import type { GlobalState, MachineConstants } from '../../types/core';
+import { DEFAULT_CONSTANTS } from '../../state/defaults';
+import { computeSuggestedFrontUsbHeight } from '../../math/tormek';
 import { _nz } from '../../utils/numbers';
 import { blurOnEnter } from '../../utils/dom';
 import { BTN } from '../../ui/buttons';
@@ -13,6 +15,7 @@ export type GlobalSetupCardProps = {
   heightMode?: 'hn' | 'hr';
   setHeightMode?: React.Dispatch<React.SetStateAction<'hn' | 'hr'>>;
   targetAngleSymbol?: string;
+  constants?: MachineConstants;
 };
 
 export function GlobalSetupCard({
@@ -23,8 +26,21 @@ export function GlobalSetupCard({
   heightMode,
   setHeightMode,
   targetAngleSymbol = '\u03b2',
+  constants,
 }: GlobalSetupCardProps) {
   const isProjectionMode = global.calcMode === 'projection';
+  const effectiveConsts = constants ?? DEFAULT_CONSTANTS;
+  const rearVal = _nz(global.fixedUsbRear, _nz(global.fixedUsbHeight, 150));
+  const dsVal = _nz(global.usbDiameter, 12);
+  const suggestedFrontUsb = computeSuggestedFrontUsbHeight(
+    rearVal,
+    effectiveConsts,
+    dsVal,
+    heightMode === 'hr' ? 'hr' : 'hn'
+  );
+  const activeFrontUsb = global.useCustomFrontUsb
+    ? _nz(global.fixedUsbFront, suggestedFrontUsb)
+    : suggestedFrontUsb;
 
   const toggleCalcMode = () => {
     setGlobal(g => ({
@@ -54,14 +70,6 @@ export function GlobalSetupCard({
       const current = _nz(g.fixedUsbRear, _nz(g.fixedUsbHeight, 150));
       const next = Math.max(10, Math.round((current + delta) * 100) / 100);
       return { ...g, fixedUsbRear: next, fixedUsbHeight: next };
-    });
-  };
-
-  const handleFixedUsbFrontStep = (delta: number) => {
-    setGlobal(g => {
-      const current = _nz(g.fixedUsbFront, _nz(g.fixedUsbHeight, 85));
-      const next = Math.max(10, Math.round((current + delta) * 100) / 100);
-      return { ...g, fixedUsbFront: next };
     });
   };
 
@@ -110,7 +118,7 @@ export function GlobalSetupCard({
                     Front {heightMode === 'hr' ? 'hr' : 'hn'}:
                   </span>
                   <span className="text-neutral-200 font-semibold">
-                    {(global.fixedUsbFront ?? 85).toFixed(2)} mm
+                    {activeFrontUsb.toFixed(2)} mm
                   </span>
                 </span>
                 <span>
@@ -155,12 +163,10 @@ export function GlobalSetupCard({
 
       {/* Expanded Full Inputs View */}
       {isSetupPanelOpen && (
-        <div className="panel-card__body flex flex-col gap-3">
-          {/* Main Inputs */}
-          {isProjectionMode ? (
-            /* Projection Mode: 3 Inputs (USB Rear, USB Front, Target Angle) */
-            <div className="grid grid-cols-2 min-[640px]:grid-cols-3 gap-2 sm:gap-3 text-sm">
-              {/* USB Rear Height */}
+        <div className="panel-card__body">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 text-sm">
+            {/* Top Left: Rear USB (Projection Mode) OR Projection A (Height Mode) */}
+            {isProjectionMode ? (
               <div className="flex flex-col gap-1.5 rounded border u-border u-surface p-2 sm:p-2.5 col-span-1">
                 <span className="text-xs font-medium u-text truncate">
                   USB Rear {heightMode === 'hr' ? 'hr' : 'hn'} (mm)
@@ -215,119 +221,8 @@ export function GlobalSetupCard({
                   </button>
                 </div>
               </div>
-
-              {/* USB Front Height */}
+            ) : (
               <div className="flex flex-col gap-1.5 rounded border u-border u-surface p-2 sm:p-2.5 col-span-1">
-                <span className="text-xs font-medium u-text truncate">
-                  USB Front {heightMode === 'hr' ? 'hr' : 'hn'} (mm)
-                </span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="any"
-                  className="w-full rounded border u-border u-surface px-2 py-1 text-base font-mono text-center u-text focus:ring-1 focus:ring-accent"
-                  value={global.fixedUsbFront ?? 85}
-                  onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({
-                      ...g,
-                      fixedUsbFront: _nz(e.target.value, g.fixedUsbFront ?? 85),
-                    }))
-                  }
-                />
-                <div className="grid grid-cols-4 gap-1">
-                  <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Subtract 5mm"
-                    onClick={() => handleFixedUsbFrontStep(-5)}
-                  >
-                    -5
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Subtract 1mm"
-                    onClick={() => handleFixedUsbFrontStep(-1)}
-                  >
-                    -1
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Add 1mm"
-                    onClick={() => handleFixedUsbFrontStep(1)}
-                  >
-                    +1
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Add 5mm"
-                    onClick={() => handleFixedUsbFrontStep(5)}
-                  >
-                    +5
-                  </button>
-                </div>
-              </div>
-
-              {/* Target Angle */}
-              <div className="flex flex-col gap-1.5 rounded border u-border u-surface p-2 sm:p-2.5 col-span-2 min-[640px]:col-span-1">
-                <span className="text-xs font-medium u-text truncate">
-                  Target angle {targetAngleSymbol}° (/side)
-                </span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="any"
-                  className="w-full rounded border u-border u-surface px-2 py-1 text-base font-mono text-center u-text focus:ring-1 focus:ring-accent"
-                  value={global.targetAngle}
-                  onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({ ...g, targetAngle: _nz(e.target.value, g.targetAngle) }))
-                  }
-                />
-                <div className="grid grid-cols-4 gap-1">
-                  <button
-                    type="button"
-                    className="py-1 text-[0.65rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Subtract 1.0°"
-                    onClick={() => handleAngleStep(-1)}
-                  >
-                    -1°
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.6rem] sm:text-[0.7rem] font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center px-0"
-                    title="Subtract 0.5°"
-                    onClick={() => handleAngleStep(-0.5)}
-                  >
-                    -0.5°
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.6rem] sm:text-[0.7rem] font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center px-0"
-                    title="Add 0.5°"
-                    onClick={() => handleAngleStep(0.5)}
-                  >
-                    +0.5°
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.65rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Add 1.0°"
-                    onClick={() => handleAngleStep(1)}
-                  >
-                    +1°
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Height Mode: 2 Inputs (Projection A, Target Angle) */
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 text-sm">
-              {/* Projection (A) */}
-              <div className="flex flex-col gap-1.5 rounded border u-border u-surface p-2 sm:p-2.5">
                 <span className="text-xs font-medium u-text truncate">Projection A (mm)</span>
                 <input
                   type="number"
@@ -375,116 +270,164 @@ export function GlobalSetupCard({
                   </button>
                 </div>
               </div>
-
-              {/* Target Angle (Beta) */}
-              <div className="flex flex-col gap-1.5 rounded border u-border u-surface p-2 sm:p-2.5">
-                <span className="text-xs font-medium u-text truncate">
-                  Target angle {targetAngleSymbol}° (/side)
-                </span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="any"
-                  className="w-full rounded border u-border u-surface px-2 py-1 text-base font-mono text-center u-text focus:ring-1 focus:ring-accent"
-                  value={global.targetAngle}
-                  onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({ ...g, targetAngle: _nz(e.target.value, g.targetAngle) }))
-                  }
-                />
-                <div className="grid grid-cols-4 gap-1">
-                  <button
-                    type="button"
-                    className="py-1 text-[0.65rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Subtract 1.0°"
-                    onClick={() => handleAngleStep(-1)}
-                  >
-                    -1°
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.6rem] sm:text-[0.7rem] font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center px-0"
-                    title="Subtract 0.5°"
-                    onClick={() => handleAngleStep(-0.5)}
-                  >
-                    -0.5°
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.6rem] sm:text-[0.7rem] font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center px-0"
-                    title="Add 0.5°"
-                    onClick={() => handleAngleStep(0.5)}
-                  >
-                    +0.5°
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.65rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Add 1.0°"
-                    onClick={() => handleAngleStep(1)}
-                  >
-                    +1°
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Secondary Setup Options */}
-          <div className="flex flex-col gap-3 pt-2 border-t border-neutral-800">
-            {/* Height Readout / Reference Mode (hn vs hr) */}
-            {heightMode && setHeightMode && (
-              <div className="flex items-center justify-between rounded border border-neutral-800 bg-neutral-950/60 p-2 text-xs">
-                <div className="flex flex-col">
-                  <span className="font-semibold text-neutral-200">
-                    {isProjectionMode ? 'Fixed USB reference' : 'USB height reference'}
-                  </span>
-                  <span className="text-[0.7rem] u-text-muted">
-                    {heightMode === 'hn'
-                      ? 'Datum (Base to USB top)'
-                      : 'Wheel (Perimeter to USB top)'}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    className={`px-2.5 py-1 text-xs rounded border transition-colors ${
-                      heightMode === 'hn'
-                        ? 'border-accent bg-accent-tint text-accent font-semibold'
-                        : 'border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-neutral-700'
-                    }`}
-                    onClick={() => {
-                      setHeightMode('hn');
-                      setGlobal(g => ({ ...g, fixedUsbMode: 'hn' }));
-                    }}
-                    title="Datum Base Height (hn) - distance from machine datum base to USB top"
-                  >
-                    Datum
-                  </button>
-                  <button
-                    type="button"
-                    className={`px-2.5 py-1 text-xs rounded border transition-colors ${
-                      heightMode === 'hr'
-                        ? 'border-accent bg-accent-tint text-accent font-semibold'
-                        : 'border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-neutral-700'
-                    }`}
-                    onClick={() => {
-                      setHeightMode('hr');
-                      setGlobal(g => ({ ...g, fixedUsbMode: 'hr' }));
-                    }}
-                    title="Wheel Top Height (hr) - distance from wheel surface to USB top"
-                  >
-                    Wheel
-                  </button>
-                </div>
-              </div>
             )}
 
-            {/* Advanced Diameters */}
-            <div className="grid grid-cols-2 gap-2 text-sm pt-1 border-t border-neutral-800/80">
+            {/* Top Right: Target Angle (Shared by both modes) */}
+            <div className="flex flex-col gap-1.5 rounded border u-border u-surface p-2 sm:p-2.5 col-span-1">
+              <span className="text-xs font-medium u-text truncate">
+                Target angle {targetAngleSymbol}° (/side)
+              </span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="any"
+                className="w-full rounded border u-border u-surface px-2 py-1 text-base font-mono text-center u-text focus:ring-1 focus:ring-accent"
+                value={global.targetAngle}
+                onKeyDown={blurOnEnter}
+                onChange={e =>
+                  setGlobal(g => ({ ...g, targetAngle: _nz(e.target.value, g.targetAngle) }))
+                }
+              />
+              <div className="grid grid-cols-4 gap-1">
+                <button
+                  type="button"
+                  className="py-1 text-[0.65rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
+                  title="Subtract 1.0°"
+                  onClick={() => handleAngleStep(-1)}
+                >
+                  -1°
+                </button>
+                <button
+                  type="button"
+                  className="py-1 text-[0.6rem] sm:text-[0.7rem] font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center px-0"
+                  title="Subtract 0.5°"
+                  onClick={() => handleAngleStep(-0.5)}
+                >
+                  -0.5°
+                </button>
+                <button
+                  type="button"
+                  className="py-1 text-[0.6rem] sm:text-[0.7rem] font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center px-0"
+                  title="Add 0.5°"
+                  onClick={() => handleAngleStep(0.5)}
+                >
+                  +0.5°
+                </button>
+                <button
+                  type="button"
+                  className="py-1 text-[0.65rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
+                  title="Add 1.0°"
+                  onClick={() => handleAngleStep(1)}
+                >
+                  +1°
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Left: Front USB (Projection Mode) OR Reference Toggle (Height Mode) */}
+            {isProjectionMode ? (
+              <div className="flex flex-col gap-1.5 rounded border u-border u-surface p-2 sm:p-2.5 col-span-1 justify-between">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium u-text truncate">
+                    USB Front {heightMode === 'hr' ? 'hr' : 'hn'} (mm)
+                  </span>
+                  {global.useCustomFrontUsb ? (
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="any"
+                      className="w-full rounded border u-border u-surface px-2 py-1 text-base font-mono text-center u-text focus:ring-1 focus:ring-accent"
+                      value={global.fixedUsbFront ?? Math.round(suggestedFrontUsb * 100) / 100}
+                      onKeyDown={blurOnEnter}
+                      onChange={e =>
+                        setGlobal(g => ({
+                          ...g,
+                          fixedUsbFront: _nz(e.target.value, g.fixedUsbFront ?? suggestedFrontUsb),
+                        }))
+                      }
+                    />
+                  ) : (
+                    <div
+                      className="w-full rounded border u-border bg-neutral-950/60 px-2 py-1 text-base font-mono text-center u-text select-text flex items-center justify-center font-semibold"
+                      title="Suggested front USB height matching rear wheel distance (CA)"
+                    >
+                      {suggestedFrontUsb.toFixed(2)}
+                    </div>
+                  )}
+                </div>
+
+                <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs u-text-muted hover:text-neutral-200 py-1">
+                  <input
+                    type="checkbox"
+                    className="rounded accent-accent w-3.5 h-3.5"
+                    checked={Boolean(global.useCustomFrontUsb)}
+                    onChange={e => {
+                      const checked = e.target.checked;
+                      setGlobal(g => ({
+                        ...g,
+                        useCustomFrontUsb: checked,
+                        ...(checked && g.fixedUsbFront === undefined
+                          ? { fixedUsbFront: Math.round(suggestedFrontUsb * 100) / 100 }
+                          : {}),
+                      }));
+                    }}
+                  />
+                  <span>Custom setting</span>
+                </label>
+              </div>
+            ) : (
+              heightMode && setHeightMode && (
+                <div className="flex flex-col justify-between gap-1.5 rounded border border-neutral-800 bg-neutral-950/60 p-2 sm:p-2.5 text-xs col-span-1">
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-neutral-200 truncate">
+                      USB height reference
+                    </span>
+                    <span className="text-[0.7rem] u-text-muted leading-tight mt-0.5">
+                      {heightMode === 'hn'
+                        ? 'Datum (Base to USB top)'
+                        : 'Wheel (Perimeter to USB top)'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 w-full mt-auto">
+                    <button
+                      type="button"
+                      className={`flex-1 px-2 py-1.5 text-xs rounded border transition-colors ${
+                        heightMode === 'hn'
+                          ? 'border-accent bg-accent-tint text-accent font-semibold'
+                          : 'border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-neutral-700'
+                      }`}
+                      onClick={() => {
+                        setHeightMode('hn');
+                        setGlobal(g => ({ ...g, fixedUsbMode: 'hn' }));
+                      }}
+                      title="Datum Base Height (hn) - distance from machine datum base to USB top"
+                    >
+                      Datum
+                    </button>
+                    <button
+                      type="button"
+                      className={`flex-1 px-2 py-1.5 text-xs rounded border transition-colors ${
+                        heightMode === 'hr'
+                          ? 'border-accent bg-accent-tint text-accent font-semibold'
+                          : 'border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-neutral-700'
+                      }`}
+                      onClick={() => {
+                        setHeightMode('hr');
+                        setGlobal(g => ({ ...g, fixedUsbMode: 'hr' }));
+                      }}
+                      title="Wheel Top Height (hr) - distance from wheel surface to USB top"
+                    >
+                      Wheel
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+
+            {/* Bottom Right: Advanced Diameters (Shared by both modes) */}
+            <div className="flex flex-col gap-2 rounded border border-neutral-800/80 bg-neutral-950/30 p-2 sm:p-2.5 col-span-1 justify-between">
               <label className="flex flex-col gap-1">
-                <span className="u-text text-xs">USB diameter Ds (mm)</span>
+                <span className="u-text text-xs truncate">USB diameter Ds (mm)</span>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -500,7 +443,7 @@ export function GlobalSetupCard({
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="u-text text-xs">Jig diameter Dj (mm)</span>
+                <span className="u-text text-xs truncate">Jig diameter Dj (mm)</span>
                 <input
                   type="number"
                   inputMode="decimal"

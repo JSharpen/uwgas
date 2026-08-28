@@ -749,6 +749,7 @@ export default function App() {
             heightMode={heightMode}
             setHeightMode={setHeightMode}
             targetAngleSymbol={targetAngleSymbol}
+            constants={effectiveConstants}
           />
 
           {/* Progression Section */}

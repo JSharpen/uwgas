@@ -5,6 +5,7 @@ import type {
   CalibrationResult,
   GlobalState,
   MachineConfig,
+  MachineConstants,
   ProjectionInput,
   ProjectionOutput,
   TonInput,
@@ -127,6 +128,27 @@ export function computeRequiredProjection(input: ProjectionInput): ProjectionOut
   return { A, jg, CA, isReachable: true };
 }
 
+/**
+ * Calculates suggested front USB height to match the rear USB wheel distance (CA).
+ * When front and rear share the same wheel diameter and target angle, setting the
+ * front base to this height gives the exact same required projection A.
+ */
+export function computeSuggestedFrontUsbHeight(
+  fixedUsbRear: number,
+  constants: MachineConstants,
+  Ds: number,
+  mode: 'hn' | 'hr' = 'hn'
+): number {
+  if (mode === 'hr') {
+    return fixedUsbRear;
+  }
+  const yRear = fixedUsbRear + constants.rear.hc - Ds / 2;
+  const CA2 = yRear * yRear + constants.rear.o * constants.rear.o;
+  const yFront2 = CA2 - constants.front.o * constants.front.o;
+  const yFront = Math.sqrt(Math.max(0, yFront2));
+  return yFront - constants.front.hc + Ds / 2;
+}
+
 export function computeWheelResults(
   wheels: Wheel[],
   sessionSteps: SessionStep[] | null,
@@ -140,7 +162,15 @@ export function computeWheelResults(
   const isProjectionMode = global.calcMode === 'projection';
   const fixedUsbMode = global.fixedUsbMode === 'hr' ? 'hr' : 'hn';
   const rearFixedHeight = _nz(global.fixedUsbRear, _nz(global.fixedUsbHeight, 150.0));
-  const frontFixedHeight = _nz(global.fixedUsbFront, _nz(global.fixedUsbHeight, 85.0));
+  const suggestedFrontHeight = computeSuggestedFrontUsbHeight(
+    rearFixedHeight,
+    machine.constants,
+    Ds,
+    fixedUsbMode
+  );
+  const frontFixedHeight = global.useCustomFrontUsb
+    ? _nz(global.fixedUsbFront, suggestedFrontHeight)
+    : suggestedFrontHeight;
 
   const items: { step?: SessionStep; wheel: Wheel }[] = [];
 
