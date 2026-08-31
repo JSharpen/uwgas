@@ -321,7 +321,7 @@ html, body {
 
 .card-stack .card-elevated:not(.motion-list-item--removing) {
   min-height: var(--step-card-height, 5.5rem);
-  height: var(--step-card-height, 5.5rem);
+  height: auto;
   display: flex;
   flex-direction: column;
 }

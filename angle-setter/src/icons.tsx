@@ -198,3 +198,55 @@ export function IconSortDesc({ className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+/** Sharpening Wheel / Disc */
+export function IconDisc({ className, ...rest }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...rest}>
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth={1.5} />
+      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth={1.5} />
+    </svg>
+  );
+}
+
+/** Sharpening Machine / Grinder */
+export function IconGrinder({ className, ...rest }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...rest}>
+      <rect x="7" y="10" width="10" height="10" rx="1" fill="none" stroke="currentColor" strokeWidth={1.5} />
+      <rect x="3" y="12" width="4" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth={1.5} />
+      <rect x="17" y="12" width="4" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth={1.5} />
+      <path d="M12 10V7M10 7h4" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconEdgeLeading(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      {/* Blade (positioned top right, pointing left into the wheel) */}
+      <path d="M11 6 L21 2 L19 12 Z" fill="currentColor" stroke="none" />
+      <path d="M11 6 L21 2 L19 12 Z" />
+      {/* Wheel (bottom left) */}
+      <circle cx="10" cy="14" r="7" />
+      {/* Arrow on wheel indicating rotation INTO the edge (counter-clockwise) */}
+      <path d="M3.5 11.5 A 7 7 0 0 1 10 7" />
+      <path d="M8.5 5.5 L10 7 L8 8.5" />
+    </svg>
+  );
+}
+
+export function IconEdgeTrailing(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      {/* Blade (positioned top right, pointing left) */}
+      <path d="M11 6 L21 2 L19 12 Z" fill="currentColor" stroke="none" />
+      <path d="M11 6 L21 2 L19 12 Z" />
+      {/* Wheel (bottom left) */}
+      <circle cx="10" cy="14" r="7" />
+      {/* Arrow on wheel indicating rotation AWAY from the edge (clockwise) */}
+      <path d="M10 7 A 7 7 0 0 1 16.5 11.5" />
+      <path d="M17.5 9.5 L16.5 11.5 L14.5 10.5" />
+    </svg>
+  );
+}

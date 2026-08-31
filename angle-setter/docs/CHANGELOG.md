@@ -1,8 +1,34 @@
 # Changelog & Autonomous Session Log
 
 > **Universal Wet Grinder Angle Setter (UWGAS)**
+> **Universal Wet Grinder Angle Setter (UWGAS)**
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [0.9.5] — 2026-08-31 (Session: Hardware Manager & Jigs/USB Profiles)
+
+### 🚀 Added
+- **Hardware Profile Manager**:
+  - Replaced raw USB ($D_s$) and Jig ($D_j$) diameter inputs with a new `HardwareManagerView` (accessible via Settings > Hardware) that allows creating, editing, and deleting named Jigs and USBs profiles.
+  - V5 schema migration automatically converts legacy raw diameters into generated named custom profiles for seamless backwards compatibility.
+- **Dynamic Hardware Selectors**:
+  - `GlobalSetupCard` now utilizes `MiniSelect` dropdowns for selecting the active Jig and USB profile.
+  - `ProgressionEditor` step cards now support individual USB profile overrides instead of raw diameters.
+- **Progression Card Redesign**:
+  - Re-flowed progression card inputs to reserve the bottom row for the step's support bar (USB) override and wheel diameter, moving the angle offset to the main body of the card.
+  - `ProgressionView` accurately resolves hardware names and renders warning badges for unmapped geometry.
+
+### ♻️ Changed
+- Replaced the "Machines & hardware" setting menu option with distinct "Machines" and "Hardware" views.
+- Safely deprecated the Direct Swap calculator from the UI, keeping the mathematical algorithm inside `tormek.ts` for future experiments (`JOB-015`).
+
+## [0.9.4] — 2026-08-30 (Session: Multi-Machine Profiles System)
+
+### 🚀 Added
+- **Multi-Machine Profiles System (`JOB-006`)**:
+  - Replaced the legacy global constants card with a new `MachineManagerView` to create, edit, and set a default machine profile.
+  - The `CalibrationWizard` is now launched strictly per machine directly from the manager view, updating that machine's constants seamlessly upon application.
+  - Implemented dynamic per-step hardware overrides in `ProgressionEditor` and `ProgressionView`, allowing users to select a different machine or explicitly override the USB diameter ($D_s$) for any individual step in a sequence.
 
 ## [0.9.3] — 2026-08-28 (Session: Suggested Front USB Height & Custom Override)
 
@@ -18,6 +44,7 @@
 - **Custom Front USB Toggle**: Users can optionally check "Custom setting" in Projection Mode to manually override the suggested Front USB height.
 
 ### ♻️ Changed
+- **Default Wheel Library Streamlined**: Removed extra wheels from the default list in `DEFAULT_WHEELS` (`src/state/defaults.ts`) to provide a cleaner starting point. The defaults now strictly include only the SG-250, SJ-250, and LA-220 wheels.
 - **Mobile Grid Layout Consistency**: Refactored the layout of `GlobalSetupCard` so both Height Mode and Projection Mode display a perfectly consistent 2x2 grid of half-width cards on mobile. Removed full-width text inputs and restyled the Reference Toggle and Advanced Diameters to fit seamlessly within the grid.
 
 ### ⚙️ State & Schema Extensions

@@ -1,513 +1,351 @@
 import * as React from 'react';
-import MiniSelect from './MiniSelect';
 import type {
-  BaseSide,
-  CalibrationDiagnostics,
-  CalibrationMeasurement,
-  CalibrationSnapshot,
   GlobalState,
-  MachineConfig,
-  MachineConstants,
   Wheel,
+  MachineConfig,
+  CalibrationMeasurement,
+  CalibrationProfile,
+  CalibrationDiagnostics,
 } from '../types/core';
-import { calibrateBase, estimateMaxAngleErrorDeg } from '../math/tormek';
 import { BTN } from '../ui/buttons';
+import MiniSelect from './MiniSelect';
+import { calibrateBase, estimateMaxAngleErrorDeg } from '../math/tormek';
 
-type CalibrationResultState = {
-  hc: number;
-  o: number;
-  diagnostics: CalibrationDiagnostics;
-  angleErrorDeg: number | null;
-  rowResiduals: { row: number; residual: number }[];
-} | null;
-
+import type { JigConfig, UsbConfig } from "../types/core";
 type CalibrationWizardProps = {
+  jigs: JigConfig[];
+  usbs: UsbConfig[];
   global: GlobalState;
   activeMachine: MachineConfig;
   wheels: Wheel[];
-  calibBase: BaseSide | '';
-  setCalibBase: React.Dispatch<React.SetStateAction<BaseSide | ''>>;
-  calibName: string;
-  setCalibName: React.Dispatch<React.SetStateAction<string>>;
-  calibDa: number;
-  setCalibDa: React.Dispatch<React.SetStateAction<number>>;
-  calibDs: number;
-  setCalibDs: React.Dispatch<React.SetStateAction<number>>;
-  calibCount: number;
-  setCalibCount: React.Dispatch<React.SetStateAction<number>>;
-  calibRows: CalibrationMeasurement[];
-  setCalibRows: React.Dispatch<React.SetStateAction<CalibrationMeasurement[]>>;
-  calibResult: CalibrationResultState;
-  setCalibResult: React.Dispatch<React.SetStateAction<CalibrationResultState>>;
-  calibError: string | null;
-  setCalibError: React.Dispatch<React.SetStateAction<string | null>>;
-  calibSnapshots: CalibrationSnapshot[];
-  setCalibSnapshots: React.Dispatch<React.SetStateAction<CalibrationSnapshot[]>>;
-  onApplyCalibration: (base: BaseSide, snapshotId: string) => void;
+  onSaveProfile: (profile: CalibrationProfile) => void;
+  onCancel: () => void;
 };
 
-function CalibrationWizard({
+type WizardStep = 'intro' | 'measuring' | 'results';
+type Scope = 'both' | 'rear' | 'front';
+
+export default function CalibrationWizard({
   global,
   activeMachine,
   wheels,
-  calibBase,
-  setCalibBase,
-  calibName,
-  setCalibName,
-  calibDa,
-  setCalibDa,
-  calibDs,
-  setCalibDs,
-  calibCount,
-  setCalibCount,
-  calibRows,
-  setCalibRows,
-  calibResult,
-  setCalibResult,
-  calibError,
-  setCalibError,
-  calibSnapshots,
-  setCalibSnapshots,
-  onApplyCalibration,
+  onSaveProfile,
+  onCancel,
+  jigs,
+  usbs,
 }: CalibrationWizardProps) {
-  const lastSnapshotIdRef = React.useRef<string | null>(null);
-  const parseInputValue = React.useCallback((raw: unknown): number => {
-    if (typeof raw === 'string') {
-      const trimmed = raw.trim();
-      if (trimmed === '') return NaN;
-      const n = Number(trimmed);
-      return Number.isFinite(n) ? n : NaN;
-    }
-    const n = Number(raw);
-    return Number.isFinite(n) ? n : NaN;
-  }, []);
-
-  const ensureCalibRowsLength = React.useCallback(
-    (count: number) => {
-      setCalibRows(prev => {
-        const next = [...prev];
-        while (next.length < count) {
-          next.push({ hn: '', CAo: '' });
-        }
-        return next;
-      });
-    },
-    [setCalibRows]
+  const [step, setStep] = React.useState<WizardStep>('intro');
+  const [scope, setScope] = React.useState<Scope>('both');
+  const [calibName, setCalibName] = React.useState('');
+  const [calibCount, setCalibCount] = React.useState(4);
+  const [calibDa, setCalibDa] = React.useState(12);
+  const [calibDs, setCalibDs] = React.useState(usbs.find(u => u.id === global.activeUsbId)?.Ds ?? 12);
+  
+  const [measIndex, setMeasIndex] = React.useState(0);
+  
+  const [rearRows, setRearRows] = React.useState<CalibrationMeasurement[]>(
+    Array(4).fill({ hn: '', CAo: '' })
+  );
+  const [frontRows, setFrontRows] = React.useState<CalibrationMeasurement[]>(
+    Array(4).fill({ hn: '', CAo: '' })
   );
 
-  const validateInputs = React.useCallback(() => {
-    const missing: string[] = [];
-    const rowsToUse = Array.from({ length: calibCount }, (_, i) => calibRows[i] ?? { hn: '', CAo: '' });
-
-    if (!calibBase) missing.push('Base selection');
-
-    const DaVal = parseInputValue(calibDa);
-    const DsVal = parseInputValue(calibDs);
-    if (!Number.isFinite(DaVal) || DaVal <= 0) missing.push('Axle diameter');
-    if (!Number.isFinite(DsVal) || DsVal <= 0) missing.push('USB diameter');
-
-    let validRowCount = 0;
-    rowsToUse.forEach((row, idx) => {
-      const hnVal = parseInputValue(row.hn);
-      const CAoVal = parseInputValue(row.CAo);
-      const rowLabel = idx + 1;
-      if (!Number.isFinite(hnVal)) missing.push(`Row ${rowLabel} h?`);
-      if (!Number.isFinite(CAoVal)) missing.push(`Row ${rowLabel} CAo`);
-      if (Number.isFinite(hnVal) && Number.isFinite(CAoVal)) validRowCount += 1;
-    });
-
-    if (validRowCount < 2) {
-      missing.push('At least 2 complete measurement rows');
+  React.useEffect(() => {
+    if (rearRows.length !== calibCount) {
+      setRearRows(Array(calibCount).fill({ hn: '', CAo: '' }));
+      setFrontRows(Array(calibCount).fill({ hn: '', CAo: '' }));
     }
+  }, [calibCount, rearRows.length]);
 
-    return { missing, rowsToUse, DaVal, DsVal };
-  }, [calibBase, calibCount, calibDa, calibDs, calibRows, parseInputValue]);
+  const [rearResult, setRearResult] = React.useState<{hc: number, o: number, diagnostics: CalibrationDiagnostics, angleErrorDeg: number | null} | null>(null);
+  const [frontResult, setFrontResult] = React.useState<{hc: number, o: number, diagnostics: CalibrationDiagnostics, angleErrorDeg: number | null} | null>(null);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
-  const handleRunCalibration = React.useCallback(() => {
-    setCalibError(null);
-    setCalibResult(null);
-
-    const { missing, rowsToUse, DaVal, DsVal } = validateInputs();
-    if (missing.length > 0) {
-      setCalibError(`Missing or invalid: ${missing.join(', ')}`);
+  const startMeasuring = () => {
+    if (!calibName.trim()) {
+      alert("Please provide a name for this calibration.");
       return;
     }
+    setStep('measuring');
+    setMeasIndex(0);
+  };
 
-    const Da = DaVal || 12;
-    const Ds = DsVal || global.usbDiameter;
-
-    const result = calibrateBase(rowsToUse, Da, Ds);
-    if (!result) {
-      setCalibError('Need at least two valid hn + CAo rows with numeric values.');
-      return;
+  const nextMeasurement = () => {
+    if (measIndex < calibCount - 1) {
+      setMeasIndex(measIndex + 1);
+    } else {
+      computeResults();
     }
+  };
+  
+  const prevMeasurement = () => {
+    if (measIndex > 0) {
+      setMeasIndex(measIndex - 1);
+    } else {
+      setStep('intro');
+    }
+  };
 
-    // Map residuals back to original row indices used
-    const rowResiduals: { row: number; residual: number }[] = [];
-    let usedIdx = 0;
-    rowsToUse.forEach((row, idx) => {
-      const hnVal = parseInputValue(row.hn);
-      const CAoVal = parseInputValue(row.CAo);
-      if (!Number.isFinite(hnVal) || !Number.isFinite(CAoVal)) return;
-      const residual = result.diagnostics.residuals[usedIdx];
-      rowResiduals.push({ row: idx + 1, residual });
-      usedIdx += 1;
+  const computeResults = () => {
+    setErrorMsg(null);
+    let rRes = null;
+    let fRes = null;
+    
+    if (scope === 'both' || scope === 'rear') {
+      rRes = calibrateBase(rearRows, calibDa, calibDs);
+      if (!rRes) {
+        setErrorMsg("Failed to calibrate rear base. Check inputs.");
+        return;
+      }
+    }
+    if (scope === 'both' || scope === 'front') {
+      fRes = calibrateBase(frontRows, calibDa, calibDs);
+      if (!fRes) {
+        setErrorMsg("Failed to calibrate front base. Check inputs.");
+        return;
+      }
+    }
+    
+    // Estimate angle errors
+    let rAngleError = null;
+    let fAngleError = null;
+    
+    if (rRes) {
+      const dummyMachine: MachineConfig = { ...activeMachine, constants: { ...activeMachine.constants, rear: { hc: rRes.hc, o: rRes.o } } };
+      rAngleError = estimateMaxAngleErrorDeg(rRes.diagnostics, 'rear', global, dummyMachine, wheels, jigs, usbs);
+    }
+    if (fRes) {
+      const dummyMachine: MachineConfig = { ...activeMachine, constants: { ...activeMachine.constants, front: { hc: fRes.hc, o: fRes.o } } };
+      fAngleError = estimateMaxAngleErrorDeg(fRes.diagnostics, 'front', global, dummyMachine, wheels, jigs, usbs);
+    }
+    
+    if (rRes) setRearResult({ hc: rRes.hc, o: rRes.o, diagnostics: rRes.diagnostics, angleErrorDeg: rAngleError });
+    if (fRes) setFrontResult({ hc: fRes.hc, o: fRes.o, diagnostics: fRes.diagnostics, angleErrorDeg: fAngleError });
+    
+    setStep('results');
+  };
+
+  const updateRear = (field: 'hn' | 'CAo', val: string) => {
+    setRearRows(prev => {
+      const next = [...prev];
+      next[measIndex] = { ...next[measIndex], [field]: val };
+      return next;
     });
+  };
 
-    const proposedConstants: MachineConstants = {
-      ...activeMachine.constants,
-      [calibBase as BaseSide]: {
-        hc: result.hc,
-        o: result.o,
-      },
-    } as MachineConstants;
-
-    const machineLike: MachineConfig = {
-      ...activeMachine,
-      constants: proposedConstants,
-    };
-
-    const angleErr = estimateMaxAngleErrorDeg(
-      result.diagnostics,
-      calibBase as BaseSide,
-      global,
-      machineLike,
-      wheels
-    );
-
-    const snapshot: CalibrationSnapshot = {
-      id: `calib-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      base: calibBase as BaseSide,
-      baseTag: calibBase as BaseSide,
+  const updateFront = (field: 'hn' | 'CAo', val: string) => {
+    setFrontRows(prev => {
+      const next = [...prev];
+      next[measIndex] = { ...next[measIndex], [field]: val };
+      return next;
+    });
+  };
+  
+  const handleSave = () => {
+    const profile: CalibrationProfile = {
+      id: crypto.randomUUID(),
       name: calibName.trim(),
-      hc: result.hc,
-      o: result.o,
-      measurements: rowsToUse,
-      diagnostics: result.diagnostics,
-      angleErrorDeg: angleErr,
-      count: result.diagnostics.residuals.length,
-      Da,
-      Ds,
       createdAt: new Date().toISOString(),
+      scope,
+      Da: calibDa,
+      Ds: calibDs,
     };
+    
+    if (rearResult) {
+      profile.rear = {
+        hc: rearResult.hc,
+        o: rearResult.o,
+        diagnostics: rearResult.diagnostics,
+        angleErrorDeg: rearResult.angleErrorDeg,
+        measurements: rearRows,
+      };
+    }
+    
+    if (frontResult) {
+      profile.front = {
+        hc: frontResult.hc,
+        o: frontResult.o,
+        diagnostics: frontResult.diagnostics,
+        angleErrorDeg: frontResult.angleErrorDeg,
+        measurements: frontRows,
+      };
+    }
+    
+    onSaveProfile(profile);
+  };
 
-    lastSnapshotIdRef.current = snapshot.id;
-    setCalibSnapshots(prev => [snapshot, ...prev]);
-
-    setCalibResult({
-      hc: result.hc,
-      o: result.o,
-      diagnostics: result.diagnostics,
-      angleErrorDeg: angleErr,
-      rowResiduals,
-    });
-  }, [activeMachine, calibBase, calibName, global, parseInputValue, setCalibError, setCalibResult, setCalibSnapshots, validateInputs, wheels]);
-
-  const handleApplyCalibration = React.useCallback(() => {
-    if (!calibResult) return;
-    if (!calibBase) return;
-    if (calibResult.angleErrorDeg != null && calibResult.angleErrorDeg > 0.2) return;
-    const fallback = calibSnapshots.find(s => s.base === calibBase)?.id || null;
-    const snapshotId = lastSnapshotIdRef.current || fallback;
-    if (!snapshotId) return;
-    const selected = calibSnapshots.find(s => s.id === snapshotId) || null;
-    const label =
-      selected?.name?.trim() ||
-      selected?.createdAt?.slice(0, 10) ||
-      (calibBase === 'rear' ? 'Rear calibration' : 'Front calibration');
-    const baseLabel = calibBase === 'rear' ? 'rear base' : 'front base';
-    const ok =
-      typeof window === 'undefined'
-        ? true
-        : window.confirm(`Apply "${label}" to ${baseLabel}? This will replace the current constants for that base.`);
-    if (!ok) return;
-    onApplyCalibration(calibBase as BaseSide, snapshotId);
-  }, [calibBase, calibResult, calibSnapshots, onApplyCalibration]);
-
-  const handleReset = React.useCallback(() => {
-    const confirmMsg =
-      'Start over? This will clear entered measurements, any result, and your base/name selection.';
-    if (typeof window !== 'undefined' && !window.confirm(confirmMsg)) return;
-    lastSnapshotIdRef.current = null;
-    setCalibRows([]);
-    setCalibResult(null);
-    setCalibError(null);
-    setCalibBase('');
-    setCalibName('');
-  }, [setCalibBase, setCalibError, setCalibName, setCalibResult, setCalibRows]);
-
-  const hasDraft =
-    Boolean(calibBase) ||
-    Boolean(calibName.trim()) ||
-    calibRows.some(r => (r?.hn ?? '') !== '' || (r?.CAo ?? '') !== '') ||
-    calibResult != null ||
-    calibError != null;
-
-  const validation = validateInputs();
-  const computeInvalid = validation.missing.length > 0;
+  const renderDiagnostic = (a: number | null) => {
+    if (a == null) return <span className="text-neutral-400">Not available</span>;
+    let label = '';
+    let cls = '';
+    if (a <= 0.05) { label = 'Excellent'; cls = 'text-accent'; }
+    else if (a <= 0.1) { label = 'Good'; cls = 'text-accent-soft'; }
+    else if (a <= 0.2) { label = 'Fair'; cls = 'text-warning'; }
+    else { label = 'Poor'; cls = 'text-danger'; }
+    return <span className={cls}>Max error ≈ {a.toFixed(3)}° ({label})</span>;
+  };
 
   return (
-    <section className="panel-card panel-card--strong flex flex-col gap-0 max-w-xl motion-panel">
-      <div className="panel-card__header">
-        <h2 className="text-sm font-semibold u-text panel-header">Calibration wizard (single base)</h2>
-      </div>
-      <div className="panel-card__body flex flex-col gap-3">
-        <p className="text-xs u-text-muted">
-          Use this wizard to solve hc and o for one base. Pick the base, confirm axle/USB diameters,
-          then take 3-5 paired measurements at different heights: h (datum to USB top) and CAo
-          (outer-to-outer span from axle to USB-keep calipers square). Enter the pairs below; CA is
-          computed automatically and the wizard reports the solved constants plus an angle-error
-          estimate for your wheels.
-        </p>
-
-      {/* Base selection */}
-      <div className="flex items-center gap-3 text-xs justify-end text-left">
-        <span className="text-neutral-300">Base to calibrate:</span>
-        <MiniSelect
-          value={calibBase}
-          options={[
-            { value: '', label: 'Select base...' },
-            { value: 'rear', label: 'Rear (edge leading)' },
-            { value: 'front', label: 'Front (edge trailing)' },
-          ]}
-          onChange={val => {
-            const nextBase = val as BaseSide | '';
-            const switchingBase = calibBase && calibBase !== nextBase;
-            const hasCompletedCalib = Boolean(calibResult || lastSnapshotIdRef.current);
-            setCalibBase(nextBase);
-            // Only auto-clear when switching away from a base after a calibration has been run/applied
-            if (switchingBase && hasCompletedCalib) {
-              setCalibRows([]);
-              setCalibResult(null);
-              setCalibError(null);
-              ensureCalibRowsLength(calibCount);
-            }
-          }}
-          align="right"
-          widthClass="w-40"
-          menuWidthClass="w-40"
-        />
+    <section className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 h-full p-4 md:p-6 u-surface rounded shadow">
+      <div className="flex items-center justify-between border-b u-border pb-2">
+        <h2 className="text-lg font-semibold u-text">Calibrate {activeMachine.name}</h2>
+        <button type="button" className="text-xs text-neutral-400 hover:text-neutral-200" onClick={onCancel}>
+          Cancel
+        </button>
       </div>
 
-      <div className="flex items-center gap-3 text-xs justify-end text-left">
-        <span className="text-neutral-300 whitespace-nowrap">Name (optional):</span>
-        <input
-          className="w-40 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs u-focus-ring"
-          value={calibName}
-          onChange={e => setCalibName(e.target.value)}
-          placeholder="e.g. New wheel setup"
-        />
-      </div>
-
-      {/* Measurement count */}
-      <div className="flex items-center gap-3 text-xs justify-end text-left">
-        <span className="text-neutral-300 whitespace-nowrap">Measurements</span>
-        <MiniSelect
-          value={String(calibCount)}
-          options={[
-            { value: '3', label: '3 (fast)' },
-            { value: '4', label: '4 (recommended)' },
-            { value: '5', label: '5 (most robust)' },
-          ]}
-          onChange={val => {
-            const next = parseInt(val, 10) || 4;
-            setCalibCount(next);
-            ensureCalibRowsLength(next);
-          }}
-          align="right"
-          widthClass="w-40"
-          menuWidthClass="w-40"
-        />
-      </div>
-
-      {/* Diameters */}
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <label className="flex flex-col gap-1">
-          <span className="text-neutral-300">
-            Axle diameter Dₐ (mm)
-            <span className="text-neutral-500 text-xs ml-1">(default 12)</span>
-          </span>
-          <input
-            type="number"
-            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-            value={calibDa}
-            onChange={e => setCalibDa(Number(e.target.value) || calibDa)}
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-neutral-300">
-            USB diameter Dₛ (mm)
-            <span className="text-neutral-500 text-xs ml-1">(prefilled, editable)</span>
-          </span>
-          <input
-            type="number"
-            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm"
-            value={calibDs}
-            onChange={e => setCalibDs(Number(e.target.value) || calibDs)}
-          />
-        </label>
-      </div>
-
-      {/* Measurement table */}
-      <div className="flex flex-col gap-1 text-xs">
-        <div className="grid grid-cols-[1.5rem_repeat(3,minmax(0,1fr))] gap-1 font-mono text-[0.7rem] text-neutral-400 text-left items-center">
-          <div>#</div>
-          <div>hₙ (mm)</div>
-          <div>CAo (mm)</div>
-          <div>ε</div>
-        </div>
-        {Array.from({ length: calibCount }, (_, i) => {
-          const row = calibRows[i] ?? { hn: '', CAo: '' };
-          const residualEntry = calibResult?.rowResiduals.find(r => r.row === i + 1);
-          const abs = residualEntry ? Math.abs(residualEntry.residual) : null;
-          let resClass = 'text-neutral-400';
-          let badge = '';
-          if (abs != null) {
-            if (abs > 0.2) {
-              resClass = 'text-danger';
-              badge = ' re-measure';
-            } else if (abs > 0.1) {
-              resClass = 'text-warning';
-              badge = ' check';
-            } else {
-              resClass = 'text-accent';
-            }
-          }
-          return (
-            <div
-              key={i}
-              className="grid grid-cols-[1.5rem_repeat(3,minmax(0,1fr))] gap-1 items-center text-[0.75rem] motion-list-item"
-              style={{ '--motion-order': i } as React.CSSProperties}
-            >
-              <div className="text-neutral-500">{i + 1}</div>
-              <input
-                type="number"
-                className="w-20 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right"
-                value={row.hn}
-                onChange={e =>
-                  setCalibRows(prev => {
-                    const next = [...prev];
-                    while (next.length <= i) {
-                      next.push({ hn: '', CAo: '' });
-                    }
-                    next[i] = { ...next[i], hn: e.target.value };
-                    return next;
-                  })
-                }
-              />
-              <input
-                type="number"
-                className="w-20 rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right"
-                value={row.CAo}
-                onChange={e =>
-                  setCalibRows(prev => {
-                    const next = [...prev];
-                    while (next.length <= i) {
-                      next.push({ hn: '', CAo: '' });
-                    }
-                    next[i] = { ...next[i], CAo: e.target.value };
-                    return next;
-                  })
-                }
-              />
-              <div className={`text-[0.7rem] ${resClass}`}>
-                {residualEntry ? `${residualEntry.residual.toFixed(3)} mm${badge}` : '—'}
+      {step === 'intro' && (
+        <div className="flex flex-col gap-4 max-w-sm">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold u-text">Calibration Name</span>
+            <input
+              type="text"
+              className="input-base w-full"
+              value={calibName}
+              onChange={e => setCalibName(e.target.value)}
+              placeholder="e.g. Original Setup 2026"
+            />
+          </label>
+          
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold u-text">Scope</span>
+            <MiniSelect
+              value={scope}
+              options={[
+                { value: 'both', label: 'Both Bases (Recommended)' },
+                { value: 'rear', label: 'Rear Only' },
+                { value: 'front', label: 'Front Only' },
+              ]}
+              onChange={val => setScope(val as Scope)}
+              widthClass="w-full"
+            />
+          </label>
+          
+          <details className="text-xs text-neutral-400 mt-2">
+            <summary className="cursor-pointer hover:text-neutral-200">Advanced Settings</summary>
+            <div className="flex flex-col gap-3 mt-3 p-3 bg-neutral-900 rounded border u-border">
+              <label className="flex flex-col gap-1">
+                <span>Measurements per base</span>
+                <MiniSelect
+                  value={String(calibCount)}
+                  options={[
+                    { value: '3', label: '3 (fast)' },
+                    { value: '4', label: '4 (recommended)' },
+                    { value: '5', label: '5 (most robust)' },
+                  ]}
+                  onChange={val => setCalibCount(parseInt(val, 10))}
+                  widthClass="w-full"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1">
+                  <span>Axle Dₐ (mm)</span>
+                  <input type="number" className="input-base px-2 py-1" value={calibDa} onChange={e => setCalibDa(Number(e.target.value) || calibDa)} />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span>USB Dₛ (mm)</span>
+                  <input type="number" className="input-base px-2 py-1" value={calibDs} onChange={e => setCalibDs(Number(e.target.value) || calibDs)} />
+                </label>
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Actions and results */}
-      <div className="flex flex-col gap-2 text-xs">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className={BTN.primaryFlat}
-              onClick={handleRunCalibration}
-              disabled={computeInvalid}
-              aria-disabled={computeInvalid}
-            >
-              Compute hc &amp; o
+          </details>
+          
+          <div className="mt-4 flex justify-end">
+            <button type="button" className={BTN.primary} onClick={startMeasuring}>
+              Start Measurements
             </button>
-            {calibResult && (
-              <button
-                type="button"
-                className={BTN.base}
-                disabled={
-                  !calibBase ||
-                  (calibResult.angleErrorDeg != null && calibResult.angleErrorDeg > 0.2)
-                }
-                onClick={handleApplyCalibration}
-              >
-                Apply to{' '}
-                {calibBase === 'rear' ? 'rear base' : calibBase === 'front' ? 'front base' : 'base'}
-              </button>
-            )}
           </div>
-          <button
-            type="button"
-            className={BTN.ghost}
-            onClick={handleReset}
-            disabled={!hasDraft}
-          >
-            Start over
-          </button>
         </div>
+      )}
 
-        {calibError && <div className="text-danger text-xs">Error: {calibError}</div>}
-
-        {calibResult && (
-          <div className="border border-neutral-700 rounded p-2 flex flex-col gap-1 motion-card">
-            <div className="text-neutral-200">
-              Proposed constants for {calibBase === 'rear' ? 'rear' : 'front'} base:
-            </div>
-            <div className="font-mono text-[0.8rem]">
-              hc = {calibResult.hc.toFixed(3)} mm, o = {calibResult.o.toFixed(3)} mm
-            </div>
-            <div className="text-neutral-300 text-[0.75rem]">
-            Max ε in hₙ: {calibResult.diagnostics.maxAbsResidualMm.toFixed(3)} mm
-            </div>
-            <div className="text-[0.75rem]">
-              {(() => {
-                const a = calibResult.angleErrorDeg;
-                if (a == null) {
-                  return (
-                    <span className="text-neutral-400">
-                      Angle error estimate not available (derivative too small).
-                    </span>
-                  );
-                }
-                let label = '';
-                let cls = '';
-                if (a <= 0.05) {
-                  label = 'Excellent';
-                  cls = 'text-accent';
-                } else if (a <= 0.1) {
-                  label = 'Good';
-                  cls = 'text-accent-soft';
-                } else if (a <= 0.2) {
-                  label = 'Fair';
-                  cls = 'text-warning';
-                } else {
-                  label = 'Poor';
-                  cls = 'text-danger';
-                }
-                return (
-                  <span className={cls}>
-                    Estimated worst-case angle error over your wheels ≈ {a.toFixed(3)}° ({label}).{' '}
-                    If &gt; 0.10°, consider re-measuring.
-                  </span>
-                );
-              })()}
-            </div>
+      {step === 'measuring' && (
+        <div className="flex flex-col gap-4 max-w-sm">
+          <div className="text-sm font-semibold u-text flex justify-between">
+            <span>Measurement {measIndex + 1} of {calibCount}</span>
           </div>
-        )}
-      </div>
-      </div>
+          
+          <div className="p-3 bg-neutral-900 border border-primary/30 rounded text-xs text-neutral-300">
+            Set your USB to a <strong>{measIndex === 0 ? 'low' : measIndex === calibCount - 1 ? 'high' : 'medium'}</strong> height and lock the nut.
+            {(scope === 'both') && " Measure the Rear base first, then move the USB to the Front base without adjusting the nut."}
+          </div>
+          
+          {(scope === 'both' || scope === 'rear') && (
+            <div className="card-elevated p-3 flex flex-col gap-2 border-l-2 border-l-blue-500">
+              <h3 className="text-sm font-semibold text-blue-400">Rear Base</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className="text-neutral-400">hₙ (Casing to USB top)</span>
+                  <input type="number" className="input-base" placeholder="mm" value={rearRows[measIndex]?.hn} onChange={e => updateRear('hn', e.target.value)} />
+                </label>
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className="text-neutral-400">CAₒ (Axle to USB top)</span>
+                  <input type="number" className="input-base" placeholder="mm" value={rearRows[measIndex]?.CAo} onChange={e => updateRear('CAo', e.target.value)} />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {(scope === 'both' || scope === 'front') && (
+            <div className="card-elevated p-3 flex flex-col gap-2 border-l-2 border-l-emerald-500">
+              <h3 className="text-sm font-semibold text-emerald-400">Front Base</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className="text-neutral-400">hₙ (Casing to USB top)</span>
+                  <input type="number" className="input-base" placeholder="mm" value={frontRows[measIndex]?.hn} onChange={e => updateFront('hn', e.target.value)} />
+                </label>
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className="text-neutral-400">CAₒ (Axle to USB top)</span>
+                  <input type="number" className="input-base" placeholder="mm" value={frontRows[measIndex]?.CAo} onChange={e => updateFront('CAo', e.target.value)} />
+                </label>
+              </div>
+            </div>
+          )}
+          
+          {errorMsg && <div className="text-danger text-xs">{errorMsg}</div>}
+
+          <div className="flex justify-between mt-4">
+            <button type="button" className={BTN.ghost} onClick={prevMeasurement}>
+              Back
+            </button>
+            <button type="button" className={BTN.primary} onClick={nextMeasurement}>
+              {measIndex < calibCount - 1 ? 'Next Height' : 'Compute Results'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 'results' && (
+        <div className="flex flex-col gap-4 max-w-sm">
+          <h3 className="text-sm font-semibold u-text">Calibration Results</h3>
+          
+          {rearResult && (
+            <div className="card-elevated p-3 flex flex-col gap-1 border-l-2 border-l-blue-500 text-xs">
+              <span className="font-semibold text-blue-400">Rear Base</span>
+              <span className="font-mono mt-1">hc = {rearResult.hc.toFixed(3)}, o = {rearResult.o.toFixed(3)}</span>
+              <span className="text-neutral-400 mt-1">Max Residual: {rearResult.diagnostics.maxAbsResidualMm.toFixed(3)} mm</span>
+              {renderDiagnostic(rearResult.angleErrorDeg)}
+            </div>
+          )}
+          
+          {frontResult && (
+            <div className="card-elevated p-3 flex flex-col gap-1 border-l-2 border-l-emerald-500 text-xs">
+              <span className="font-semibold text-emerald-400">Front Base</span>
+              <span className="font-mono mt-1">hc = {frontResult.hc.toFixed(3)}, o = {frontResult.o.toFixed(3)}</span>
+              <span className="text-neutral-400 mt-1">Max Residual: {frontResult.diagnostics.maxAbsResidualMm.toFixed(3)} mm</span>
+              {renderDiagnostic(frontResult.angleErrorDeg)}
+            </div>
+          )}
+          
+          <div className="flex justify-between mt-4">
+            <button type="button" className={BTN.ghost} onClick={() => setStep('measuring')}>
+              Back
+            </button>
+            <button type="button" className={BTN.primary} onClick={handleSave}>
+              Save &amp; Apply
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
-
-export default CalibrationWizard;

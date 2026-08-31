@@ -1,3 +1,4 @@
+import { computeWheelResults } from "./math/tormek";
 // ==============================================================================
 // UWGAS (Universal Wet Grinder Angle Setter)
 // Precision Tormek / Wet Grinder USB Height Calculator
@@ -5,7 +6,6 @@
 
 import * as React from 'react';
 import { IconKebab } from './icons';
-import CalibrationWizard from './components/CalibrationWizard';
 import ImportExportPanel from './components/ImportExportPanel';
 import GlossaryPage from './components/GlossaryPage';
 import ProgressionView from './components/ProgressionView';
@@ -16,41 +16,26 @@ import ProgressionEditor from './components/calculator/ProgressionEditor';
 import WheelManagerView from './components/wheels/WheelManagerView';
 import PresetManagerModal from './components/presets/PresetManagerModal';
 import SavePresetDialog from './components/presets/SavePresetDialog';
-import MachineConstantsCard from './components/settings/MachineConstantsCard';
+import MachineManagerView from './components/settings/MachineManagerView';
+import HardwareManagerView from './components/settings/HardwareManagerView';
 import useModalLayout from './hooks/useModalLayout';
 
-import type {
-  BaseSide,
-  CalibrationDiagnostics,
-  CalibrationMeasurement,
-  CalibrationSnapshot,
+import type { JigConfig, UsbConfig,
   GlobalState,
   MachineConfig,
-  MachineConstants,
-  PresetStepRef,
+  
   SessionPreset,
   SessionStep,
   Wheel,
 } from './types/core';
-import { _nz } from './utils/numbers';
 import {
-  isObject,
-  normalizeCalibrationSnapshots,
-  normalizeSessionStep,
   normalizeWheel,
 } from './utils/normalizers';
-import { PERSIST_VERSION, _load, _save } from './state/storage';
-import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS } from './state/defaults';
-import { computeWheelResults, computeTonHeights } from './math/tormek';
+import { _load, readPersistedState, writePersistedState } from './state/storage';
+import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS, DEFAULT_JIGS, DEFAULT_USBS } from './state/defaults';
 import { BTN } from './ui/buttons';
 import { APP_VERSION, APP_VERSION_DISPLAY } from './version';
 
-type PartialConstants = {
-  rear?: Partial<MachineConstants['rear']>;
-  front?: Partial<MachineConstants['front']>;
-};
-
-type RawAppliedIds = { rear?: string; front?: string };
 
 type ImportSections = {
   global: boolean;
@@ -59,8 +44,6 @@ type ImportSections = {
   sessionSteps: boolean;
   sessionPresets: boolean;
   heightMode: boolean;
-  calibSnapshots: boolean;
-  calibAppliedIds: boolean;
 };
 
 type ImportModes = {
@@ -69,17 +52,16 @@ type ImportModes = {
 
 export default function App() {
   // ======= Core state =======
-  const [global, setGlobal] = React.useState<GlobalState>(() =>
-    _load('t_global', DEFAULT_GLOBAL)
-  );
-
-  const [constants, setConstants] = React.useState<MachineConstants>(() =>
-    _load('t_constants', DEFAULT_CONSTANTS)
-  );
-
+  const [initialState] = React.useState(() => readPersistedState());
+  const [global, setGlobal] = React.useState<GlobalState>(initialState.global);
+  const [machines, setMachines] = React.useState<MachineConfig[]>(initialState.machines || []);
+  const [defaultMachineId, setDefaultMachineId] = React.useState<string | undefined>(initialState.defaultMachineId);
+  const [jigs, setJigs] = React.useState<JigConfig[]>(initialState.jigs);
+  const [usbs, setUsbs] = React.useState<UsbConfig[]>(initialState.usbs);
+  
   const [wheels, setWheels] = React.useState<Wheel[]>(() => {
     const seen = new Set<string>();
-    return _load('t_wheels', DEFAULT_WHEELS)
+    return initialState.wheels
       .map(normalizeWheel)
       .filter(w => {
         if (seen.has(w.id)) return false;
@@ -88,23 +70,33 @@ export default function App() {
       });
   });
 
-  const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(() =>
-    _load('t_sessionSteps', [])
-  );
+  const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(initialState.sessionSteps);
+  const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(initialState.sessionPresets);
+  const [heightMode, setHeightMode] = React.useState<'hn' | 'hr'>(initialState.heightMode || 'hn');
 
-  const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(() =>
-    _load('t_sessionPresets', [])
-  );
 
-  const [heightMode, setHeightMode] = React.useState<'hn' | 'hr'>(() => {
-    const val = _load<'hn' | 'hr'>('t_heightMode', 'hn');
-    return val === 'hr' ? 'hr' : 'hn';
-  });
+
+  // Persistence effect
+  React.useEffect(() => {
+    writePersistedState({
+      version: 5,
+      global,
+      machines,
+      defaultMachineId,
+      jigs,
+      usbs,
+      wheels,
+      sessionSteps,
+      sessionPresets,
+      heightMode,
+    });
+  }, [global, machines, defaultMachineId, jigs, usbs, wheels, sessionSteps, sessionPresets, heightMode]);
 
   // ======= Navigation & UI States =======
+
   const [view, setView] = React.useState<'calculator' | 'wheels' | 'settings'>('calculator');
   const [settingsView, setSettingsView] = React.useState<
-    'machine' | 'calibration' | 'import' | 'glossary' | 'themelab'
+    'machine' | 'hardware' | 'calibration' | 'import' | 'glossary' | 'themelab'
   >('machine');
 
   const showDevHeader = import.meta.env.DEV;
@@ -125,6 +117,30 @@ export default function App() {
   const [isProgressionMenuClosing, setIsProgressionMenuClosing] = React.useState(false);
   const progressionMenuRef = React.useRef<HTMLDivElement | null>(null);
 
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (
+        isProgressionMenuVisible &&
+        progressionMenuRef.current &&
+        !progressionMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsProgressionMenuClosing(true);
+        setTimeout(() => {
+          setIsProgressionMenuVisible(false);
+          setIsProgressionMenuClosing(false);
+        }, 160);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isProgressionMenuVisible]);
+
   // Import / Export sections
   const [exportSections, setExportSections] = React.useState<ImportSections>({
     global: true,
@@ -133,8 +149,6 @@ export default function App() {
     sessionSteps: true,
     sessionPresets: true,
     heightMode: true,
-    calibSnapshots: true,
-    calibAppliedIds: true,
   });
 
   const [importSections, setImportSections] = React.useState<ImportSections>({
@@ -144,8 +158,6 @@ export default function App() {
     sessionSteps: true,
     sessionPresets: true,
     heightMode: true,
-    calibSnapshots: true,
-    calibAppliedIds: true,
   });
 
   const [importModes, setImportModes] = React.useState<ImportModes>({
@@ -155,8 +167,6 @@ export default function App() {
     sessionSteps: 'merge',
     sessionPresets: 'merge',
     heightMode: 'merge',
-    calibSnapshots: 'merge',
-    calibAppliedIds: 'merge',
   });
 
   // Modal layout styles
@@ -164,88 +174,10 @@ export default function App() {
     useModalLayout();
 
   // Calibration state
-  const [calibBase, setCalibBase] = React.useState<BaseSide | ''>('');
-  const [calibName, setCalibName] = React.useState<string>('');
-  const [calibDa, setCalibDa] = React.useState<number>(12);
-  const [calibDs, setCalibDs] = React.useState<number>(DEFAULT_GLOBAL.usbDiameter);
-  const [calibCount, setCalibCount] = React.useState<number>(4);
-  const [calibRows, setCalibRows] = React.useState<CalibrationMeasurement[]>(() => []);
-  const [calibResult, setCalibResult] = React.useState<{
-    hc: number;
-    o: number;
-    diagnostics: CalibrationDiagnostics;
-    angleErrorDeg: number | null;
-    rowResiduals: { row: number; residual: number }[];
-  } | null>(null);
-  const [calibError, setCalibError] = React.useState<string | null>(null);
-  const [calibSnapshots, setCalibSnapshots] = React.useState<CalibrationSnapshot[]>(() => {
-    const legacy = _load<CalibrationSnapshot | null>('t_calibSnapshot', null);
-    const list = _load<CalibrationSnapshot[]>('t_calibSnapshots', []);
-    const items = list && list.length ? list : legacy ? [legacy] : [];
-    return normalizeCalibrationSnapshots(items);
-  });
-  const [calibAppliedIds, setCalibAppliedIds] = React.useState<{ rear: string; front: string }>(
-    () => _load('t_calibAppliedIds', { rear: '', front: '' })
-  );
-
-  // Persistence effects
-  React.useEffect(() => {
-    _save('t_global', global);
-  }, [global]);
-
-  React.useEffect(() => {
-    _save('t_constants', constants);
-  }, [constants]);
-
-  React.useEffect(() => {
-    _save('t_wheels', wheels);
-  }, [wheels]);
-
-  React.useEffect(() => {
-    _save('t_sessionSteps', sessionSteps);
-  }, [sessionSteps]);
-
-  React.useEffect(() => {
-    _save('t_sessionPresets', sessionPresets);
-  }, [sessionPresets]);
-
-  React.useEffect(() => {
-    _save('t_heightMode', heightMode);
-  }, [heightMode]);
-
-  React.useEffect(() => {
-    _save('t_calibSnapshots', calibSnapshots);
-  }, [calibSnapshots]);
-
-  React.useEffect(() => {
-    _save('t_calibAppliedIds', calibAppliedIds);
-  }, [calibAppliedIds]);
+  
+  
 
   // ======= Calculations & Machine Configuration =======
-  const effectiveConstants = React.useMemo(() => {
-    const next = { ...constants };
-    const rearSnap = calibSnapshots.find(s => s.id === calibAppliedIds.rear);
-    const frontSnap = calibSnapshots.find(s => s.id === calibAppliedIds.front);
-    if (rearSnap && Number.isFinite(rearSnap.hc) && Number.isFinite(rearSnap.o)) {
-      next.rear = { hc: rearSnap.hc, o: rearSnap.o };
-    }
-    if (frontSnap && Number.isFinite(frontSnap.hc) && Number.isFinite(frontSnap.o)) {
-      next.front = { hc: frontSnap.hc, o: frontSnap.o };
-    }
-    return next;
-  }, [calibAppliedIds.front, calibAppliedIds.rear, calibSnapshots, constants]);
-
-  const activeMachine: MachineConfig = React.useMemo(
-    () => ({
-      id: 'machine-1',
-      name: 'Default machine',
-      constants: effectiveConstants,
-      usbDiameter: global.usbDiameter,
-      jigDiameter: global.jig.Dj,
-    }),
-    [effectiveConstants, global.jig.Dj, global.usbDiameter]
-  );
-
   const targetAngleSymbol = 'θ';
   const effectiveAngleSymbol = 'γ';
   const progressionBodyPaddingX = 'px-3';
@@ -253,266 +185,114 @@ export default function App() {
   const progressionBodyGap = 'gap-2';
 
   const wheelResults = React.useMemo(
-    () => computeWheelResults(wheels, sessionSteps, global, activeMachine),
-    [activeMachine, global, sessionSteps, wheels]
+    () => computeWheelResults(wheels, sessionSteps, global, machines, jigs, usbs, defaultMachineId),
+    [machines, defaultMachineId, global, sessionSteps, wheels]
   );
 
-  const appliedCalibrationByBase = React.useMemo(
-    () => ({
-      rear: calibSnapshots.find(s => s.id === calibAppliedIds.rear) || null,
-      front: calibSnapshots.find(s => s.id === calibAppliedIds.front) || null,
-    }),
-    [calibAppliedIds.front, calibAppliedIds.rear, calibSnapshots]
-  );
-
-  const estimatedAngleErrorByResultId = React.useMemo(() => {
-    const map: Record<string, number | null> = {};
-    const A = _nz(global.projection);
-    const beta = _nz(global.targetAngle);
-    const Dj = activeMachine.jigDiameter;
-    const Ds = activeMachine.usbDiameter;
-    const delta = 0.05;
-
-    for (const r of wheelResults) {
-      const key = r.step?.id ?? r.wheel.id;
-      const base: BaseSide = r.step?.base === 'front' ? 'front' : 'rear';
-      const snap = base === 'front' ? appliedCalibrationByBase.front : appliedCalibrationByBase.rear;
-      const rawResidual = snap?.diagnostics?.maxAbsResidualMm;
-      const residualMm = Number.isFinite(rawResidual) ? Math.abs(Number(rawResidual)) : null;
-      const Draw = _nz(r.wheel.D, 250);
-      const D = Draw > 0 ? Draw : 250;
-
-      if (residualMm === null) {
-        map[key] = null;
-        continue;
-      }
-
-      const baseInput = {
-        base,
-        D,
-        A,
-        betaDeg: beta,
-        Dj,
-        Ds,
-        constants: activeMachine.constants,
-      } as const;
-
-      const hnPlus = computeTonHeights({ ...baseInput, betaDeg: beta + delta }).hn;
-      const hnMinus = computeTonHeights({ ...baseInput, betaDeg: beta - delta }).hn;
-      const dHn_dBeta = (hnPlus - hnMinus) / (2 * delta);
-
-      if (Math.abs(dHn_dBeta) < 1e-6) {
-        map[key] = null;
-        continue;
-      }
-
-      map[key] = Math.abs(residualMm / dHn_dBeta);
-    }
-
-    return map;
-  }, [
-    activeMachine.constants,
-    activeMachine.jigDiameter,
-    activeMachine.usbDiameter,
-    appliedCalibrationByBase.front,
-    appliedCalibrationByBase.rear,
-    global.projection,
-    global.targetAngle,
-    wheelResults,
-  ]);
-
-  // ======= Step & Progression Handlers =======
-  const handleAddStep = () => {
-    if (wheels.length === 0) return;
-    const firstWheel = wheels[0];
-    const newStep: SessionStep = {
-      id: `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      wheelId: firstWheel.id,
-      base: firstWheel.isHoning ? 'front' : firstWheel.baseForHn,
-      angleOffset: 0,
-    };
-    setSessionSteps(prev => [...prev, newStep]);
+  
+  
+  
+  const handleAddWheel = (wheel: Omit<Wheel, 'id'>) => {
+    setWheels(prev => [...prev, { ...wheel, id: crypto.randomUUID() }]);
   };
-
-  const handleLoadDefaultProgression = React.useCallback(() => {
-    const grindWheel = wheels.find(w => !w.isHoning) || wheels[0];
-    const honeWheel = wheels.find(w => w.isHoning) || wheels[1] || wheels[0];
-
-    const steps: SessionStep[] = [];
-    if (grindWheel) {
-      steps.push({
-        id: `step-${Date.now()}-grind`,
-        wheelId: grindWheel.id,
-        base: 'rear',
-        angleOffset: 0,
-      });
-    }
-    if (honeWheel && honeWheel.id !== grindWheel?.id) {
-      steps.push({
-        id: `step-${Date.now()}-hone`,
-        wheelId: honeWheel.id,
-        base: 'front',
-        angleOffset: 0.2, // standard +0.2° honing bump
-      });
-    }
-
-    setSessionSteps(steps);
-  }, [wheels]);
-
-  const handleUpdateStep = (id: string, patch: Partial<SessionStep>) => {
-    setSessionSteps(prev => prev.map(s => (s.id === id ? { ...s, ...patch } : s)));
+  const handleDeleteWheel = (id: string) => {
+    setWheels(prev => prev.filter(w => w.id !== id));
   };
-
-  const handleDeleteStep = (id: string) => {
-    setSessionSteps(prev => prev.filter(s => s.id !== id));
-  };
-
-  const handleMoveStep = (index: number, delta: -1 | 1) => {
-    setSessionSteps(prev => {
-      const next = [...prev];
-      const newIndex = index + delta;
-      if (newIndex < 0 || newIndex >= next.length) return prev;
-      const [item] = next.splice(index, 1);
-      next.splice(newIndex, 0, item);
-      return next;
-    });
-  };
-
-  // ======= Wheel Manager Handlers =======
-  const handleAddWheel = (draft: Omit<Wheel, 'id'>) => {
-    const id = `wheel-${Date.now()}`;
-    const newWheel: Wheel = {
-      id,
-      name: draft.name.trim(),
-      D: Math.round(draft.D * 100) / 100,
-      DText: draft.DText?.trim() ?? '',
-      angleOffset: draft.angleOffset ?? 0,
-      baseForHn: draft.isHoning ? 'front' : draft.baseForHn,
-      isHoning: draft.isHoning,
-      grit: draft.grit?.trim() ?? '',
-    };
-    setWheels(prev => [...prev, newWheel]);
-  };
+  
+  const handleUpdateJig = (id: string, patch: Partial<JigConfig>) => setJigs(prev => prev.map(j => j.id === id ? { ...j, ...patch } : j));
+  const handleAddJig = (j: JigConfig) => setJigs(prev => [...prev, j]);
+  const handleDeleteJig = (id: string) => setJigs(prev => prev.filter(j => j.id !== id));
+  
+  const handleUpdateUsb = (id: string, patch: Partial<UsbConfig>) => setUsbs(prev => prev.map(u => u.id === id ? { ...u, ...patch } : u));
+  const handleAddUsb = (u: UsbConfig) => setUsbs(prev => [...prev, u]);
+  const handleDeleteUsb = (id: string) => setUsbs(prev => prev.filter(u => u.id !== id));
 
   const handleUpdateWheel = (id: string, patch: Partial<Wheel>) => {
     setWheels(prev => prev.map(w => (w.id === id ? { ...w, ...patch } : w)));
   };
 
-  const handleDeleteWheel = (id: string) => {
-    const target = wheels.find(w => w.id === id);
-    if (!target) return;
-    if (!window.confirm(`Delete wheel "${target.name}"?`)) return;
-
-    setWheels(prev => prev.filter(w => w.id !== id));
-    setSessionSteps(prev => prev.filter(step => step.wheelId !== id));
+  const handleAddStep = () => {
+    setSessionSteps(prev => [...prev, {
+      id: crypto.randomUUID(),
+      wheelId: wheels[0]?.id ?? '',
+      base: 'front',
+      angleOffset: 0
+    }]);
+  };
+  const handleDeleteStep = (id: string) => {
+    setSessionSteps(prev => prev.filter(s => s.id !== id));
+  };
+  const handleUpdateStep = (id: string, patch: Partial<SessionStep>) => {
+    setSessionSteps(prev => prev.map(s => (s.id === id ? { ...s, ...patch } : s)));
+  };
+  const handleMoveStep = (index: number, direction: -1 | 1) => {
+    setSessionSteps(prev => {
+      const next = [...prev];
+      if (index + direction < 0 || index + direction >= next.length) return next;
+      const temp = next[index];
+      next[index] = next[index + direction];
+      next[index + direction] = temp;
+      return next;
+    });
+  };
+  const handleLoadDefaultProgression = () => {
+    if (wheels.length > 0) {
+      setSessionSteps([{
+        id: crypto.randomUUID(),
+        wheelId: wheels[0].id,
+        base: 'front',
+        angleOffset: 0
+      }]);
+    } else {
+      setSessionSteps([]);
+    }
   };
 
-  // ======= Preset Handlers =======
-  const handleLoadPreset = (presetId: string) => {
-    const preset = sessionPresets.find(p => p.id === presetId);
-    if (!preset) return;
-
-    const resolvedSteps: SessionStep[] = [];
-    for (const ref of preset.steps) {
-      const wheel =
-        wheels.find(w => w.id === ref.wheelId) ||
-        wheels.find(w => w.name === ref.wheelName);
-      if (!wheel) continue;
-
-      resolvedSteps.push({
-        id: `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        wheelId: wheel.id,
-        base: ref.base,
-        angleOffset: ref.angleOffset,
-      });
-    }
-
-    if (resolvedSteps.length > 0) {
-      setSessionSteps(resolvedSteps);
-      setSelectedPresetId(preset.id);
-    }
-  };
-
-  const handleSavePreset = () => {
-    const name = presetNameDraft.trim();
-    if (!name || sessionSteps.length === 0) return;
-
-    if (sessionPresets.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-      window.alert('A preset with that name already exists. Choose a different name.');
-      return;
-    }
-
-    const presetSteps: PresetStepRef[] = sessionSteps
-      .map(step => {
-        const wheel = wheels.find(w => w.id === step.wheelId);
-        if (!wheel) return null;
-        return {
-          wheelId: wheel.id,
-          wheelName: wheel.name,
-          base: step.base,
-          angleOffset: step.angleOffset,
-        } as PresetStepRef;
-      })
-      .filter((x): x is PresetStepRef => x !== null);
-
-    if (presetSteps.length === 0) return;
-
-    const newPreset: SessionPreset = {
-      id: `preset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      name,
-      createdAt: new Date().toISOString(),
-      version: 1,
-      steps: presetSteps,
-    };
-
-    setSessionPresets(prev => [...prev, newPreset]);
-    setSelectedPresetId(newPreset.id);
-    setIsPresetDialogOpen(false);
-    setPresetNameDraft('');
-  };
-
-  const handleDeletePreset = (id: string) => {
+  const handleLoadPreset = (id: string) => {
     const preset = sessionPresets.find(p => p.id === id);
     if (!preset) return;
-    if (!window.confirm(`Delete preset "${preset.name}"?`)) return;
-
+    
+    setSessionSteps(preset.steps.map(s => ({
+      id: crypto.randomUUID(),
+      wheelId: s.wheelId,
+      base: s.base,
+      angleOffset: s.angleOffset,
+      machineId: s.machineId,
+      usbId: s.usbId
+    })));
+  };
+  const handleDeletePreset = (id: string) => {
     setSessionPresets(prev => prev.filter(p => p.id !== id));
-    if (selectedPresetId === id) setSelectedPresetId('');
   };
-
   const handleRenamePreset = (id: string, newName: string) => {
-    setSessionPresets(prev =>
-      prev.map(p => (p.id === id ? { ...p, name: newName } : p))
-    );
+    setSessionPresets(prev => prev.map(p => (p.id === id ? { ...p, name: newName } : p)));
+  };
+  const handleSavePreset = () => {
+    if (!presetNameDraft.trim()) return;
+    setSessionPresets(prev => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: presetNameDraft.trim(),
+        createdAt: new Date().toISOString(),
+        version: 1,
+                steps: sessionSteps.map(s => {
+          const w = wheels.find(wx => wx.id === s.wheelId);
+          return {
+            wheelId: s.wheelId,
+            wheelName: w ? w.name : 'Unknown Wheel',
+            base: s.base,
+            angleOffset: s.angleOffset,
+            machineId: s.machineId,
+            usbId: s.usbId
+          };
+        }),
+      },
+    ]);
+    setIsPresetDialogOpen(false);
   };
 
-  // ======= Import / Export =======
-  const exportBundle = React.useMemo(
-    () => ({
-      version: PERSIST_VERSION,
-      ...(exportSections.global ? { global } : {}),
-      ...(exportSections.constants ? { constants } : {}),
-      ...(exportSections.wheels ? { wheels } : {}),
-      ...(exportSections.sessionSteps ? { sessionSteps } : {}),
-      ...(exportSections.sessionPresets ? { sessionPresets } : {}),
-      ...(exportSections.heightMode ? { heightMode } : {}),
-      ...(exportSections.calibSnapshots ? { calibSnapshots } : {}),
-      ...(exportSections.calibAppliedIds ? { calibAppliedIds } : {}),
-    }),
-    [
-      exportSections,
-      calibAppliedIds,
-      calibSnapshots,
-      constants,
-      global,
-      heightMode,
-      sessionPresets,
-      sessionSteps,
-      wheels,
-    ]
-  );
-
-  const exportText = React.useMemo(() => JSON.stringify(exportBundle, null, 2), [exportBundle]);
+  const exportText = React.useMemo(() => JSON.stringify(null, null, 2), []);
 
   const handleImportText = React.useCallback(
     (raw: string) => {
@@ -522,183 +302,83 @@ export default function App() {
       } catch {
         return { error: 'Import failed: invalid JSON.' };
       }
-      if (!isObject(parsed)) return { error: 'Import failed: expected a JSON object.' };
+      if (typeof parsed !== 'object' || parsed === null) {
+        return { error: 'Import failed: not an object.' };
+      }
+      
       const parsedObj = parsed as Record<string, unknown>;
-
-      const nextGlobal = isObject(parsedObj.global)
-        ? { ...DEFAULT_GLOBAL, ...(parsedObj.global as Partial<GlobalState>) }
-        : DEFAULT_GLOBAL;
-
-      const parsedConstants = isObject(parsedObj.constants)
-        ? (parsedObj.constants as PartialConstants)
-        : null;
-
-      const nextConstants: MachineConstants = parsedConstants
-        ? {
-            rear: {
-              hc: _nz(parsedConstants.rear?.hc, DEFAULT_CONSTANTS.rear.hc),
-              o: _nz(parsedConstants.rear?.o, DEFAULT_CONSTANTS.rear.o),
-            },
-            front: {
-              hc: _nz(parsedConstants.front?.hc, DEFAULT_CONSTANTS.front.hc),
-              o: _nz(parsedConstants.front?.o, DEFAULT_CONSTANTS.front.o),
-            },
-          }
-        : DEFAULT_CONSTANTS;
-
-      const nextWheels = Array.isArray(parsedObj.wheels)
-        ? parsedObj.wheels.map(normalizeWheel)
-        : [];
-
-      const nextSteps = Array.isArray(parsedObj.sessionSteps)
-        ? parsedObj.sessionSteps.map(normalizeSessionStep)
-        : [];
-
-      const nextPresets = Array.isArray(parsedObj.sessionPresets)
-        ? (parsedObj.sessionPresets as SessionPreset[])
-        : [];
-
-      const nextHeightMode = parsedObj.heightMode === 'hr' ? 'hr' : 'hn';
-      const nextSnapshots = normalizeCalibrationSnapshots(
-        Array.isArray(parsedObj.calibSnapshots) ? parsedObj.calibSnapshots : []
-      );
-
-      const appliedRaw = isObject(parsedObj.calibAppliedIds)
-        ? (parsedObj.calibAppliedIds as RawAppliedIds)
-        : null;
-      const nextApplied = {
-        rear: typeof appliedRaw?.rear === 'string' ? appliedRaw.rear : '',
-        front: typeof appliedRaw?.front === 'string' ? appliedRaw.front : '',
-      };
-
+      
       const mergeMapById = <T extends { id: string }>(current: T[], incoming: T[]) => {
         const map = new Map<string, T>();
-        current.forEach(item => {
-          if (item && item.id) map.set(item.id, item);
-        });
-        incoming.forEach(item => {
-          if (item && item.id) map.set(item.id, item);
-        });
+        current.forEach(item => { if (item && item.id) map.set(item.id, item); });
+        incoming.forEach(item => { if (item && item.id) map.set(item.id, item); });
         return Array.from(map.values());
       };
 
       const appliedSummary: string[] = [];
 
-      if (importSections.global) {
+      if (importSections.global && typeof parsedObj.global === 'object' && parsedObj.global !== null) {
         if (importModes.global === 'overwrite') {
-          setGlobal(nextGlobal);
+          setGlobal(prev => ({ ...prev, ...(parsedObj.global as Partial<GlobalState>) }));
           appliedSummary.push('global: overwrite');
         } else {
-          setGlobal(prev => ({ ...prev, ...nextGlobal }));
+          setGlobal(prev => ({ ...prev, ...(parsedObj.global as Partial<GlobalState>) }));
           appliedSummary.push('global: merge');
         }
       }
 
-      if (importSections.constants) {
+      if (importSections.constants && Array.isArray(parsedObj.machines)) {
         if (importModes.constants === 'overwrite') {
-          setConstants(nextConstants);
-          appliedSummary.push('constants: overwrite');
+          setMachines(parsedObj.machines as MachineConfig[]);
+          appliedSummary.push('machines: overwrite');
         } else {
-          setConstants(prev => ({
-            rear: {
-              hc: _nz(nextConstants.rear.hc, prev.rear.hc),
-              o: _nz(nextConstants.rear.o, prev.rear.o),
-            },
-            front: {
-              hc: _nz(nextConstants.front.hc, prev.front.hc),
-              o: _nz(nextConstants.front.o, prev.front.o),
-            },
-          }));
-          appliedSummary.push('constants: merge');
+          setMachines(prev => mergeMapById(prev, parsedObj.machines as MachineConfig[]));
+          appliedSummary.push('machines: merge');
+        }
+        if (typeof parsedObj.defaultMachineId === 'string') {
+          setDefaultMachineId(parsedObj.defaultMachineId);
         }
       }
 
-      if (importSections.wheels) {
+      if (importSections.wheels && Array.isArray(parsedObj.wheels)) {
         if (importModes.wheels === 'overwrite') {
-          setWheels(nextWheels);
-          appliedSummary.push(`wheels: overwrite (${nextWheels.length})`);
+          setWheels(parsedObj.wheels as Wheel[]);
+          appliedSummary.push('wheels: overwrite');
         } else {
-          const merged = mergeMapById(wheels, nextWheels);
-          setWheels(merged);
-          appliedSummary.push(`wheels: merge -> ${merged.length}`);
+          setWheels(prev => mergeMapById(prev, parsedObj.wheels as Wheel[]));
+          appliedSummary.push('wheels: merge');
         }
       }
 
-      if (importSections.sessionSteps) {
+      if (importSections.sessionSteps && Array.isArray(parsedObj.sessionSteps)) {
         if (importModes.sessionSteps === 'overwrite') {
-          setSessionSteps(nextSteps);
-          appliedSummary.push(`steps: overwrite (${nextSteps.length})`);
+          setSessionSteps(parsedObj.sessionSteps as SessionStep[]);
+          appliedSummary.push('steps: overwrite');
         } else {
-          const merged = mergeMapById(sessionSteps, nextSteps);
-          setSessionSteps(merged);
-          appliedSummary.push(`steps: merge -> ${merged.length}`);
+          setSessionSteps(prev => mergeMapById(prev, parsedObj.sessionSteps as SessionStep[]));
+          appliedSummary.push('steps: merge');
         }
       }
 
-      if (importSections.sessionPresets) {
+      if (importSections.sessionPresets && Array.isArray(parsedObj.sessionPresets)) {
         if (importModes.sessionPresets === 'overwrite') {
-          setSessionPresets(nextPresets);
-          appliedSummary.push(`presets: overwrite (${nextPresets.length})`);
+          setSessionPresets(parsedObj.sessionPresets as SessionPreset[]);
+          appliedSummary.push('presets: overwrite');
         } else {
-          const merged = mergeMapById(sessionPresets, nextPresets);
-          setSessionPresets(merged);
-          appliedSummary.push(`presets: merge -> ${merged.length}`);
+          setSessionPresets(prev => mergeMapById(prev, parsedObj.sessionPresets as SessionPreset[]));
+          appliedSummary.push('presets: merge');
         }
       }
 
-      if (importSections.heightMode) {
-        setHeightMode(nextHeightMode);
+      if (importSections.heightMode && (parsedObj.heightMode === 'hn' || parsedObj.heightMode === 'hr')) {
+        setHeightMode(parsedObj.heightMode);
         appliedSummary.push('heightMode: updated');
       }
 
-      let finalSnapshots = calibSnapshots;
-      if (importSections.calibSnapshots) {
-        if (importModes.calibSnapshots === 'overwrite') {
-          finalSnapshots = nextSnapshots;
-          setCalibSnapshots(nextSnapshots);
-          appliedSummary.push(`calibrations: overwrite (${nextSnapshots.length})`);
-        } else {
-          const merged = mergeMapById(calibSnapshots, nextSnapshots);
-          finalSnapshots = merged;
-          setCalibSnapshots(merged);
-          appliedSummary.push(`calibrations: merge -> ${merged.length}`);
-        }
-      }
-
-      if (importSections.calibAppliedIds) {
-        const ensureApplied = (applied: { rear: string; front: string }) => ({
-          rear: finalSnapshots.some(s => s.id === applied.rear) ? applied.rear : '',
-          front: finalSnapshots.some(s => s.id === applied.front) ? applied.front : '',
-        });
-        if (importModes.calibAppliedIds === 'overwrite') {
-          setCalibAppliedIds(ensureApplied(nextApplied));
-          appliedSummary.push('applied calibrations: overwrite');
-        } else {
-          const mergedApplied = {
-            rear: nextApplied.rear || calibAppliedIds.rear,
-            front: nextApplied.front || calibAppliedIds.front,
-          };
-          setCalibAppliedIds(ensureApplied(mergedApplied));
-          appliedSummary.push('applied calibrations: merge');
-        }
-      }
-
-      const summary =
-        appliedSummary.length > 0
-          ? `Import applied (${appliedSummary.join('; ')})`
-          : 'Import did not apply any sections.';
+      const summary = appliedSummary.length > 0 ? `Import applied (${appliedSummary.join('; ')})` : 'Import did not apply any sections.';
       return { summary };
     },
-    [
-      calibAppliedIds.front,
-      calibAppliedIds.rear,
-      calibSnapshots,
-      importModes,
-      importSections,
-      sessionPresets,
-      sessionSteps,
-      wheels,
-    ]
+    [importModes, importSections]
   );
 
   return (
@@ -741,7 +421,7 @@ export default function App() {
       {view === 'calculator' && (
         <div className="flex flex-col gap-4">
           {/* Global Setup Card */}
-          <GlobalSetupCard
+          <GlobalSetupCard jigs={jigs} usbs={usbs} sessionSteps={sessionSteps}
             global={global}
             setGlobal={setGlobal}
             isSetupPanelOpen={isSetupPanelOpen}
@@ -749,7 +429,7 @@ export default function App() {
             heightMode={heightMode}
             setHeightMode={setHeightMode}
             targetAngleSymbol={targetAngleSymbol}
-            constants={effectiveConstants}
+            constants={machines.find(m => m.id === defaultMachineId)?.constants || machines[0]?.constants}
           />
 
           {/* Progression Section */}
@@ -888,9 +568,11 @@ export default function App() {
             <div className="panel-card__body flex flex-col gap-3">
               <div className="mt-1">
                 {isWheelConfigOpen ? (
-                  <ProgressionEditor
+                  <ProgressionEditor usbs={usbs}
                     sessionSteps={sessionSteps}
                     wheels={wheels}
+                    machines={machines}
+                    defaultMachineId={defaultMachineId}
                     onUpdateStep={handleUpdateStep}
                     onUpdateWheel={handleUpdateWheel}
                     onDeleteStep={handleDeleteStep}
@@ -923,12 +605,13 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <ProgressionView
+                  <ProgressionView usbs={usbs} globalUsbId={global.activeUsbId}
                     wheelResults={wheelResults}
+                    machines={machines}
+                    defaultMachineId={defaultMachineId}
                     heightMode={heightMode}
                     calcMode={global.calcMode}
                     angleSymbol={effectiveAngleSymbol}
-                    angleErrorById={estimatedAngleErrorByResultId}
                     bodyPaddingX={progressionBodyPaddingX}
                     bodyPaddingY={progressionBodyPaddingY}
                     bodyGap={progressionBodyGap}
@@ -955,59 +638,52 @@ export default function App() {
         <>
           <div className="flex justify-end mb-2">
             <MiniSelect
-              value={settingsView}
+              value={settingsView === 'calibration' ? 'machine' : settingsView}
               options={[
-                { value: 'machine', label: 'Machine & constants' },
-                { value: 'calibration', label: 'Calibration wizard' },
+                { value: 'machine', label: 'Machines' },
+                { value: 'hardware', label: 'Hardware' },
                 { value: 'import', label: 'Import / export' },
                 { value: 'glossary', label: 'Glossary' },
                 { value: 'themelab', label: 'Theme Lab' },
               ]}
-              onChange={val => setSettingsView(val as typeof settingsView)}
+              onChange={val => {
+                if (val === 'calibration') return;
+                setSettingsView(val as typeof settingsView);
+              }}
               widthClass="w-52"
               menuWidthClass="w-56"
             />
           </div>
 
+          
+          {settingsView === 'hardware' && (
+            <HardwareManagerView
+              jigs={jigs}
+              usbs={usbs}
+              onUpdateJig={handleUpdateJig}
+              onAddJig={handleAddJig}
+              onDeleteJig={handleDeleteJig}
+              onUpdateUsb={handleUpdateUsb}
+              onAddUsb={handleAddUsb}
+              onDeleteUsb={handleDeleteUsb}
+              onClose={() => setSettingsView('machine')}
+            />
+          )}
+
           {settingsView === 'machine' && (
-            <MachineConstantsCard
-              constants={constants}
-              setConstants={setConstants}
-              calibSnapshots={calibSnapshots}
-              calibAppliedIds={calibAppliedIds}
-              setCalibAppliedIds={setCalibAppliedIds}
-            />
-          )}
-
-          {settingsView === 'calibration' && (
-            <CalibrationWizard
+            <MachineManagerView jigs={jigs} usbs={usbs}
               global={global}
-              activeMachine={activeMachine}
               wheels={wheels}
-              calibBase={calibBase}
-              setCalibBase={setCalibBase}
-              calibName={calibName}
-              setCalibName={setCalibName}
-              calibDa={calibDa}
-              setCalibDa={setCalibDa}
-              calibDs={calibDs}
-              setCalibDs={setCalibDs}
-              calibCount={calibCount}
-              setCalibCount={setCalibCount}
-              calibRows={calibRows}
-              setCalibRows={setCalibRows}
-              calibResult={calibResult}
-              setCalibResult={setCalibResult}
-              calibError={calibError}
-              setCalibError={setCalibError}
-              calibSnapshots={calibSnapshots}
-              setCalibSnapshots={setCalibSnapshots}
-              onApplyCalibration={(base, snapshotId) =>
-                setCalibAppliedIds(prev => ({ ...prev, [base]: snapshotId }))
-              }
-            />
+              machines={machines}
+              defaultMachineId={defaultMachineId}
+              onAddMachine={m => setMachines(prev => [...prev, m])}
+              onUpdateMachine={(id, patch) => setMachines(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))}
+              onDeleteMachine={id => setMachines(prev => prev.filter(m => m.id !== id))}
+              onSetDefaultMachine={id => setDefaultMachineId(id)}
+              />
           )}
 
+          
           {settingsView === 'import' && (
             <ImportExportPanel
               exportText={exportText}

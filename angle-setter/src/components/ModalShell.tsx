@@ -28,7 +28,7 @@ export function ModalShell({
   return (
     <div
       className={
-        'fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-black/60 pt-12 md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
+        'fixed inset-0 z-40 flex items-start justify-center overflow-hidden bg-black/60 pt-12 sm:pt-16 md:items-center md:pt-0 pb-[calc(env(safe-area-inset-bottom)+16px)] px-4 min-h-[100dvh] motion-overlay ' +
         (closing ? 'motion-overlay--closing' : '')
       }
       style={overlayStyle}

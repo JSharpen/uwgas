@@ -1,4 +1,6 @@
 import type {
+  JigConfig,
+  UsbConfig,
   BaseSide,
   CalibrationDiagnostics,
   CalibrationMeasurement,
@@ -153,24 +155,20 @@ export function computeWheelResults(
   wheels: Wheel[],
   sessionSteps: SessionStep[] | null,
   global: GlobalState,
-  machine: MachineConfig
+  machines: MachineConfig[],
+  jigs: JigConfig[],
+  usbs: UsbConfig[],
+  defaultMachineId?: string
 ): WheelResult[] {
   const A = _nz(global.projection);
-  const Ds = _nz(machine.usbDiameter);
-  const Dj = _nz(machine.jigDiameter);
+  const activeJig = jigs.find(j => j.id === global.activeJigId) || jigs[0];
+  const Dj = _nz(activeJig?.Dj ?? 12);
+  const activeGlobalUsb = usbs.find(u => u.id === global.activeUsbId) || usbs[0];
+  const globalDs = _nz(activeGlobalUsb?.Ds ?? 12);
   const beta = _nz(global.targetAngle);
   const isProjectionMode = global.calcMode === 'projection';
   const fixedUsbMode = global.fixedUsbMode === 'hr' ? 'hr' : 'hn';
   const rearFixedHeight = _nz(global.fixedUsbRear, _nz(global.fixedUsbHeight, 150.0));
-  const suggestedFrontHeight = computeSuggestedFrontUsbHeight(
-    rearFixedHeight,
-    machine.constants,
-    Ds,
-    fixedUsbMode
-  );
-  const frontFixedHeight = global.useCustomFrontUsb
-    ? _nz(global.fixedUsbFront, suggestedFrontHeight)
-    : suggestedFrontHeight;
 
   const items: { step?: SessionStep; wheel: Wheel }[] = [];
 
@@ -185,7 +183,24 @@ export function computeWheelResults(
     return [];
   }
 
-  return items.map(({ step, wheel }) => {
+  const results: WheelResult[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const { step, wheel } = items[i];
+    const machineId = step?.machineId || defaultMachineId;
+    const machine = machines.find(m => m.id === machineId) || machines[0];
+    if (!machine) continue; // fallback
+
+    const stepUsb = usbs.find(u => u.id === step?.usbId); const Ds = stepUsb ? _nz(stepUsb.Ds) : globalDs;
+    const suggestedFrontHeight = computeSuggestedFrontUsbHeight(
+      rearFixedHeight,
+      machine.constants,
+      Ds,
+      fixedUsbMode
+    );
+    const frontFixedHeight = global.useCustomFrontUsb
+      ? _nz(global.fixedUsbFront, suggestedFrontHeight)
+      : suggestedFrontHeight;
+
     const baseForHn: BaseSide = wheel.isHoning
       ? 'front'
       : step?.base ?? wheel.baseForHn;
@@ -210,7 +225,7 @@ export function computeWheelResults(
       });
 
       if (!projOutput.isReachable || projOutput.A === null) {
-        return {
+        results.push({
           wheel,
           baseForHn,
           orientationLabel,
@@ -219,9 +234,11 @@ export function computeWheelResults(
           hnBase: fixedUsbMode === 'hn' ? baseFixedHeight : 0,
           requiredProjectionA: null,
           isReachable: false,
-          step,
-        };
-      }
+        step,
+        unadjustedBetaDeg: null,
+      });
+      continue;
+    }
 
       // Compute exact Ton heights corresponding to this solved projection
       const common: TonInput = {
@@ -238,7 +255,7 @@ export function computeWheelResults(
       const hrRear = computeTonHeights({ ...common, base: 'rear' });
       const hBase = computeTonHeights(common);
 
-      return {
+      results.push({
         wheel,
         baseForHn,
         orientationLabel,
@@ -248,7 +265,9 @@ export function computeWheelResults(
         requiredProjectionA: projOutput.A,
         isReachable: true,
         step,
-      };
+        unadjustedBetaDeg: null,
+      });
+      continue;
     }
 
     // Height mode (default)
@@ -266,7 +285,7 @@ export function computeWheelResults(
     const hrRear = computeTonHeights({ ...common, base: 'rear' });
     const hBase = computeTonHeights(common);
 
-    return {
+    results.push({
       wheel,
       baseForHn,
       orientationLabel,
@@ -276,8 +295,41 @@ export function computeWheelResults(
       requiredProjectionA: A,
       isReachable: true,
       step,
-    };
-  });
+      unadjustedBetaDeg: null,
+    });
+  }
+
+  // Calculate unadjusted carry-over angles
+  for (let i = 1; i < results.length; i++) {
+    const curr = results[i];
+    const prev = results[i-1];
+    if (curr.isReachable === false || prev.isReachable === false) continue;
+
+    const prevA = prev.requiredProjectionA;
+    if (prevA == null) continue;
+
+    const machineId = curr.step?.machineId || defaultMachineId;
+    const machine = machines.find(m => m.id === machineId) || machines[0];
+    const currUsb = usbs.find(u => u.id === curr.step?.usbId); const Ds = currUsb ? _nz(currUsb.Ds) : globalDs;
+    const fixedUsbMode = global.fixedUsbMode === 'hr' ? 'hr' : 'hn';
+
+    if (global.calcMode === 'projection') {
+      const baseFixedHeight = curr.baseForHn === 'rear' ? (fixedUsbMode === 'hr' ? curr.hrWheel : curr.hnBase) : (fixedUsbMode === 'hr' ? curr.hrWheel : curr.hnBase);
+      const unadj = solveBetaForFixedSetup(
+        curr.baseForHn, _nz(curr.wheel.D), prevA, Dj, Ds,
+        machine.constants, baseFixedHeight, fixedUsbMode
+      );
+      if (unadj != null) curr.unadjustedBetaDeg = unadj + _nz(curr.step?.angleOffset ?? curr.wheel.angleOffset);
+    } else {
+      const unadj = solveBetaForFixedSetup(
+        curr.baseForHn, _nz(curr.wheel.D), _nz(global.projection), Dj, Ds,
+        machine.constants, fixedUsbMode === 'hn' ? prev.hnBase : prev.hrWheel, fixedUsbMode
+      );
+      if (unadj != null) curr.unadjustedBetaDeg = unadj + _nz(curr.step?.angleOffset ?? curr.wheel.angleOffset);
+    }
+  }
+
+  return results;
 }
 
 /**
@@ -368,15 +420,19 @@ export function estimateMaxAngleErrorDeg(
   base: BaseSide,
   global: GlobalState,
   machineLike: MachineConfig,
-  wheels: Wheel[]
+  wheels: Wheel[],
+  jigs: JigConfig[],
+  usbs: UsbConfig[]
 ): number | null {
   const maxRes = diagnostics.maxAbsResidualMm;
   if (!Number.isFinite(maxRes) || maxRes <= 0) return null;
 
   const A = _nz(global.projection);
   const beta = _nz(global.targetAngle);
-  const Dj = machineLike.jigDiameter;
-  const Ds = machineLike.usbDiameter;
+  const activeJig = jigs.find(j => j.id === global.activeJigId) || jigs[0];
+  const Dj = _nz(activeJig?.Dj ?? 12);
+  const activeGlobalUsb = usbs.find(u => u.id === global.activeUsbId) || usbs[0];
+  const Ds = _nz(activeGlobalUsb?.Ds ?? 12);
 
   const candidateDs =
     wheels.length > 0 ? wheels.map(w => _nz(w.D)) : [250, 215, 200];
@@ -415,4 +471,64 @@ export function estimateMaxAngleErrorDeg(
 
   if (maxAngle === 0) return null;
   return maxAngle;
+}
+
+/**
+
+/**
+ * Numerically solves for the angle (beta) that corresponds to a given physical setup.
+ * Used for "Direct Swap" feature.
+ */
+export function solveBetaForFixedSetup(
+  base: BaseSide,
+  D: number,
+  A: number,
+  Dj: number,
+  Ds: number,
+  constants: MachineConstants,
+  targetValue: number,
+  mode: 'hn' | 'hr'
+): number | null {
+  // We want to find beta in [1, 89] such that computeTonHeights(...).hn === targetHn
+  let low = 1;
+  let high = 89;
+  
+  const getVal = (b: number) => {
+    const res = computeTonHeights({
+      base, D, A, betaDeg: b, Dj, Ds, constants, angleOffsetDeg: 0
+    });
+    return mode === 'hn' ? res.hn : res.hr;
+  };
+
+  const valLow = getVal(low);
+  const valHigh = getVal(high);
+  
+  if (!Number.isFinite(valLow) || !Number.isFinite(valHigh)) return null;
+
+  // Determine monotonicity direction
+  const isAscending = valHigh > valLow;
+  
+  // Check if target is out of bounds
+  if (isAscending) {
+    if (targetValue < valLow || targetValue > valHigh) return null;
+  } else {
+    if (targetValue > valLow || targetValue < valHigh) return null;
+  }
+
+  // Binary search (approx 40 iterations is more than enough for 6 decimal places)
+  let mid = (low + high) / 2;
+  for (let i = 0; i < 45; i++) {
+    mid = (low + high) / 2;
+    const valMid = getVal(mid);
+    
+    if (isAscending) {
+      if (valMid < targetValue) low = mid;
+      else high = mid;
+    } else {
+      if (valMid < targetValue) high = mid;
+      else low = mid;
+    }
+  }
+
+  return mid;
 }

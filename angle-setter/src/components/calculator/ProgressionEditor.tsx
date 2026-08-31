@@ -11,6 +11,9 @@ const STEP_REMOVE_DURATION_MS = 380;
 export type ProgressionEditorProps = {
   sessionSteps: SessionStep[];
   wheels: Wheel[];
+  machines: import('../../types/core').MachineConfig[];
+  defaultMachineId?: string;
+  usbs: import("../../types/core").UsbConfig[];
   onUpdateStep: (id: string, patch: Partial<SessionStep>) => void;
   onUpdateWheel: (id: string, patch: Partial<Wheel>) => void;
   onDeleteStep: (id: string) => void;
@@ -24,9 +27,11 @@ export type ProgressionEditorProps = {
   progressionCardMinHeight?: string;
 };
 
-export function ProgressionEditor({
+export function ProgressionEditor({ usbs,
   sessionSteps,
   wheels,
+  machines,
+  defaultMachineId,
   onUpdateStep,
   onUpdateWheel,
   onDeleteStep,
@@ -172,44 +177,7 @@ export function ProgressionEditor({
 
                   {/* RIGHT: D editor + delete (fixed, shrink-0) */}
                   <div className="flex items-center gap-1 flex-nowrap shrink-0 ml-1">
-                    <label className="flex items-center gap-1 text-[0.7rem] text-neutral-300">
-                      <span className="font-mono text-neutral-400 text-[0.7rem]">D</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        className="w-[52px] sm:w-[58px] rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right text-xs font-mono disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!wheel.id}
-                        value={
-                          wheel.DText !== undefined
-                            ? wheel.DText
-                            : Number.isNaN(wheel.D)
-                            ? ''
-                            : String(wheel.D)
-                        }
-                        onKeyDown={blurOnEnter}
-                        onFocus={e => e.target.select()}
-                        onChange={e => {
-                          const text = e.target.value;
-                          const patch: Partial<Wheel> = { DText: text };
 
-                          const trimmed = text.trim();
-                          if (trimmed === '') {
-                            patch.D = NaN as unknown as number;
-                            onUpdateWheel(wheel.id, patch);
-                            return;
-                          }
-
-                          const normalised = trimmed.replace(',', '.');
-                          const val = Number(normalised);
-
-                          if (!Number.isNaN(val)) {
-                            patch.D = Math.round(val * 100) / 100;
-                          }
-                          onUpdateWheel(wheel.id, patch);
-                        }}
-                      />
-                      <span className="text-neutral-400 text-[0.7rem]">mm</span>
-                    </label>
 
                     <button
                       type="button"
@@ -227,47 +195,111 @@ export function ProgressionEditor({
                   className={`card-elevated__body ${progressionBodyPaddingX} ${progressionBodyPaddingY} flex items-center justify-between ${progressionBodyGap}`}
                 >
                   {/* Left: base select + angle offset */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <GrindDirToggle
-                      base={step.base}
-                      isHoning={isHoning}
-                      canToggle={!isHoning}
-                      showLabel
-                      onToggle={() =>
-                        onUpdateStep(step.id, {
-                          base: step.base === 'rear' ? 'front' : 'rear',
-                        })
-                      }
-                    />
-
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-neutral-400 text-xs">
-                        {targetAngleSymbol} offset
-                      </span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        className="w-14 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right text-xs font-mono"
-                        value={step.angleOffset === 0 ? '' : step.angleOffset}
-                        placeholder="0"
-                        onFocus={e => {
-                          if (e.target.value !== '') {
-                            e.target.select();
-                          }
-                        }}
-                        onChange={e => {
-                          const text = e.target.value;
-                          if (text.trim() === '') {
-                            onUpdateStep(step.id, { angleOffset: 0 });
-                            return;
-                          }
-                          const val = Number(text);
-                          if (!Number.isNaN(val)) {
-                            onUpdateStep(step.id, { angleOffset: val });
-                          }
-                        }}
+                  <div className="flex flex-col gap-2 flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <GrindDirToggle
+                        base={step.base}
+                        isHoning={isHoning}
+                        canToggle={!isHoning}
+                        showLabel
+                        onToggle={() =>
+                          onUpdateStep(step.id, {
+                            base: step.base === 'rear' ? 'front' : 'rear',
+                          })
+                        }
                       />
-                      <span className="text-neutral-400 text-xs">°</span>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-neutral-400 text-xs">
+                          {targetAngleSymbol} offset
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          className="w-14 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right text-xs font-mono"
+                          value={step.angleOffset === 0 ? '' : step.angleOffset}
+                          placeholder="0"
+                          onFocus={e => {
+                            if (e.target.value !== '') {
+                              e.target.select();
+                            }
+                          }}
+                          onChange={e => {
+                            const text = e.target.value;
+                            if (text.trim() === '') {
+                              onUpdateStep(step.id, { angleOffset: 0 });
+                              return;
+                            }
+                            const val = Number(text);
+                            if (!Number.isNaN(val)) {
+                              onUpdateStep(step.id, { angleOffset: val });
+                            }
+                          }}
+                        />
+                        <span className="text-neutral-400 text-xs">°</span>
+                      </div>
+                    </div>
+
+                    {/* Hardware overrides */}
+                    <div className="flex items-center justify-between w-full pt-1.5 border-t border-neutral-800/40">
+                      <div className="flex items-center gap-2">
+                        {machines && machines.length > 0 && (
+                          <MiniSelect
+                            value={step.machineId || defaultMachineId || ''}
+                            options={machines.map(m => ({ value: m.id, label: m.name }))}
+                            onChange={val => onUpdateStep(step.id, { machineId: val })}
+                            widthClass="min-w-[100px] text-[10px]"
+                            menuWidthClass="min-w-[120px]"
+                          />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                          <MiniSelect
+                            value={step.usbId || ''}
+                            options={[{ value: '', label: 'USB (Global)' }, ...usbs.map(u => ({ value: u.id, label: u.name, meta: `${u.Ds} mm` }))]}
+                            onChange={val => onUpdateStep(step.id, { usbId: val || undefined })}
+                            widthClass="min-w-[90px] text-[10px]"
+                            menuWidthClass="min-w-[120px]"
+                          />
+                        </div>
+                        
+                        <label className="flex items-center gap-1 text-[10px] text-neutral-400">
+                          <span className="font-bold font-mono">D=</span>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className="w-[44px] sm:w-[50px] rounded border border-neutral-700 bg-neutral-950 px-1 py-0.5 text-right text-xs font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!wheel.id}
+                            value={
+                              wheel.DText !== undefined
+                                ? wheel.DText
+                                : Number.isNaN(wheel.D)
+                                ? ''
+                                : String(wheel.D)
+                            }
+                            onKeyDown={blurOnEnter}
+                            onFocus={e => e.target.select()}
+                            onChange={e => {
+                              const text = e.target.value;
+                              const patch: Partial<Wheel> = { DText: text };
+
+                              const trimmed = text.trim();
+                              if (trimmed === '') {
+                                patch.D = NaN as unknown as number;
+                                onUpdateWheel(wheel.id, patch);
+                                return;
+                              }
+
+                              const val = Number(trimmed.replace(',', '.'));
+                              if (!Number.isNaN(val)) {
+                                patch.D = Math.round(val * 100) / 100;
+                              }
+                              onUpdateWheel(wheel.id, patch);
+                            }}
+                          />
+                        </label>
+                      </div>
                     </div>
                   </div>
 

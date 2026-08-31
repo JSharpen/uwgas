@@ -1,8 +1,13 @@
 import type React from 'react';
-import type { CalcMode, WheelResult } from '../types/core';
+import type { CalcMode, WheelResult, MachineConfig, UsbConfig } from '../types/core';
+import { IconEdgeLeading, IconEdgeTrailing } from '../icons';
 
 type ProgressionViewProps = {
   wheelResults: WheelResult[];
+  machines: MachineConfig[];
+  defaultMachineId?: string;
+  usbs: UsbConfig[];
+  globalUsbId: string;
   heightMode: 'hn' | 'hr';
   calcMode?: CalcMode;
   angleSymbol: string;
@@ -19,6 +24,10 @@ type ProgressionViewProps = {
  */
 function ProgressionView({
   wheelResults,
+  machines,
+  defaultMachineId,
+  usbs,
+  globalUsbId,
   heightMode,
   calcMode = 'height',
   angleSymbol,
@@ -35,6 +44,8 @@ function ProgressionView({
     <div className="flex flex-col card-stack text-xs">
       {wheelResults.map((r, index) => {
         const key = r.step?.id ?? r.wheel.id;
+        const effectiveMachineId = r.step?.machineId || defaultMachineId;
+        const effectiveMachine = machines.find(m => m.id === effectiveMachineId);
         const angleOffset = r.step?.angleOffset ?? 0;
         const hasOffset = angleOffset !== 0;
         const angleError = angleErrorById?.[key] ?? null;
@@ -43,6 +54,49 @@ function ProgressionView({
             ? 'text-accent'
             : 'text-danger'
           : 'u-text';
+
+        let deltaInfo: React.ReactNode = null;
+        if (index > 0 && r.step && wheelResults[index - 1].step && !isProjectionMode) {
+          const prev = wheelResults[index - 1];
+          const currUsbId = r.step.usbId || globalUsbId;
+          const prevUsbId = prev.step?.usbId || globalUsbId;
+          if (currUsbId === prevUsbId) {
+            const deltaH = r.hnBase - prev.hnBase;
+            const absDelta = Math.abs(deltaH);
+            const isUp = deltaH >= 0;
+            const usb = usbs.find(u => u.id === currUsbId);
+            
+            let turnsInfo = '';
+            if (usb?.threadPitch && usb.threadPitch > 0) {
+              const totalTurns = absDelta / usb.threadPitch;
+              const wholeTurns = Math.trunc(totalTurns);
+              const remainderTurns = totalTurns - wholeTurns;
+              if (usb.microAdjustMarks && usb.microAdjustMarks > 0) {
+                 const notches = Math.round(remainderTurns * usb.microAdjustMarks);
+                 if (notches === usb.microAdjustMarks) {
+                    turnsInfo = `${isUp ? '↑' : '↓'} ${wholeTurns + 1}t 0n`;
+                 } else {
+                    turnsInfo = `${isUp ? '↑' : '↓'} ${wholeTurns}t ${notches}n`;
+                 }
+              } else {
+                 turnsInfo = `${isUp ? '↑' : '↓'} ${totalTurns.toFixed(2)}t`;
+              }
+            }
+
+            deltaInfo = (
+              <div className="flex flex-col items-center justify-center text-center px-1">
+                <span className={`text-[11px] font-mono font-bold ${absDelta > 0.005 ? 'text-neutral-300' : 'text-neutral-500'}`}>
+                  Δ {deltaH > 0 ? '+' : ''}{deltaH.toFixed(2)} mm
+                </span>
+                {turnsInfo && absDelta > 0.005 && (
+                  <span className="text-[10px] font-mono text-neutral-500 leading-tight">
+                    {turnsInfo}
+                  </span>
+                )}
+              </div>
+            );
+          }
+        }
         const formatResidual = (val: number) => {
           if (!Number.isFinite(val)) return '';
           const abs = Math.abs(val);
@@ -73,78 +127,108 @@ function ProgressionView({
               } as React.CSSProperties
             }
           >
-            {/* ===== Header bar ===== */}
+                        {/* ===== Header bar ===== */}
             <div className="card-elevated__header wheel-card__header flex flex-nowrap items-center justify-between gap-1.5 px-2 py-1.5 min-h-[40px]">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 {/* Step badge */}
                 {r.step && (
                   <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[0.7rem] font-mono text-neutral-50 shrink-0 shadow-sm">
                     {index + 1}
                   </div>
                 )}
-                {/* Wheel name */}
-                <span className="text-xs text-neutral-100 font-medium truncate leading-none min-w-0 flex-1">
-                  {r.wheel.name}
-                </span>
+                {/* Direction Icon */}
+                {r.step && (
+                  <div className="flex items-center shrink-0" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
+                    {r.step.base === 'rear' ? <IconEdgeLeading className="w-4 h-4 text-accent/80" /> : <IconEdgeTrailing className="w-4 h-4 text-sky-400/80" />}
+                  </div>
+                )}
+                {/* Wheel name & badges */}
+                <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
+                  <span className="text-xs text-neutral-100 font-medium truncate leading-none">
+                    {r.wheel.name}
+                  </span>
+                </div>
               </div>
-
-              {/* Right side: diameter display */}
-              <div className="flex items-center gap-1 flex-nowrap shrink-0 text-xs text-neutral-100 font-mono whitespace-nowrap ml-2">
-                <span className="text-neutral-400 text-[0.7rem]">D=</span>
-                <span>{r.wheel.D?.toFixed(2)}</span>
-                <span className="text-neutral-400 text-[0.7rem]">mm</span>
-              </div>
+              {hasOffset && (
+                <div className="shrink-0 ml-1">
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-mono ${angleOffset > 0 ? 'bg-accent/20 text-accent' : 'bg-danger/20 text-danger'}`}>
+                    {angleOffset > 0 ? '+' : ''}{angleOffset}°
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* ===== Wheel Card Body ===== */}
             <div
-              className={`card-elevated__body ${bodyPaddingX} ${bodyPaddingY} flex items-center justify-between ${bodyGap} u-surface`}
+              className={`card-elevated__body flex-col justify-center ${bodyGap} ${bodyPaddingX} ${bodyPaddingY} u-surface`}
             >
-              {/* Left: Height or Projection readout */}
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[0.7rem] u-text-muted">
-                  {isProjectionMode
-                    ? heightMode === 'hr'
-                      ? r.step?.base === 'front'
-                        ? 'Required projection A (Front · Wheel)'
-                        : 'Required projection A (Rear · Wheel)'
-                      : r.step?.base === 'front'
-                      ? 'Required projection A (Front · Datum)'
-                      : 'Required projection A (Rear · Datum)'
-                    : heightMode === 'hn'
-                    ? r.step?.base === 'front'
-                      ? 'Datum (Front) ↔ USB top'
-                      : 'Datum (Rear) ↔ USB top'
-                    : 'Wheel ↔ USB top'}
-                </span>
-                <span className="font-mono text-base sm:text-lg font-bold u-text tracking-tight">
-                  {isProjectionMode ? (
-                    r.isReachable !== false && r.requiredProjectionA != null ? (
-                      `A = ${r.requiredProjectionA.toFixed(2)} mm`
+              {/* Top Row: Readout and Angle */}
+              <div className="flex items-center justify-between w-full">
+                {/* Left: Height or Projection readout */}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="font-mono text-base sm:text-lg font-bold u-text tracking-tight leading-none">
+                    {isProjectionMode ? (
+                      r.isReachable !== false && r.requiredProjectionA != null ? (
+                        `A = ${r.requiredProjectionA.toFixed(2)} mm`
+                      ) : (
+                        <span className="text-danger text-sm sm:text-base">Out of range</span>
+                      )
+                    ) : heightMode === 'hn' ? (
+                      `hn = ${r.hnBase.toFixed(2)} mm`
                     ) : (
-                      <span className="text-danger text-sm sm:text-base">Out of range</span>
-                    )
-                  ) : heightMode === 'hn' ? (
-                    `hn = ${r.hnBase.toFixed(2)} mm`
-                  ) : (
-                    `hr = ${r.hrWheel.toFixed(2)} mm`
+                      `hr = ${r.hrWheel.toFixed(2)} mm`
+                    )}
+                  </span>
+                </div>
+
+                {deltaInfo && (
+                  <div className="flex-1 flex justify-center shrink-0">
+                    {deltaInfo}
+                  </div>
+                )}
+
+                {/* Right: Effective Angle & Tolerance */}
+                <div className="flex flex-col items-end text-right flex-1 shrink-0">
+                  <span className="text-sm font-semibold u-text leading-none">
+                    {angleSymbol} ={' '}
+                    <span className={angleValueClass}>
+                      {formatDeg(r.betaEffDeg)}°
+                    </span>
+                  </span>
+
+                  {angleError != null && (
+                    <span className="text-[0.65rem] text-neutral-500 mt-1 leading-none">
+                      (calib ±{formatResidual(angleError)}°)
+                    </span>
                   )}
-                </span>
+                </div>
               </div>
 
-              {/* Right: Effective Angle & Tolerance */}
-              <div className="flex flex-col items-end gap-0.5 text-right shrink-0">
-                <span className="text-xs u-text-muted">
-                  {angleSymbol} ={' '}
-                  <span className={`font-semibold ${angleValueClass}`}>
-                    {formatDeg(r.betaEffDeg)}°
+              {/* Bottom Row: Hardware Overrides / Base Info */}
+              <div className="flex items-center justify-between w-full pt-1.5 border-t border-neutral-800/40">
+                <div className="flex items-center gap-2">
+                  <span className="text-[0.65rem] uppercase font-bold text-neutral-400 tracking-wider">
+                    {r.step?.base === 'front' ? 'FRONT BASE' : 'REAR BASE'}
                   </span>
-                </span>
-                {angleError != null && (
-                  <span className="text-[0.65rem] text-neutral-500">
-                    (calib ±{formatResidual(angleError)}°)
+                  {effectiveMachine && (
+                    <>
+                      <span className="text-[0.65rem] text-neutral-600">&bull;</span>
+                      <span className="text-[0.65rem] uppercase font-bold text-primary tracking-wider">
+                        {effectiveMachine.name}
+                      </span>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {r.step?.usbId && r.step.usbId !== globalUsbId && usbs.find(u => u.id === r.step!.usbId) && (
+                    <span className="text-[0.65rem] uppercase font-bold text-accent tracking-wider font-mono truncate max-w-[120px]">
+                      {usbs.find(u => u.id === r.step!.usbId)!.name}
+                    </span>
+                  )}
+                  <span className="text-[0.65rem] uppercase font-bold text-neutral-400 tracking-wider font-mono">
+                    D={r.wheel.D?.toFixed(2)}
                   </span>
-                )}
+                </div>
               </div>
             </div>
           </div>

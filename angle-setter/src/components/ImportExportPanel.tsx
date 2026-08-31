@@ -9,8 +9,7 @@ type ImportSectionKey =
   | 'sessionSteps'
   | 'sessionPresets'
   | 'heightMode'
-  | 'calibSnapshots'
-  | 'calibAppliedIds';
+
 
 type ImportExportPanelProps = {
   exportText: string;
@@ -30,8 +29,6 @@ const SECTION_LABELS: Record<ImportSectionKey, string> = {
   sessionSteps: 'Current progression steps',
   sessionPresets: 'Saved progression presets',
   heightMode: 'Height mode',
-  calibSnapshots: 'Calibrations',
-  calibAppliedIds: 'Applied calibration refs',
 };
 
 function CollapseToggle({

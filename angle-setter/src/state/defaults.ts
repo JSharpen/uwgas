@@ -1,9 +1,19 @@
-import type { MachineConstants, GlobalState, Wheel } from '../types/core';
+import type { MachineConstants, GlobalState, Wheel, JigConfig, UsbConfig } from '../types/core';
+
+export const DEFAULT_JIGS: JigConfig[] = [
+  { id: 'jig-svm45', name: 'SVM-45 / KJ-45', Dj: 12 },
+  { id: 'jig-svm140', name: 'SVM-140', Dj: 12 },
+];
+
+export const DEFAULT_USBS: UsbConfig[] = [
+  { id: 'usb-tormek', name: 'Tormek Standard', Ds: 11.98, threadPitch: 1.5, microAdjustMarks: 6 },
+  { id: 'usb-fvb', name: 'Frontal Vertical Base', Ds: 12, threadPitch: 1.5, microAdjustMarks: 6 },
+];
 export const DEFAULT_GLOBAL: GlobalState = {
   projection: 127.39,
-  usbDiameter: 11.98,
+  activeUsbId: 'usb-tormek',
   targetAngle: 16,
-  jig: { Dj: 12 },
+  activeJigId: 'jig-svm45',
   calcMode: 'height',
   fixedUsbHeight: 150.0,
   fixedUsbRear: 150.0,
@@ -30,40 +40,8 @@ export const DEFAULT_WHEELS: Wheel[] = [
     isHoning: false,
   },
   {
-    id: `wheel-sb250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'SB-250 Blackstone Silicon',
-    D: 250.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
     id: `wheel-sj250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: 'SJ-250 Japanese Waterstone',
-    D: 250.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-dc250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DC-250 Diamond Wheel Coarse (360)',
-    D: 250.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-df250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DF-250 Diamond Wheel Fine (600)',
-    D: 250.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-de250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DE-250 Diamond Wheel Extra Fine (1200)',
     D: 250.0,
     angleOffset: 0,
     baseForHn: 'rear',
@@ -76,68 +54,6 @@ export const DEFAULT_WHEELS: Wheel[] = [
     id: `wheel-la220-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: 'LA-220 Leather Honing Wheel',
     D: 215.0, // you can change to your measured value (e.g. 215) if you prefer
-    angleOffset: 0,
-    baseForHn: 'front',
-    isHoning: true,
-  },
-  {
-    id: `wheel-cw220-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'CW-220 Composite Honing Wheel',
-    D: 220.0,
-    angleOffset: 0,
-    baseForHn: 'front',
-    isHoning: true,
-  },
-
-  // ===== 200 mm class - T-4 / T-3 =====
-
-  {
-    id: `wheel-sg200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'SG-200 Original Grindstone',
-    D: 200.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-sj200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'SJ-200 Japanese Waterstone',
-    D: 200.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-dc200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DC-200 Diamond Wheel Coarse (360)',
-    D: 200.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-df200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DF-200 Diamond Wheel Fine (600)',
-    D: 200.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-  {
-    id: `wheel-de200-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'DE-200 Diamond Wheel Extra Fine (1200)',
-    D: 200.0,
-    angleOffset: 0,
-    baseForHn: 'rear',
-    isHoning: false,
-  },
-
-  // Honing - T-4 / T-3
-
-  {
-    id: `wheel-la145-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: 'LA-145 Leather Honing Wheel',
-    D: 145.0,
     angleOffset: 0,
     baseForHn: 'front',
     isHoning: true,

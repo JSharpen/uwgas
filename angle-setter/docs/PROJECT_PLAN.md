@@ -14,7 +14,7 @@
 | **JOB-003** | Global MicroBump Removal | `[COMPLETED]` | **LOW** | Removed redundant global micro-bevel toggle and degree adjuster to streamline interface; per-step angle offsets remain for micro-beveling. |
 | **JOB-004** | Direct $h_n \leftrightarrow h_r$ Height Mode Toggle | `[COMPLETED]` | **HIGH** | Dedicated segmented control in the Global Setup card for switching between datum base height ($h_n$) and wheel surface height ($h_r$) in 1 click. |
 | **JOB-005** | Workshop Steppers & Mobile 2-Col Layout | `[COMPLETED]` | **HIGH** | Permanent 2-column side-by-side layout with touch-friendly $+/-$ steppers for Projection $A$ ($\pm 1\text{mm}$, $\pm 5\text{mm}$) and Angle $\beta$ ($\pm 0.5^\circ$, $\pm 1.0^\circ$). |
-| **JOB-006** | Multi-Machine Profiles System | `[READY]` | **MEDIUM** | Store multiple grinder configs (e.g. "T-8 Shop", "T-4 Mobile", "Jet Clone") with individual USB diameters and calibration offsets. |
+| **JOB-006** | Multi-Machine Profiles System | `[COMPLETED]` | **MEDIUM** | Store multiple grinder configs (e.g. "T-8 Shop", "T-4 Mobile", "Jet Clone") with individual USB diameters and calibration offsets. |
 | **JOB-007** | Built-in Jig Catalog & Projection Calc | `[PROPOSED]` | **MEDIUM** | Provide jig presets (SVM-45, KJ-45 centering jig, etc.) and knife clamp projection calculators (blade width + clamp depth $\rightarrow A$). |
 | **JOB-008** | Large Readout Workshop HUD Mode | `[PROPOSED]` | **MEDIUM** | Fullscreen high-contrast view with massive $h_n$ readouts designed for viewing from 2 meters away while at the grinding wheel. |
 | **JOB-009** | Vitest Math Engine Unit Tests | `[PROPOSED]` | **MEDIUM** | Golden-master test suite validating Ton math against canonical Dutchman spreadsheet tables ([`docs/MATH_REFERENCE.md`](MATH_REFERENCE.md)). |
@@ -23,6 +23,8 @@
 | **JOB-012** | Projection Solver for Adjustable Jigs & Fixed USB | `[COMPLETED]` | **HIGH** | Exact closed-form inverse Dutchman solver calculating required knife projection $A$ for fixed USB bar ($h_n / h_r$) with header mode toggle and workshop steppers. |
 | **JOB-013** | Global Setup Full Collapse & Compact Summary Strip | `[COMPLETED]` | **MEDIUM** | Header collapse toggle collapses the entire inputs body; renders a compact one-line variable summary strip when collapsed with 1-click expand. |
 | **JOB-014** | Suggested Front USB Height & Custom Override for Projection Mode | `[COMPLETED]` | **HIGH** | Implemented suggested Front USB height matching Rear USB wheel distance ($CA$), high-contrast text display, custom setting checkbox override, and stepper removal. |
+| **JOB-015** | Direct Swap / Unadjusted Angle Calculator | `[PROPOSED]` | **LOW** | Add UI to display the exact angle hit when swapping wheels on the same base without adjusting the USB nut. The mathematical solver (`solveBetaForFixedSetup`) is already implemented in `tormek.ts`. |
+
 
 ---
 

@@ -16,6 +16,8 @@ export type SessionStep = {
   wheelId: string;
   base: BaseSide;
   angleOffset: number; // β° at step level
+  machineId?: string;
+  usbId?: string;
 };
 
 export type PresetStepRef = {
@@ -23,6 +25,8 @@ export type PresetStepRef = {
   wheelName: string;
   base: BaseSide;
   angleOffset: number;
+  machineId?: string;
+  usbId?: string;
 };
 
 export type SessionPreset = {
@@ -31,6 +35,20 @@ export type SessionPreset = {
   createdAt: string;
   version: 1;
   steps: PresetStepRef[];
+};
+
+export type JigConfig = {
+  id: string;
+  name: string;
+  Dj: number;
+};
+
+export type UsbConfig = {
+  id: string;
+  name: string;
+  Ds: number;
+  threadPitch?: number; // mm per full rotation
+  microAdjustMarks?: number; // number of index marks on the nut
 };
 
 export type MachineConstants = {
@@ -42,17 +60,19 @@ export type MachineConfig = {
   id: string;
   name: string;
   constants: MachineConstants;
-  usbDiameter: number; // Ds for this machine
-  jigDiameter: number; // Dj for this machine
+  isDefault?: boolean;
+  axleDiameter?: number;
+  calibrationProfiles?: CalibrationProfile[];
+  activeCalibrationId?: string;
 };
 
 export type CalcMode = 'height' | 'projection';
 
 export type GlobalState = {
   projection: number; // A (used when calcMode is 'height')
-  usbDiameter: number; // Ds
+  activeUsbId: string;
   targetAngle: number; // β per side
-  jig: { Dj: number }; // jig diameter
+  activeJigId: string;
   calcMode?: CalcMode; // 'height' (default) or 'projection'
   fixedUsbHeight?: number; // legacy fallback fixed USB height (mm)
   fixedUsbRear?: number; // fixed USB height for rear base (mm)
@@ -64,7 +84,11 @@ export type GlobalState = {
 export type AppPersistedState = {
   version: number;
   global: GlobalState;
-  constants: MachineConstants;
+  machines?: MachineConfig[];
+  defaultMachineId?: string;
+  jigs: JigConfig[];
+  usbs: UsbConfig[];
+  constants?: MachineConstants; // Legacy, kept for migration
   wheels: Wheel[];
   sessionSteps: SessionStep[];
   sessionPresets: SessionPreset[];
@@ -118,6 +142,7 @@ export type WheelResult = {
   requiredProjectionA?: number | null;
   isReachable?: boolean;
   step?: SessionStep;
+  unadjustedBetaDeg?: number | null;
 };
 
 export type CalibrationMeasurement = {
@@ -150,4 +175,27 @@ export type CalibrationSnapshot = {
   Ds: number;
   createdAt: string;
   measurements: CalibrationMeasurement[];
+};
+
+export type CalibrationProfile = {
+  id: string;
+  name: string;
+  createdAt: string;
+  scope: 'both' | 'rear' | 'front';
+  Da: number;
+  Ds: number;
+  rear?: {
+    hc: number;
+    o: number;
+    diagnostics: CalibrationDiagnostics;
+    angleErrorDeg: number | null;
+    measurements: CalibrationMeasurement[];
+  };
+  front?: {
+    hc: number;
+    o: number;
+    diagnostics: CalibrationDiagnostics;
+    angleErrorDeg: number | null;
+    measurements: CalibrationMeasurement[];
+  };
 };

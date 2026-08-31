@@ -6,8 +6,13 @@ import { _nz } from '../../utils/numbers';
 import { blurOnEnter } from '../../utils/dom';
 import { BTN } from '../../ui/buttons';
 import ExpandToggle from '../ExpandToggle';
+import MiniSelect from '../MiniSelect';
 
-export type GlobalSetupCardProps = {
+import type { JigConfig, UsbConfig, SessionStep } from "../../types/core";
+type GlobalSetupCardProps = {
+  jigs: JigConfig[];
+  usbs: UsbConfig[];
+  sessionSteps: SessionStep[];
   global: GlobalState;
   setGlobal: React.Dispatch<React.SetStateAction<GlobalState>>;
   isSetupPanelOpen: boolean;
@@ -21,6 +26,8 @@ export type GlobalSetupCardProps = {
 export function GlobalSetupCard({
   global,
   setGlobal,
+  jigs,
+  usbs,
   isSetupPanelOpen,
   setIsSetupPanelOpen,
   heightMode,
@@ -31,7 +38,7 @@ export function GlobalSetupCard({
   const isProjectionMode = global.calcMode === 'projection';
   const effectiveConsts = constants ?? DEFAULT_CONSTANTS;
   const rearVal = _nz(global.fixedUsbRear, _nz(global.fixedUsbHeight, 150));
-  const dsVal = _nz(global.usbDiameter, 12);
+  const activeUsb = usbs.find(u => u.id === global.activeUsbId); const dsVal = _nz(activeUsb?.Ds, 12);
   const suggestedFrontUsb = computeSuggestedFrontUsbHeight(
     rearVal,
     effectiveConsts,
@@ -121,12 +128,6 @@ export function GlobalSetupCard({
                     {activeFrontUsb.toFixed(2)} mm
                   </span>
                 </span>
-                <span>
-                  <span className="text-neutral-500 font-sans text-[0.7rem] mr-1">Ref:</span>
-                  <span className="text-neutral-200">
-                    {heightMode === 'hr' ? 'Wheel' : 'Datum'}
-                  </span>
-                </span>
               </>
             ) : (
               <>
@@ -154,9 +155,9 @@ export function GlobalSetupCard({
           </div>
 
           <div className="text-[0.7rem] text-neutral-500 font-mono hidden sm:inline-flex items-center gap-1.5">
-            <span>Ds: {global.usbDiameter} mm</span>
+            <span>Ds: {usbs.find(u => u.id === global.activeUsbId)?.Ds ?? 12} mm</span>
             <span>·</span>
-            <span>Dj: {global.jig.Dj} mm</span>
+            <span>Dj: {jigs.find(j => j.id === global.activeJigId)?.Dj ?? 12} mm</span>
           </div>
         </div>
       )}
@@ -427,35 +428,25 @@ export function GlobalSetupCard({
             {/* Bottom Right: Advanced Diameters (Shared by both modes) */}
             <div className="flex flex-col gap-2 rounded border border-neutral-800/80 bg-neutral-950/30 p-2 sm:p-2.5 col-span-1 justify-between">
               <label className="flex flex-col gap-1">
-                <span className="u-text text-xs truncate">USB diameter Ds (mm)</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  className="rounded border u-border u-surface px-2 py-1 text-sm font-mono u-text"
-                  value={global.usbDiameter}
-                  onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({
-                      ...g,
-                      usbDiameter: _nz(e.target.value, g.usbDiameter),
-                    }))
-                  }
+                <span className="u-text text-xs truncate">Support Bar (USB)</span>
+                <MiniSelect
+                  value={global.activeUsbId || usbs[0]?.id || ''}
+                  options={usbs.map(u => ({ value: u.id, label: u.name, meta: `${u.Ds} mm` }))}
+                  onChange={val => setGlobal(g => ({ ...g, activeUsbId: val }))}
+                  widthClass="w-full"
+                  menuWidthClass="w-full"
+                  liftOnOpen={true}
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="u-text text-xs truncate">Jig diameter Dj (mm)</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  className="rounded border u-border u-surface px-2 py-1 text-sm font-mono u-text"
-                  value={global.jig.Dj}
-                  onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({
-                      ...g,
-                      jig: { ...g.jig, Dj: _nz(e.target.value, g.jig.Dj) },
-                    }))
-                  }
+                <span className="u-text text-xs truncate">Sharpening Jig</span>
+                <MiniSelect
+                  value={global.activeJigId || jigs[0]?.id || ''}
+                  options={jigs.map(j => ({ value: j.id, label: j.name, meta: `${j.Dj} mm` }))}
+                  onChange={val => setGlobal(g => ({ ...g, activeJigId: val }))}
+                  widthClass="w-full"
+                  menuWidthClass="w-full"
+                  liftOnOpen={true}
                 />
               </label>
             </div>

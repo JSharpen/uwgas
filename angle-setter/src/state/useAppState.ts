@@ -179,7 +179,7 @@ export function useAppState(): AppState {
   // Calibration wizard state (single-base)
   const [calibBase, setCalibBase] = React.useState<BaseSide>('rear');
   const [calibDa, setCalibDa] = React.useState<number>(12); // axle diameter
-  const [calibDs, setCalibDs] = React.useState<number>(DEFAULT_GLOBAL.usbDiameter);
+  const [calibDs, setCalibDs] = React.useState<number>(12);
   const [calibCount, setCalibCount] = React.useState<number>(4); // 3/4/5, default 4 (recommended)
   const [calibRows, setCalibRows] = React.useState<CalibrationMeasurement[]>(() => []);
   const [calibResult, setCalibResult] = React.useState<{
