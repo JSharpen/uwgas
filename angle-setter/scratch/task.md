@@ -1,0 +1,5 @@
+- `[ ]` Extend USB Profile Schema with threadPitch and microAdjustMarks
+- `[ ]` Update HardwareManagerView with new inputs
+- `[ ]` Implement Delta Math and UI in ProgressionView
+- `[ ]` Create custom SVG icons for Grind Direction
+- `[ ]` Implement Micro-Bevel Header Badge

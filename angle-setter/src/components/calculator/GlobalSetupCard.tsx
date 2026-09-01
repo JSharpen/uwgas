@@ -31,11 +31,11 @@ export function GlobalSetupCard({
   isSetupPanelOpen,
   setIsSetupPanelOpen,
   heightMode,
-  setHeightMode,
   targetAngleSymbol = '\u03b2',
   constants,
 }: GlobalSetupCardProps) {
   const isProjectionMode = global.calcMode === 'projection';
+  const [activeUsbTab, setActiveUsbTab] = React.useState<'rear' | 'front'>('rear');
   const effectiveConsts = constants ?? DEFAULT_CONSTANTS;
   const rearVal = _nz(global.fixedUsbRear, _nz(global.fixedUsbHeight, 150));
   const activeUsb = usbs.find(u => u.id === global.activeUsbId); const dsVal = _nz(activeUsb?.Ds, 12);
@@ -80,15 +80,33 @@ export function GlobalSetupCard({
     });
   };
 
+  const handleFixedUsbFrontStep = (delta: number) => {
+    setGlobal(g => {
+      const current = _nz(g.fixedUsbFront, suggestedFrontUsb);
+      const next = Math.max(10, Math.round((current + delta) * 100) / 100);
+      return { ...g, fixedUsbFront: next, useCustomFrontUsb: true };
+    });
+  };
+
   return (
     <section className="panel-card panel-card--strong flex flex-col gap-0 max-w-xl motion-panel">
       <div className="panel-card__header flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold u-text panel-header">Global setup</h2>
+
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className={`${BTN.base} px-2 text-xs`}
+            onClick={() => setGlobal(g => ({ ...g, useProtrusionMode: !g.useProtrusionMode }))}
+            title={global.useProtrusionMode ? "Switch to Manual Projection (A)" : "Switch to Caliper Protrusion (Pb)"}
+          >
+            {global.useProtrusionMode ? 'Pb Mode' : 'A Mode'}
+          </button>
           <button
             type="button"
             className={`${BTN.base} px-3 text-xs`}
             onClick={toggleCalcMode}
+
             title={
               isProjectionMode
                 ? 'Switch to USB Height solver mode (fixed projection)'
@@ -166,109 +184,118 @@ export function GlobalSetupCard({
       {isSetupPanelOpen && (
         <div className="panel-card__body">
           <div className="grid grid-cols-2 gap-2 sm:gap-3 text-sm">
-            {/* Top Left: Rear USB (Projection Mode) OR Projection A (Height Mode) */}
+            {/* Top Left: Fixed USB (Projection Mode) OR Projection A (Height Mode) */}
             {isProjectionMode ? (
               <div className="flex flex-col gap-1.5 rounded border u-border u-surface p-2 sm:p-2.5 col-span-1">
-                <span className="text-xs font-medium u-text truncate">
-                  USB Rear {heightMode === 'hr' ? 'hr' : 'hn'} (mm)
-                </span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="any"
-                  className="w-full rounded border u-border u-surface px-2 py-1 text-base font-mono text-center u-text focus:ring-1 focus:ring-accent"
-                  value={global.fixedUsbRear ?? global.fixedUsbHeight ?? 150}
-                  onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({
-                      ...g,
-                      fixedUsbRear: _nz(e.target.value, g.fixedUsbRear ?? 150),
-                      fixedUsbHeight: _nz(e.target.value, g.fixedUsbRear ?? 150),
-                    }))
-                  }
-                />
-                <div className="grid grid-cols-4 gap-1">
+                <div className="flex bg-neutral-950 rounded-full border border-neutral-800/60 p-0.5 select-none">
                   <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Subtract 5mm"
-                    onClick={() => handleFixedUsbRearStep(-5)}
+                    className={`flex-1 rounded-full text-[10px] font-bold tracking-wider py-1 uppercase ${activeUsbTab === 'rear' ? 'bg-neutral-800 text-neutral-200 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    onClick={() => setActiveUsbTab('rear')}
                   >
-                    -5
+                    Rear {heightMode === 'hr' ? 'hr' : 'hn'}
                   </button>
                   <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Subtract 1mm"
-                    onClick={() => handleFixedUsbRearStep(-1)}
+                    className={`flex-1 rounded-full text-[10px] font-bold tracking-wider py-1 uppercase ${activeUsbTab === 'front' ? 'bg-neutral-800 text-neutral-200 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    onClick={() => setActiveUsbTab('front')}
                   >
-                    -1
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Add 1mm"
-                    onClick={() => handleFixedUsbRearStep(1)}
-                  >
-                    +1
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Add 5mm"
-                    onClick={() => handleFixedUsbRearStep(5)}
-                  >
-                    +5
+                    Front {heightMode === 'hr' ? 'hr' : 'hn'}
                   </button>
                 </div>
+
+                {activeUsbTab === 'rear' ? (
+                  <>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="any"
+                      className="w-full rounded border u-border u-surface px-2 py-1 text-base font-mono text-center u-text focus:ring-1 focus:ring-accent"
+                      value={global.fixedUsbRear ?? global.fixedUsbHeight ?? 150}
+                      onKeyDown={blurOnEnter}
+                      onChange={e =>
+                        setGlobal(g => ({
+                          ...g,
+                          fixedUsbRear: _nz(e.target.value, g.fixedUsbRear ?? 150),
+                          fixedUsbHeight: _nz(e.target.value, g.fixedUsbRear ?? 150),
+                        }))
+                      }
+                    />
+                    <div className="grid grid-cols-4 gap-1">
+                      <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleFixedUsbRearStep(-5)}>-5</button>
+                      <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleFixedUsbRearStep(-1)}>-1</button>
+                      <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleFixedUsbRearStep(1)}>+1</button>
+                      <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleFixedUsbRearStep(5)}>+5</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="any"
+                      className="w-full rounded border u-border u-surface px-2 py-1 text-base font-mono text-center u-text focus:ring-1 focus:ring-accent"
+                      value={global.useCustomFrontUsb ? (global.fixedUsbFront ?? Math.round(suggestedFrontUsb * 100) / 100) : suggestedFrontUsb.toFixed(2)}
+                      onKeyDown={blurOnEnter}
+                      disabled={!global.useCustomFrontUsb}
+                      onChange={e =>
+                        setGlobal(g => ({
+                          ...g,
+                          fixedUsbFront: _nz(e.target.value, g.fixedUsbFront ?? suggestedFrontUsb),
+                        }))
+                      }
+                    />
+                    {global.useCustomFrontUsb ? (
+                      <div className="grid grid-cols-4 gap-1">
+                        <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleFixedUsbFrontStep(-5)}>-5</button>
+                        <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleFixedUsbFrontStep(-1)}>-1</button>
+                        <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleFixedUsbFrontStep(1)}>+1</button>
+                        <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleFixedUsbFrontStep(5)}>+5</button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center py-1">
+                        <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Auto-calculated</span>
+                      </div>
+                    )}
+                    <label className="flex items-center justify-center gap-1.5 cursor-pointer select-none text-[10px] u-text-muted hover:text-neutral-200 mt-1">
+                      <input
+                        type="checkbox"
+                        className="rounded accent-accent w-3 h-3"
+                        checked={Boolean(global.useCustomFrontUsb)}
+                        onChange={e => setGlobal(g => ({ ...g, useCustomFrontUsb: e.target.checked, fixedUsbFront: e.target.checked ? suggestedFrontUsb : g.fixedUsbFront }))}
+                      />
+                      <span className="uppercase tracking-wider font-bold">Override</span>
+                    </label>
+                  </>
+                )}
               </div>
             ) : (
               <div className="flex flex-col gap-1.5 rounded border u-border u-surface p-2 sm:p-2.5 col-span-1">
-                <span className="text-xs font-medium u-text truncate">Projection A (mm)</span>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium u-text truncate">
+                    {global.useProtrusionMode ? "Blade Protrusion (mm)" : "Projection A (mm)"}
+                  </span>
+                </div>
                 <input
                   type="number"
                   inputMode="decimal"
                   step="any"
                   className="w-full rounded border u-border u-surface px-2 py-1 text-base font-mono text-center u-text focus:ring-1 focus:ring-accent"
-                  value={global.projection}
+                  value={global.useProtrusionMode ? global.protrusion : global.projection}
                   onKeyDown={blurOnEnter}
-                  onChange={e =>
-                    setGlobal(g => ({ ...g, projection: _nz(e.target.value, g.projection) }))
-                  }
+                  onChange={e => {
+                    const val = _nz(e.target.value, global.useProtrusionMode ? global.protrusion : global.projection);
+                    if (global.useProtrusionMode) {
+                      setGlobal(g => ({ ...g, protrusion: val }));
+                    } else {
+                      setGlobal(g => ({ ...g, projection: val }));
+                    }
+                  }}
                 />
                 <div className="grid grid-cols-4 gap-1">
-                  <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Subtract 5mm"
-                    onClick={() => handleProjectionStep(-5)}
-                  >
-                    -5
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Subtract 1mm"
-                    onClick={() => handleProjectionStep(-1)}
-                  >
-                    -1
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Add 1mm"
-                    onClick={() => handleProjectionStep(1)}
-                  >
-                    +1
-                  </button>
-                  <button
-                    type="button"
-                    className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center"
-                    title="Add 5mm"
-                    onClick={() => handleProjectionStep(5)}
-                  >
-                    +5
-                  </button>
+                  <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleProjectionStep(-5)}>-5</button>
+                  <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleProjectionStep(-1)}>-1</button>
+                  <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleProjectionStep(1)}>+1</button>
+                  <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border u-border bg-neutral-900 text-neutral-300 hover:text-white hover:border-neutral-700 text-center" onClick={() => handleProjectionStep(5)}>+5</button>
                 </div>
               </div>
             )}
@@ -325,109 +352,43 @@ export function GlobalSetupCard({
               </div>
             </div>
 
-            {/* Bottom Left: Front USB (Projection Mode) OR Reference Toggle (Height Mode) */}
-            {isProjectionMode ? (
-              <div className="flex flex-col gap-1.5 rounded border u-border u-surface p-2 sm:p-2.5 col-span-1 justify-between">
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs font-medium u-text truncate">
-                    USB Front {heightMode === 'hr' ? 'hr' : 'hn'} (mm)
-                  </span>
-                  {global.useCustomFrontUsb ? (
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      className="w-full rounded border u-border u-surface px-2 py-1 text-base font-mono text-center u-text focus:ring-1 focus:ring-accent"
-                      value={global.fixedUsbFront ?? Math.round(suggestedFrontUsb * 100) / 100}
-                      onKeyDown={blurOnEnter}
-                      onChange={e =>
-                        setGlobal(g => ({
-                          ...g,
-                          fixedUsbFront: _nz(e.target.value, g.fixedUsbFront ?? suggestedFrontUsb),
-                        }))
-                      }
-                    />
-                  ) : (
-                    <div
-                      className="w-full rounded border u-border bg-neutral-950/60 px-2 py-1 text-base font-mono text-center u-text select-text flex items-center justify-center font-semibold"
-                      title="Suggested front USB height matching rear wheel distance (CA)"
-                    >
-                      {suggestedFrontUsb.toFixed(2)}
-                    </div>
-                  )}
+            
+            {/* Bottom Left: Protrusion (Projection Mode) */}
+            {isProjectionMode && (
+              <div className="flex flex-col gap-1.5 rounded border border-accent/30 bg-accent/5 p-2 sm:p-2.5 col-span-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-accent truncate">Blade Protrusion Pb (mm)</span>
                 </div>
-
-                <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs u-text-muted hover:text-neutral-200 py-1">
-                  <input
-                    type="checkbox"
-                    className="rounded accent-accent w-3.5 h-3.5"
-                    checked={Boolean(global.useCustomFrontUsb)}
-                    onChange={e => {
-                      const checked = e.target.checked;
-                      setGlobal(g => ({
-                        ...g,
-                        useCustomFrontUsb: checked,
-                        ...(checked && g.fixedUsbFront === undefined
-                          ? { fixedUsbFront: Math.round(suggestedFrontUsb * 100) / 100 }
-                          : {}),
-                      }));
-                    }}
-                  />
-                  <span>Custom setting</span>
-                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="any"
+                  className="w-full rounded border border-accent/50 bg-neutral-950 px-2 py-1 text-base font-mono text-center text-accent focus:ring-1 focus:ring-accent"
+                  value={global.protrusion}
+                  disabled={!global.useProtrusionMode}
+                  onKeyDown={blurOnEnter}
+                  onChange={e =>
+                    setGlobal(g => ({ ...g, protrusion: _nz(e.target.value, g.protrusion) }))
+                  }
+                />
+                {global.useProtrusionMode ? (
+                  <div className="grid grid-cols-4 gap-1">
+                    <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border border-accent/30 bg-neutral-900 text-accent hover:bg-accent/20 text-center" onClick={() => handleProjectionStep(-5)}>-5</button>
+                    <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border border-accent/30 bg-neutral-900 text-accent hover:bg-accent/20 text-center" onClick={() => handleProjectionStep(-1)}>-1</button>
+                    <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border border-accent/30 bg-neutral-900 text-accent hover:bg-accent/20 text-center" onClick={() => handleProjectionStep(1)}>+1</button>
+                    <button type="button" className="py-1 text-[0.7rem] sm:text-xs font-mono rounded border border-accent/30 bg-neutral-900 text-accent hover:bg-accent/20 text-center" onClick={() => handleProjectionStep(5)}>+5</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-1">
+                    <span className="text-[10px] text-accent/50 uppercase tracking-wider font-bold">Enable in Header</span>
+                  </div>
+                )}
               </div>
-            ) : (
-              heightMode && setHeightMode && (
-                <div className="flex flex-col justify-between gap-1.5 rounded border border-neutral-800 bg-neutral-950/60 p-2 sm:p-2.5 text-xs col-span-1">
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-neutral-200 truncate">
-                      USB height reference
-                    </span>
-                    <span className="text-[0.7rem] u-text-muted leading-tight mt-0.5">
-                      {heightMode === 'hn'
-                        ? 'Datum (Base to USB top)'
-                        : 'Wheel (Perimeter to USB top)'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 w-full mt-auto">
-                    <button
-                      type="button"
-                      className={`flex-1 px-2 py-1.5 text-xs rounded border transition-colors ${
-                        heightMode === 'hn'
-                          ? 'border-accent bg-accent-tint text-accent font-semibold'
-                          : 'border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-neutral-700'
-                      }`}
-                      onClick={() => {
-                        setHeightMode('hn');
-                        setGlobal(g => ({ ...g, fixedUsbMode: 'hn' }));
-                      }}
-                      title="Datum Base Height (hn) - distance from machine datum base to USB top"
-                    >
-                      Datum
-                    </button>
-                    <button
-                      type="button"
-                      className={`flex-1 px-2 py-1.5 text-xs rounded border transition-colors ${
-                        heightMode === 'hr'
-                          ? 'border-accent bg-accent-tint text-accent font-semibold'
-                          : 'border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-neutral-700'
-                      }`}
-                      onClick={() => {
-                        setHeightMode('hr');
-                        setGlobal(g => ({ ...g, fixedUsbMode: 'hr' }));
-                      }}
-                      title="Wheel Top Height (hr) - distance from wheel surface to USB top"
-                    >
-                      Wheel
-                    </button>
-                  </div>
-                </div>
-              )
             )}
 
             {/* Bottom Right: Advanced Diameters (Shared by both modes) */}
-            <div className="flex flex-col gap-2 rounded border border-neutral-800/80 bg-neutral-950/30 p-2 sm:p-2.5 col-span-1 justify-between">
-              <label className="flex flex-col gap-1">
+            <div className={`flex flex-col gap-2 rounded border border-neutral-800/80 bg-neutral-950/30 p-2 sm:p-2.5 justify-between ${isProjectionMode ? 'col-span-1' : 'col-span-1 sm:col-span-2'}`}>
+              <label className="flex flex-col gap-1 flex-1 min-w-0">
                 <span className="u-text text-xs truncate">Support Bar (USB)</span>
                 <MiniSelect
                   value={global.activeUsbId || usbs[0]?.id || ''}
@@ -438,7 +399,7 @@ export function GlobalSetupCard({
                   liftOnOpen={true}
                 />
               </label>
-              <label className="flex flex-col gap-1">
+              <label className="flex flex-col gap-1 flex-1 min-w-0">
                 <span className="u-text text-xs truncate">Sharpening Jig</span>
                 <MiniSelect
                   value={global.activeJigId || jigs[0]?.id || ''}

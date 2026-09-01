@@ -102,7 +102,7 @@ export default function HardwareManagerView({
                     </button>
                     <button
                       onClick={() => {
-                        isJig ? onDeleteJig(item.id) : onDeleteUsb(item.id);
+                        if (isJig) { onDeleteJig(item.id); } else { onDeleteUsb(item.id); }
                         setDeleteConfirmId(null);
                       }}
                       className="px-4 py-1.5 rounded-full text-xs font-bold bg-danger text-white shadow"
@@ -162,6 +162,58 @@ export default function HardwareManagerView({
                       />
                       <span className="text-xs text-neutral-500">mm</span>
                     </label>
+                    {isJig && (
+                      <div className="flex flex-col gap-3 w-full pt-2 mt-2 border-t border-neutral-800/40">
+                        <label className="flex items-center justify-between gap-2">
+                           <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Base Length (mm)</span>
+                           <input
+                             type="text"
+                             inputMode="decimal"
+                             placeholder="e.g. 100"
+                             className="w-16 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right text-xs font-mono placeholder-neutral-700"
+                             value={(item as import('../../types/core').JigConfig).length || ''}
+                             onKeyDown={blurOnEnter}
+                             onChange={e => {
+                               const val = e.target.value === '' ? undefined : Number(e.target.value.replace(',', '.'));
+                               if (val === undefined || !Number.isNaN(val)) {
+                                 onUpdateJig(item.id, { length: val });
+                               }
+                             }}
+                           />
+                        </label>
+                        <label className="flex items-center justify-between gap-2">
+                           <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Adjustable Collar?</span>
+                           <input
+                             type="checkbox"
+                             className="rounded border-neutral-700 bg-neutral-950 text-accent focus:ring-accent"
+                             checked={!!(item as import('../../types/core').JigConfig).isAdjustableLength}
+                             onChange={e => {
+                               onUpdateJig(item.id, { isAdjustableLength: e.target.checked });
+                             }}
+                           />
+                        </label>
+                        {(item as import('../../types/core').JigConfig).isAdjustableLength && (
+                          <label className="flex items-center justify-between gap-2">
+                             <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Thread Pitch (Optional, mm)</span>
+                             <input
+                               type="text"
+                               inputMode="decimal"
+                               placeholder="e.g. 1.5"
+                               className="w-16 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-right text-xs font-mono placeholder-neutral-700"
+                               value={(item as import('../../types/core').JigConfig).threadPitch || ''}
+                               onKeyDown={blurOnEnter}
+                               onChange={e => {
+                                 const val = e.target.value === '' ? undefined : Number(e.target.value.replace(',', '.'));
+                                 if (val === undefined || !Number.isNaN(val)) {
+                                   onUpdateJig(item.id, { threadPitch: val });
+                                 }
+                               }}
+                             />
+                          </label>
+                        )}
+                      </div>
+                    )}
+
                     {!isJig && (
                       <div className="flex items-center gap-4 w-full pt-1.5 mt-1 border-t border-neutral-800/40">
                         <label className="flex items-center gap-2">

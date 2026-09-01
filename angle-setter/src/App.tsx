@@ -7,6 +7,7 @@ import { computeWheelResults } from "./math/tormek";
 import * as React from 'react';
 import { IconKebab } from './icons';
 import ImportExportPanel from './components/ImportExportPanel';
+import PreferencesView from './components/settings/PreferencesView';
 import GlossaryPage from './components/GlossaryPage';
 import ProgressionView from './components/ProgressionView';
 import ThemeLab from './components/ThemeLab';
@@ -96,7 +97,7 @@ export default function App() {
 
   const [view, setView] = React.useState<'calculator' | 'wheels' | 'settings'>('calculator');
   const [settingsView, setSettingsView] = React.useState<
-    'machine' | 'hardware' | 'calibration' | 'import' | 'glossary' | 'themelab'
+    'machine' | 'hardware' | 'calibration' | 'import' | 'preferences' | 'glossary' | 'themelab'
   >('machine');
 
   const showDevHeader = import.meta.env.DEV;
@@ -186,7 +187,7 @@ export default function App() {
 
   const wheelResults = React.useMemo(
     () => computeWheelResults(wheels, sessionSteps, global, machines, jigs, usbs, defaultMachineId),
-    [machines, defaultMachineId, global, sessionSteps, wheels]
+    [machines, defaultMachineId, global, sessionSteps, wheels, jigs, usbs]
   );
 
   
@@ -427,7 +428,6 @@ export default function App() {
             isSetupPanelOpen={isSetupPanelOpen}
             setIsSetupPanelOpen={setIsSetupPanelOpen}
             heightMode={heightMode}
-            setHeightMode={setHeightMode}
             targetAngleSymbol={targetAngleSymbol}
             constants={machines.find(m => m.id === defaultMachineId)?.constants || machines[0]?.constants}
           />
@@ -639,9 +639,10 @@ export default function App() {
           <div className="flex justify-end mb-2">
             <MiniSelect
               value={settingsView === 'calibration' ? 'machine' : settingsView}
-              options={[
+                            options={[
                 { value: 'machine', label: 'Machines' },
                 { value: 'hardware', label: 'Hardware' },
+                { value: 'preferences', label: 'Preferences' },
                 { value: 'import', label: 'Import / export' },
                 { value: 'glossary', label: 'Glossary' },
                 { value: 'themelab', label: 'Theme Lab' },
@@ -656,6 +657,10 @@ export default function App() {
           </div>
 
           
+                    {settingsView === 'preferences' && (
+            <PreferencesView heightMode={heightMode} setHeightMode={setHeightMode} />
+          )}
+
           {settingsView === 'hardware' && (
             <HardwareManagerView
               jigs={jigs}

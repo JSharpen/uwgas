@@ -15,7 +15,7 @@
 | **JOB-004** | Direct $h_n \leftrightarrow h_r$ Height Mode Toggle | `[COMPLETED]` | **HIGH** | Dedicated segmented control in the Global Setup card for switching between datum base height ($h_n$) and wheel surface height ($h_r$) in 1 click. |
 | **JOB-005** | Workshop Steppers & Mobile 2-Col Layout | `[COMPLETED]` | **HIGH** | Permanent 2-column side-by-side layout with touch-friendly $+/-$ steppers for Projection $A$ ($\pm 1\text{mm}$, $\pm 5\text{mm}$) and Angle $\beta$ ($\pm 0.5^\circ$, $\pm 1.0^\circ$). |
 | **JOB-006** | Multi-Machine Profiles System | `[COMPLETED]` | **MEDIUM** | Store multiple grinder configs (e.g. "T-8 Shop", "T-4 Mobile", "Jet Clone") with individual USB diameters and calibration offsets. |
-| **JOB-007** | Built-in Jig Catalog & Projection Calc | `[PROPOSED]` | **MEDIUM** | Provide jig presets (SVM-45, KJ-45 centering jig, etc.) and knife clamp projection calculators (blade width + clamp depth $\rightarrow A$). |
+| **JOB-007** | Built-in Jig Catalog & Projection Calc | `[COMPLETED]` | **MEDIUM** | Provide jig presets (SVM-45, KJ-45 centering jig, etc.) and knife clamp projection calculators (blade width + clamp depth $\rightarrow A$). |
 | **JOB-008** | Large Readout Workshop HUD Mode | `[PROPOSED]` | **MEDIUM** | Fullscreen high-contrast view with massive $h_n$ readouts designed for viewing from 2 meters away while at the grinding wheel. |
 | **JOB-009** | Vitest Math Engine Unit Tests | `[PROPOSED]` | **MEDIUM** | Golden-master test suite validating Ton math against canonical Dutchman spreadsheet tables ([`docs/MATH_REFERENCE.md`](MATH_REFERENCE.md)). |
 | **JOB-010** | Wheel Wear & Trueing Logger | `[PROPOSED]` | **LOW** | Track wheel diameter reduction over time with trueing cut notes and quick $\Delta D$ adjustment. |
@@ -50,7 +50,7 @@ UWGAS is a precision angle calculator and sharpening workflow companion designed
 
 ---
 
-## 📊 Current Status (v0.9.1)
+## 📊 Current Status (v0.9.5)
 
 - [x] Dutchman / Ton core trigonometry solver (`src/math/tormek.ts`)
 - [x] Dual-base machine calibration wizard with least-squares / non-linear solver and residual analysis ($\varepsilon$)
@@ -95,7 +95,7 @@ flowchart LR
 *Objective: Expand the math and configuration engine to handle multi-machine setups, alternative jigs, and advanced geometry.*
 
 - [ ] **2.1 Multi-Machine Profile Management (`JOB-006`)**
-- [ ] **2.2 Jig & Knife Projection Helpers (`JOB-007`)**
+- [x] **2.2 Jig & Knife Projection Helpers (`JOB-007`)**
 - [ ] **2.3 Large Readout Workshop HUD Mode (`JOB-008`)**
 
 ---
@@ -104,6 +104,7 @@ flowchart LR
 
 | Date | Topic / Change | Rationale / Notes |
 | :--- | :--- | :--- |
+| **2026-09-01** | Completed Built-in Jig Catalog & Projection Calc (`JOB-007`) | Added Protrusion ($P_b$) mode to the Global Setup card. Expanded Hardware Settings to include Jig Base Length, Adjustable Collar toggle, and Thread Pitch. Included automated projection-to-protrusion solver output indicating exact Jig collar mm and turns to hit a target angle in Projection Solver mode. Relocated Reference Base toggle to App Settings. |
 | **2026-08-28** | Completed Suggested Front USB Height (`JOB-014`) | Added pure geometric solver matching axle-to-USB distance ($CA$) between front and rear bases in Projection Mode so projection $A$ remains identical across matched wheel operations without reclamping. Cleaned UI with high-contrast text readout, custom setting checkbox override, and removed front steppers. |
 | **2026-08-27** | Completed Projection Solver Mode (`JOB-012`) | Implemented exact closed-form algebraic inverse Dutchman solver to calculate required knife projection $A$ with fixed USB bar position ($h_n / h_r$). Added header toggle button and responsive workshop steppers. |
 | **2026-08-26** | Completed Phase 1 Core Usability & Decomposition | Decomposed `App.tsx` into modular components, added touch steppers, quick angle chips, MicroBump controls, $h_n \leftrightarrow h_r$ pill, and default progression auto-loader. Verified with clean build. |

@@ -5,6 +5,25 @@
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.9.6] — 2026-09-01 (Session: JOB-007 Jig Protrusion & Projection)
+
+### 🚀 Added
+- **Blade Protrusion (Caliper) Measurement Mode**:
+  - Implemented `$P_b$` (Blade Protrusion) mode in `GlobalSetupCard`, allowing users to directly input a caliper measurement rather than the full projection $A$.
+  - Expanded `JigConfig` to track `length` (base length of the jig), `isAdjustableLength` (collar adjustable jigs), and `threadPitch`.
+  - Added new defaults: KJ-45 (100mm), KJ-140 (140mm).
+- **Adjustable Jig Projection Solver**:
+  - In Projection Solver Mode (fixed USB), the math engine now computes the exact required jig length.
+  - Automatically calculates and renders the required physical $\Delta$ mm adjustment and number of turns (if thread pitch is defined) directly in the `ProgressionView` readout.
+- **General Preferences View**:
+  - Created a new "Preferences" tab under the main App Settings.
+  - Relocated the "Reference Base" toggle (Datum vs Wheel / $h_n$ vs $h_r$) to this new global settings view.
+
+### 💄 UI & Ergonomics
+- Refined `GlobalSetupCard` grid geometries to optimally adapt between Projection and Height modes.
+- Merged Front and Rear USB fixed inputs into a unified tabbed card in Projection Mode to restore the clean 2x2 grid.
+- Dynamically reflowed the Hardware Selection block to display side-by-side on desktop when spanning full-width.
+
 ## [0.9.5] — 2026-08-31 (Session: Hardware Manager & Jigs/USB Profiles)
 
 ### 🚀 Added

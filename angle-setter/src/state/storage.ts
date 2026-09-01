@@ -12,7 +12,7 @@ import type {
 } from '../types/core';
 import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS, DEFAULT_JIGS, DEFAULT_USBS } from './defaults';
 
-export const PERSIST_VERSION = 5;
+export const PERSIST_VERSION = 6;
 
 export function _save(k: string, v: unknown) {
   try {
@@ -59,7 +59,7 @@ function ensureHardwareConfig<T extends { id: string; name: string; }>(
 }
 
 export function readPersistedState(): AppPersistedState {
-  let loadedGlobal = _load<any>('t_global', DEFAULT_GLOBAL);
+  const loadedGlobal = _load<any>('t_global', DEFAULT_GLOBAL);
   const legacyConstants = _load<MachineConstants>('t_constants', DEFAULT_CONSTANTS);
   
   let machines = _load<MachineConfig[]>('t_machines', []);
@@ -191,7 +191,17 @@ export function parsePersistedState(raw: string): AppPersistedState | null {
       }
       return u;
     });
+    
+    jigs = jigs.map(j => {
+      const def = DEFAULT_JIGS.find(d => d.id === j.id);
+      if (def) {
+        return { ...def, ...j, length: j.length ?? def.length, isAdjustableLength: j.isAdjustableLength ?? def.isAdjustableLength, threadPitch: j.threadPitch ?? def.threadPitch };
+      }
+      return j;
+    });
+    
     let sessionSteps = Array.isArray(sessionStepsRaw) ? (sessionStepsRaw as SessionStep[]) : [];
+
 
     const constants = isObject(legacyConstantsRaw) ? (legacyConstantsRaw as MachineConstants) : DEFAULT_CONSTANTS;
 

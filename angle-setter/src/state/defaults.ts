@@ -1,8 +1,10 @@
 import type { MachineConstants, GlobalState, Wheel, JigConfig, UsbConfig } from '../types/core';
 
 export const DEFAULT_JIGS: JigConfig[] = [
-  { id: 'jig-svm45', name: 'SVM-45 / KJ-45', Dj: 12 },
-  { id: 'jig-svm140', name: 'SVM-140', Dj: 12 },
+  { id: 'jig-svm45', name: 'SVM-45', Dj: 12, isAdjustableLength: true, length: 100, threadPitch: 1.5 },
+  { id: 'jig-kj45', name: 'KJ-45 Centering', Dj: 12, isAdjustableLength: false, length: 100 },
+  { id: 'jig-svm140', name: 'SVM-140', Dj: 12, isAdjustableLength: true, length: 140, threadPitch: 1.5 },
+  { id: 'jig-kj140', name: 'KJ-140 Centering', Dj: 12, isAdjustableLength: false, length: 140 },
 ];
 
 export const DEFAULT_USBS: UsbConfig[] = [
@@ -20,6 +22,8 @@ export const DEFAULT_GLOBAL: GlobalState = {
   fixedUsbFront: 85.0,
   fixedUsbMode: 'hn',
   useCustomFrontUsb: false,
+  useProtrusionMode: false,
+  protrusion: 25.0,
 };
 
 export const DEFAULT_CONSTANTS: MachineConstants = {

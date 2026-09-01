@@ -160,9 +160,12 @@ export function computeWheelResults(
   usbs: UsbConfig[],
   defaultMachineId?: string
 ): WheelResult[] {
-  const A = _nz(global.projection);
+    
   const activeJig = jigs.find(j => j.id === global.activeJigId) || jigs[0];
   const Dj = _nz(activeJig?.Dj ?? 12);
+  const A = (global.useProtrusionMode && activeJig.length && global.protrusion !== undefined)
+    ? (activeJig.length + _nz(global.protrusion))
+    : _nz(global.projection);
   const activeGlobalUsb = usbs.find(u => u.id === global.activeUsbId) || usbs[0];
   const globalDs = _nz(activeGlobalUsb?.Ds ?? 12);
   const beta = _nz(global.targetAngle);
@@ -254,6 +257,15 @@ export function computeWheelResults(
 
       const hrRear = computeTonHeights({ ...common, base: 'rear' });
       const hBase = computeTonHeights(common);
+      let requiredJigAdjustmentMm = null;
+      let requiredJigTurns = null;
+      if (global.useProtrusionMode && global.protrusion !== undefined && activeJig.isAdjustableLength && activeJig.length) {
+         const requiredJigLength = projOutput.A - global.protrusion;
+         requiredJigAdjustmentMm = requiredJigLength - activeJig.length;
+         if (activeJig.threadPitch) {
+             requiredJigTurns = requiredJigAdjustmentMm / activeJig.threadPitch;
+         }
+      }
 
       results.push({
         wheel,
@@ -266,7 +278,10 @@ export function computeWheelResults(
         isReachable: true,
         step,
         unadjustedBetaDeg: null,
+        requiredJigAdjustmentMm,
+        requiredJigTurns
       });
+
       continue;
     }
 
@@ -427,10 +442,12 @@ export function estimateMaxAngleErrorDeg(
   const maxRes = diagnostics.maxAbsResidualMm;
   if (!Number.isFinite(maxRes) || maxRes <= 0) return null;
 
-  const A = _nz(global.projection);
-  const beta = _nz(global.targetAngle);
   const activeJig = jigs.find(j => j.id === global.activeJigId) || jigs[0];
   const Dj = _nz(activeJig?.Dj ?? 12);
+  const A = (global.useProtrusionMode && activeJig.length && global.protrusion !== undefined)
+    ? (activeJig.length + _nz(global.protrusion))
+    : _nz(global.projection);
+  const beta = _nz(global.targetAngle);
   const activeGlobalUsb = usbs.find(u => u.id === global.activeUsbId) || usbs[0];
   const Ds = _nz(activeGlobalUsb?.Ds ?? 12);
 

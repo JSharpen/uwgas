@@ -166,19 +166,27 @@ function ProgressionView({
               <div className="flex items-center justify-between w-full">
                 {/* Left: Height or Projection readout */}
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="font-mono text-base sm:text-lg font-bold u-text tracking-tight leading-none">
-                    {isProjectionMode ? (
-                      r.isReachable !== false && r.requiredProjectionA != null ? (
-                        `A = ${r.requiredProjectionA.toFixed(2)} mm`
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-mono text-base sm:text-lg font-bold u-text tracking-tight leading-none">
+                      {isProjectionMode ? (
+                        r.isReachable !== false && r.requiredProjectionA != null ? (
+                          `A = ${r.requiredProjectionA.toFixed(2)} mm`
+                        ) : (
+                          <span className="text-danger text-sm sm:text-base">Out of range</span>
+                        )
+                      ) : heightMode === 'hn' ? (
+                        `hn = ${r.hnBase.toFixed(2)} mm`
                       ) : (
-                        <span className="text-danger text-sm sm:text-base">Out of range</span>
-                      )
-                    ) : heightMode === 'hn' ? (
-                      `hn = ${r.hnBase.toFixed(2)} mm`
-                    ) : (
-                      `hr = ${r.hrWheel.toFixed(2)} mm`
+                        `hr = ${r.hrWheel.toFixed(2)} mm`
+                      )}
+                    </span>
+                    {isProjectionMode && r.requiredJigAdjustmentMm != null && (
+                      <span className="text-[10px] font-mono text-neutral-400 mt-1 uppercase tracking-widest leading-none">
+                        JIG: {r.requiredJigAdjustmentMm > 0 ? '+' : ''}{r.requiredJigAdjustmentMm.toFixed(2)} mm
+                        {r.requiredJigTurns != null && ` (${r.requiredJigTurns > 0 ? '+' : ''}${r.requiredJigTurns.toFixed(1)} turns)`}
+                      </span>
                     )}
-                  </span>
+                  </div>
                 </div>
 
                 {deltaInfo && (

@@ -38,6 +38,9 @@ export type SessionPreset = {
 };
 
 export type JigConfig = {
+  length?: number;
+  isAdjustableLength?: boolean;
+  threadPitch?: number;
   id: string;
   name: string;
   Dj: number;
@@ -73,6 +76,8 @@ export type GlobalState = {
   activeUsbId: string;
   targetAngle: number; // β per side
   activeJigId: string;
+  useProtrusionMode?: boolean;
+  protrusion?: number;
   calcMode?: CalcMode; // 'height' (default) or 'projection'
   fixedUsbHeight?: number; // legacy fallback fixed USB height (mm)
   fixedUsbRear?: number; // fixed USB height for rear base (mm)
@@ -143,6 +148,8 @@ export type WheelResult = {
   isReachable?: boolean;
   step?: SessionStep;
   unadjustedBetaDeg?: number | null;
+  requiredJigAdjustmentMm?: number | null;
+  requiredJigTurns?: number | null;
 };
 
 export type CalibrationMeasurement = {
