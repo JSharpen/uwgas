@@ -21,9 +21,12 @@
 | **JOB-010** | Wheel Wear & Trueing Logger | `[PROPOSED]` | **LOW** | Track wheel diameter reduction over time with trueing cut notes and quick $\Delta D$ adjustment. |
 | **JOB-011** | Device, Screen Size & Density Optimization | `[PROPOSED]` | **MEDIUM** | Adaptive responsive scaling, pixel-density tuning, and display density presets (Compact / Standard / Touch-Spacious) across mobile, tablet, and bench displays. |
 | **JOB-012** | Projection Solver for Adjustable Jigs & Fixed USB | `[COMPLETED]` | **HIGH** | Exact closed-form inverse Dutchman solver calculating required knife projection $A$ for fixed USB bar ($h_n / h_r$) with header mode toggle and workshop steppers. |
-| **JOB-013** | Global Setup Full Collapse & Compact Summary Strip | `[COMPLETED]` | **MEDIUM** | Header collapse toggle collapses the entire inputs body; renders a compact one-line variable summary strip when collapsed with 1-click expand. |
 | **JOB-014** | Suggested Front USB Height & Custom Override for Projection Mode | `[COMPLETED]` | **HIGH** | Implemented suggested Front USB height matching Rear USB wheel distance ($CA$), high-contrast text display, custom setting checkbox override, and stepper removal. |
 | **JOB-015** | Direct Swap / Unadjusted Angle Calculator | `[PROPOSED]` | **LOW** | Add UI to display the exact angle hit when swapping wheels on the same base without adjusting the USB nut. The mathematical solver (`solveBetaForFixedSetup`) is already implemented in `tormek.ts`. |
+| **JOB-018** | Global Setup Drawer Migration | `[COMPLETED]` | **HIGH** | Migrate the global setup panel to an animated drawer with CSS grid transitions, pinning variables at the bottom and pulling the nib to the top on expansion. |
+| **JOB-019** | Preset Controls Migration | `[COMPLETED]` | **HIGH** | Migrate preset selection into the Global Setup Drawer and summary strip. Retained Save/Manage in Progression kebab menu pending Progression view overhaul. |
+| **JOB-020** | UI/UX Modernization: Live List & Setup Unification | `[COMPLETED]` | **HIGH** | Unify global settings by moving Machine selector and Preset Save/Manage into the Setup Drawer. Overhaul Progression view into a 'Live List' with inline accordion editing, removing separate edit modes and kebab menus. |
+| **JOB-021** | Gesture-Based Step Reordering (Drag and Drop) | `[PROPOSED]` | **MEDIUM** | Implement native-feeling touch drag-and-drop reordering for the Progression list (e.g. using `@dnd-kit`), adding drag handles to avoid clicking up/down buttons. |
 
 
 ---

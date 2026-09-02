@@ -5,6 +5,22 @@
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.9.7] — 2026-09-01 (Session: Mobile-First UX Overhaul)
+
+### 💄 UI & Ergonomics
+- **Bottom Tab Bar**: Replaced the top navigation buttons with a permanent, fixed bottom tab bar using clean icon-only indicators (`IconCalculator`, `IconDisc`, `IconSettings`).
+- **Bottom Drawer Global Setup**: 
+  - Transformed the `GlobalSetupCard` into a fixed bottom drawer that sits right on top of the new tab bar.
+  - The drawer expands *upwards*, visually overlaying the progression list without disrupting background scroll.
+### Changed
+- **Global Setup Drawer Integration**: Completely overhauled the Global Setup panel into an animated bottom sheet drawer. Separated the unified background into two visually distinct components: a permanently visible floating Summary Pill, and a Drawer Body that smoothly expands upwards from behind the pill on tap/swipe.
+- **Preset Management**: Moved the preset selection dropdown from the Progression header into the new Global Setup drawer as a dedicated ActionSheetPicker. The active preset is now prominently displayed on its own line inside the Summary Pill. Save and Manage Preset controls remain in the Progression Kebab menu for now.
+- **Settings Overhaul**: Removed top tab navigation and moved Advanced options (Height Mode, Constants) into a dedicated modal Settings page.
+- **Native Settings Navigation**: 
+  - Scrapped the `MiniSelect` dropdown for Settings navigation.
+  - Created a classic vertical list root menu (`SettingsRootView`) with drill-down submenus.
+  - Relocated calculation and measurement modes (`calcMode`, `useProtrusionMode`, `heightMode`) into a new dedicated "Measurement" submenu to fully declutter the main Global Setup card.
+
 ## [0.9.6] — 2026-09-01 (Session: JOB-007 Jig Protrusion & Projection)
 
 ### 🚀 Added

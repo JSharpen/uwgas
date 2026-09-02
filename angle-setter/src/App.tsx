@@ -5,15 +5,13 @@ import { computeWheelResults } from "./math/tormek";
 // ==============================================================================
 
 import * as React from 'react';
-import { IconKebab } from './icons';
+import { IconKebab, IconCalculator, IconDisc, IconSettings } from './icons';
 import ImportExportPanel from './components/ImportExportPanel';
-import PreferencesView from './components/settings/PreferencesView';
+import SettingsRootView from './components/settings/SettingsRootView';
+import MeasurementSettingsView from './components/settings/MeasurementSettingsView';
 import GlossaryPage from './components/GlossaryPage';
 import ProgressionView from './components/ProgressionView';
-import ThemeLab from './components/ThemeLab';
-import MiniSelect from './components/MiniSelect';
 import GlobalSetupCard from './components/calculator/GlobalSetupCard';
-import ProgressionEditor from './components/calculator/ProgressionEditor';
 import WheelManagerView from './components/wheels/WheelManagerView';
 import PresetManagerModal from './components/presets/PresetManagerModal';
 import SavePresetDialog from './components/presets/SavePresetDialog';
@@ -32,8 +30,7 @@ import type { JigConfig, UsbConfig,
 import {
   normalizeWheel,
 } from './utils/normalizers';
-import { _load, readPersistedState, writePersistedState } from './state/storage';
-import { DEFAULT_CONSTANTS, DEFAULT_GLOBAL, DEFAULT_WHEELS, DEFAULT_JIGS, DEFAULT_USBS } from './state/defaults';
+import { readPersistedState, writePersistedState } from './state/storage';
 import { BTN } from './ui/buttons';
 import { APP_VERSION, APP_VERSION_DISPLAY } from './version';
 
@@ -97,11 +94,29 @@ export default function App() {
 
   const [view, setView] = React.useState<'calculator' | 'wheels' | 'settings'>('calculator');
   const [settingsView, setSettingsView] = React.useState<
-    'machine' | 'hardware' | 'calibration' | 'import' | 'preferences' | 'glossary' | 'themelab'
-  >('machine');
+    'root' | 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary'
+  >('root');
 
   const showDevHeader = import.meta.env.DEV;
-  const [isSetupPanelOpen, setIsSetupPanelOpen] = React.useState(true);
+  const [isSetupPanelOpen, setIsSetupPanelOpen] = React.useState(false);
+  // Global click-outside to collapse panels
+  React.useEffect(() => {
+    const handleGlobalPointerDown = (e: PointerEvent | MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+      // If clicking inside a card, drawer, or action sheet, don't collapse.
+      // We look for common container classes or explicit interactables.
+      const isInteractive = target.closest('.bg-\\[\\#262626\\], .bg-neutral-900, .action-sheet, button, input, select, [role="dialog"]');
+      if (!isInteractive) {
+        setIsSetupPanelOpen(false);
+        window.dispatchEvent(new CustomEvent('collapseAll'));
+      }
+    };
+    
+    // Use pointerdown so it fires before click (which might be intercepted by scroll)
+    document.addEventListener('pointerdown', handleGlobalPointerDown);
+    return () => document.removeEventListener('pointerdown', handleGlobalPointerDown);
+  }, []);
+
   const [isWheelConfigOpen, setIsWheelConfigOpen] = React.useState(false);
 
   // Preset dialogs state
@@ -383,7 +398,7 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-dvh u-bg p-3 sm:p-4 flex flex-col gap-4 max-w-4xl mx-auto">
+    <div className="min-h-dvh u-bg p-3 sm:p-4 pb-[140px] flex flex-col gap-4 max-w-4xl mx-auto">
       {view === 'settings' && (
         <div className="app-watermark" aria-label={`App version ${APP_VERSION}`}>
           v{APP_VERSION_DISPLAY}
@@ -391,38 +406,24 @@ export default function App() {
       )}
       {showDevHeader && <h1 className="text-lg font-semibold u-text">UWGAS Dev build</h1>}
 
-      {/* Top Navigation Tabs */}
-      <div className="flex gap-2 text-sm mb-1">
-        <button
-          type="button"
-          className={view === 'calculator' ? BTN.tabPrimary : BTN.tabGhost}
-          onClick={() => setView('calculator')}
-        >
-          Calculator
-        </button>
 
-        <button
-          type="button"
-          className={view === 'wheels' ? BTN.tabPrimary : BTN.tabGhost}
-          onClick={() => setView('wheels')}
-        >
-          Wheel Manager
-        </button>
-
-        <button
-          type="button"
-          className={view === 'settings' ? BTN.tabPrimary : BTN.tabGhost}
-          onClick={() => setView('settings')}
-        >
-          Settings
-        </button>
-      </div>
 
       {/* ================= CALCULATOR VIEW ================= */}
       {view === 'calculator' && (
         <div className="flex flex-col gap-4">
           {/* Global Setup Card */}
           <GlobalSetupCard jigs={jigs} usbs={usbs} sessionSteps={sessionSteps}
+            machines={machines}
+            defaultMachineId={defaultMachineId}
+            setDefaultMachineId={setDefaultMachineId}
+            sessionPresets={sessionPresets}
+            selectedPresetId={selectedPresetId}
+            onLoadPreset={(id) => {
+              setSelectedPresetId(id);
+              if (id) handleLoadPreset(id);
+            }}
+            onOpenSavePreset={() => setIsPresetDialogOpen(true)}
+            onOpenManagePresets={() => setIsPresetManagerOpen(true)}
             global={global}
             setGlobal={setGlobal}
             isSetupPanelOpen={isSetupPanelOpen}
@@ -433,188 +434,65 @@ export default function App() {
           />
 
           {/* Progression Section */}
-          <section className="panel-card panel-card--allow-overflow motion-panel flex flex-col gap-0 max-w-xl">
-            <div
-              className="panel-card__header grid items-center gap-2"
-              style={{ gridTemplateColumns: 'auto minmax(0, 1fr) auto' }}
-            >
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold u-text panel-header">Progression</h2>
-              </div>
-
-              {/* Presets dropdown */}
-              <div className="w-full min-w-0" style={{ maxWidth: 'min(28rem, calc(100% - 6rem))' }}>
-                <MiniSelect
-                  value={selectedPresetId || ''}
-                  options={[
-                    { value: '', label: 'Select preset…' },
-                    ...sessionPresets.map(p => ({
-                      value: p.id,
-                      label: p.name,
-                      meta: `${p.steps.length} step${p.steps.length === 1 ? '' : 's'}`,
-                    })),
-                  ]}
-                  onChange={id => {
-                    setSelectedPresetId(id);
-                    if (id) handleLoadPreset(id);
-                  }}
-                  align="right"
-                  widthClass="w-full min-w-[7.5rem]"
-                  menuWidthClass="w-48"
-                  emptyLabel="No presets saved"
-                  renderOption={opt => (
-                    <>
-                      <div className="dropdown-item__title text-[0.75rem] truncate">{opt.label}</div>
-                      {opt.meta ? (
-                        <div className="dropdown-item__meta text-[0.7rem]">{opt.meta}</div>
-                      ) : null}
-                    </>
-                  )}
-                  renderLabel={opt => (opt ? opt.label : 'Select preset…')}
-                />
-              </div>
-
-              {/* Edit / Back toggle + Kebab Menu */}
-              <div className="flex items-center gap-2 justify-end">
-                <button
-                  type="button"
-                  className={`${BTN.base} px-3 text-xs`}
-                  onClick={() => setIsWheelConfigOpen(open => !open)}
-                >
-                  {isWheelConfigOpen ? 'Done' : 'Edit'}
-                </button>
-
-                <div ref={progressionMenuRef} className="relative">
-                  <button
-                    type="button"
-                    className={`${BTN.iconPlain} text-neutral-300`}
-                    title="Progression options"
-                    onClick={() => {
-                      if (isProgressionMenuVisible && !isProgressionMenuClosing) {
-                        setIsProgressionMenuClosing(true);
-                        setTimeout(() => {
-                          setIsProgressionMenuVisible(false);
-                          setIsProgressionMenuClosing(false);
-                        }, 160);
-                      } else {
-                        setIsProgressionMenuVisible(true);
-                        setIsProgressionMenuClosing(false);
-                      }
-                    }}
-                  >
-                    <IconKebab className="w-5 h-5" />
-                  </button>
-
-                  {isProgressionMenuVisible && (
-                    <div
-                      className="absolute right-0 mt-1 w-52 rounded border u-border u-surface shadow-lg text-xs z-30 overflow-hidden"
-                      style={{
-                        transformOrigin: 'top right',
-                        animation: `${
-                          isProgressionMenuClosing
-                            ? 'menuFadeSlideOut 100ms ease-in forwards'
-                            : 'menuFadeSlideIn 100ms ease-out forwards'
-                        }`,
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="menu-item w-full px-3 py-2 text-left"
-                        onClick={() => {
-                          setIsPresetDialogOpen(true);
-                          setIsProgressionMenuVisible(false);
-                        }}
-                        disabled={sessionSteps.length === 0}
-                      >
-                        Save as preset
-                      </button>
-                      <button
-                        type="button"
-                        className="menu-item w-full px-3 py-2 text-left"
-                        onClick={() => {
-                          setIsPresetManagerOpen(true);
-                          setIsProgressionMenuVisible(false);
-                        }}
-                      >
-                        Manage presets
-                      </button>
-                      <button
-                        type="button"
-                        className="menu-item w-full px-3 py-2 text-left"
-                        onClick={() => {
-                          handleLoadDefaultProgression();
-                          setIsProgressionMenuVisible(false);
-                        }}
-                      >
-                        Load standard progression
-                      </button>
-                      <button
-                        type="button"
-                        className="menu-item w-full px-3 py-2 text-left text-danger"
-                        onClick={() => {
-                          setSessionSteps([]);
-                          setIsProgressionMenuVisible(false);
-                        }}
-                        disabled={sessionSteps.length === 0}
-                      >
-                        Clear progression
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+          <section className="flex flex-col gap-0 w-full max-w-[576px] mx-auto">
+            <div className="flex justify-between items-center mb-4 px-2">
+              <h2 className="text-lg font-bold text-neutral-200">Progression</h2>
+              <button
+                type="button"
+                className="text-xs font-bold text-red-500 bg-red-500/10 px-3 py-1.5 rounded-full hover:bg-red-500/20 transition disabled:opacity-50"
+                onClick={() => setSessionSteps([])}
+                disabled={sessionSteps.length === 0}
+              >
+                Clear All
+              </button>
             </div>
 
-            <div className="panel-card__body flex flex-col gap-3">
+            <div className="flex flex-col gap-3 w-full">
               <div className="mt-1">
-                {isWheelConfigOpen ? (
-                  <ProgressionEditor usbs={usbs}
-                    sessionSteps={sessionSteps}
-                    wheels={wheels}
-                    machines={machines}
-                    defaultMachineId={defaultMachineId}
-                    onUpdateStep={handleUpdateStep}
-                    onUpdateWheel={handleUpdateWheel}
-                    onDeleteStep={handleDeleteStep}
-                    onAddStep={handleAddStep}
-                    onLoadDefaultProgression={handleLoadDefaultProgression}
-                    onMoveStep={handleMoveStep}
-                    targetAngleSymbol={targetAngleSymbol}
-                    progressionBodyPaddingX={progressionBodyPaddingX}
-                    progressionBodyPaddingY={progressionBodyPaddingY}
-                    progressionBodyGap={progressionBodyGap}
-                  />
-                ) : sessionSteps.length === 0 ? (
-                  <div className="text-xs text-neutral-400 border border-dashed u-border rounded p-4 flex flex-col gap-3 items-center text-center">
+                {sessionSteps.length === 0 ? (
+                  <div className="text-sm text-white/40 border border-dashed border-white/10 rounded-3xl p-8 flex flex-col gap-4 items-center text-center">
                     <p>No sharpening steps defined yet.</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col w-full gap-3 mt-2">
                       <button
                         type="button"
-                        className={BTN.primary}
+                        className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-4 rounded-2xl transition"
                         onClick={handleLoadDefaultProgression}
                       >
-                        + Load Standard Progression
+                        Load Standard Progression
                       </button>
                       <button
                         type="button"
-                        className={BTN.base}
-                        onClick={() => setIsWheelConfigOpen(true)}
+                        className="w-full border border-white/10 hover:bg-white/5 text-white/60 font-bold py-3 px-4 rounded-2xl transition"
+                        onClick={handleAddStep}
                       >
-                        Edit Steps Manually
+                        Add Blank Step
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <ProgressionView usbs={usbs} globalUsbId={global.activeUsbId}
+                  <ProgressionView
                     wheelResults={wheelResults}
                     machines={machines}
                     defaultMachineId={defaultMachineId}
+                    usbs={usbs}
+                    wheels={wheels}
+                    globalUsbId={global.activeUsbId}
                     heightMode={heightMode}
                     calcMode={global.calcMode}
-                    angleSymbol={effectiveAngleSymbol}
-                    bodyPaddingX={progressionBodyPaddingX}
-                    bodyPaddingY={progressionBodyPaddingY}
-                    bodyGap={progressionBodyGap}
+                    showAdvancedStepOverrides={global.showAdvancedStepOverrides}
+                    onUpdateStep={(id, patch) =>
+                      setSessionSteps(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s))
+                    }
+                    onDeleteStep={id => setSessionSteps(prev => prev.filter(s => s.id !== id))}
+                    onMoveStep={(index, direction) => {
+                      const newSteps = [...sessionSteps];
+                      if (index + direction >= 0 && index + direction < newSteps.length) {
+                        const temp = newSteps[index];
+                        newSteps[index] = newSteps[index + direction];
+                        newSteps[index + direction] = temp;
+                        setSessionSteps(newSteps);
+                      }
+                    }}
                   />
                 )}
               </div>
@@ -636,80 +514,90 @@ export default function App() {
       {/* ================= SETTINGS VIEW ================= */}
       {view === 'settings' && (
         <>
-          <div className="flex justify-end mb-2">
-            <MiniSelect
-              value={settingsView === 'calibration' ? 'machine' : settingsView}
-                            options={[
-                { value: 'machine', label: 'Machines' },
-                { value: 'hardware', label: 'Hardware' },
-                { value: 'preferences', label: 'Preferences' },
-                { value: 'import', label: 'Import / export' },
-                { value: 'glossary', label: 'Glossary' },
-                { value: 'themelab', label: 'Theme Lab' },
-              ]}
-              onChange={val => {
-                if (val === 'calibration') return;
-                setSettingsView(val as typeof settingsView);
-              }}
-              widthClass="w-52"
-              menuWidthClass="w-56"
-            />
-          </div>
+          {settingsView === 'root' && (
+            <SettingsRootView onSelectSection={(sec) => setSettingsView(sec)} />
+          )}
 
-          
-                    {settingsView === 'preferences' && (
-            <PreferencesView heightMode={heightMode} setHeightMode={setHeightMode} />
+          {settingsView === 'measurement' && (
+            <MeasurementSettingsView 
+              heightMode={heightMode} 
+              setHeightMode={setHeightMode}
+              global={global}
+              setGlobal={setGlobal}
+              onBack={() => setSettingsView('root')}
+            />
           )}
 
           {settingsView === 'hardware' && (
-            <HardwareManagerView
-              jigs={jigs}
-              usbs={usbs}
-              onUpdateJig={handleUpdateJig}
-              onAddJig={handleAddJig}
-              onDeleteJig={handleDeleteJig}
-              onUpdateUsb={handleUpdateUsb}
-              onAddUsb={handleAddUsb}
-              onDeleteUsb={handleDeleteUsb}
-              onClose={() => setSettingsView('machine')}
-            />
+            <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200">
+              <button type="button" onClick={() => setSettingsView('root')} className="text-neutral-400 hover:text-white p-2 -ml-2 self-start flex items-center gap-2">
+                &larr; Back
+              </button>
+              <HardwareManagerView
+                jigs={jigs}
+                usbs={usbs}
+                onUpdateJig={handleUpdateJig}
+                onAddJig={handleAddJig}
+                onDeleteJig={handleDeleteJig}
+                onUpdateUsb={handleUpdateUsb}
+                onAddUsb={handleAddUsb}
+                onDeleteUsb={handleDeleteUsb}
+                onClose={() => setSettingsView('root')}
+              />
+            </div>
           )}
 
           {settingsView === 'machine' && (
-            <MachineManagerView jigs={jigs} usbs={usbs}
-              global={global}
-              wheels={wheels}
-              machines={machines}
-              defaultMachineId={defaultMachineId}
-              onAddMachine={m => setMachines(prev => [...prev, m])}
-              onUpdateMachine={(id, patch) => setMachines(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))}
-              onDeleteMachine={id => setMachines(prev => prev.filter(m => m.id !== id))}
-              onSetDefaultMachine={id => setDefaultMachineId(id)}
+            <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200">
+              <button type="button" onClick={() => setSettingsView('root')} className="text-neutral-400 hover:text-white p-2 -ml-2 self-start flex items-center gap-2">
+                &larr; Back
+              </button>
+              <MachineManagerView jigs={jigs} usbs={usbs}
+                global={global}
+                wheels={wheels}
+                machines={machines}
+                defaultMachineId={defaultMachineId}
+                onAddMachine={m => setMachines(prev => [...prev, m])}
+                onUpdateMachine={(id, patch) => setMachines(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m))}
+                onDeleteMachine={id => setMachines(prev => prev.filter(m => m.id !== id))}
+                onSetDefaultMachine={id => setDefaultMachineId(id)}
               />
+            </div>
           )}
 
           
           {settingsView === 'import' && (
-            <ImportExportPanel
-              exportText={exportText}
-              onImportText={handleImportText}
-              exportSections={exportSections}
-              onToggleExportSection={key =>
-                setExportSections(prev => ({ ...prev, [key]: !prev[key] as boolean }))
-              }
-              importSections={importSections}
-              importModes={importModes}
-              onToggleImportSection={key =>
-                setImportSections(prev => ({ ...prev, [key]: !prev[key] as boolean }))
-              }
-              onChangeImportMode={(key, mode) =>
-                setImportModes(prev => ({ ...prev, [key]: mode }))
-              }
-            />
+            <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200 pb-20">
+              <button type="button" onClick={() => setSettingsView('root')} className="text-neutral-400 hover:text-white p-2 -ml-2 self-start flex items-center gap-2">
+                &larr; Back
+              </button>
+              <ImportExportPanel
+                exportText={exportText}
+                onImportText={handleImportText}
+                exportSections={exportSections}
+                onToggleExportSection={key =>
+                  setExportSections(prev => ({ ...prev, [key]: !prev[key] as boolean }))
+                }
+                importSections={importSections}
+                importModes={importModes}
+                onToggleImportSection={key =>
+                  setImportSections(prev => ({ ...prev, [key]: !prev[key] as boolean }))
+                }
+                onChangeImportMode={(key, mode) =>
+                  setImportModes(prev => ({ ...prev, [key]: mode }))
+                }
+              />
+            </div>
           )}
 
-          {settingsView === 'glossary' && <GlossaryPage />}
-          {settingsView === 'themelab' && <ThemeLab />}
+          {settingsView === 'glossary' && (
+            <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200">
+              <button type="button" onClick={() => setSettingsView('root')} className="text-neutral-400 hover:text-white p-2 -ml-2 self-start flex items-center gap-2">
+                &larr; Back
+              </button>
+              <GlossaryPage />
+            </div>
+          )}
         </>
       )}
 
@@ -751,6 +639,31 @@ export default function App() {
         overlayStyle={modalOverlayStyle}
         dialogStyle={getModalDialogStyle()}
       />
+
+      {/* ================= BOTTOM TAB BAR ================= */}
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-neutral-950 border-t border-neutral-800 flex items-center justify-around z-40 pb-safe">
+        <button
+          type="button"
+          onClick={() => setView('calculator')}
+          className={`flex flex-col items-center justify-center w-full h-full ${view === 'calculator' ? 'text-accent' : 'text-neutral-500 hover:text-neutral-300'}`}
+        >
+          <IconCalculator className="w-6 h-6" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setView('wheels')}
+          className={`flex flex-col items-center justify-center w-full h-full ${view === 'wheels' ? 'text-accent' : 'text-neutral-500 hover:text-neutral-300'}`}
+        >
+          <IconDisc className="w-6 h-6" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setView('settings')}
+          className={`flex flex-col items-center justify-center w-full h-full ${view === 'settings' ? 'text-accent' : 'text-neutral-500 hover:text-neutral-300'}`}
+        >
+          <IconSettings className="w-6 h-6" />
+        </button>
+      </div>
     </div>
   );
 }

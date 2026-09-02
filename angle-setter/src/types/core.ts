@@ -83,7 +83,8 @@ export type GlobalState = {
   fixedUsbRear?: number; // fixed USB height for rear base (mm)
   fixedUsbFront?: number; // fixed USB height for front base (mm)
   fixedUsbMode?: 'hn' | 'hr'; // reference for fixed USB height: 'hn' (base) or 'hr' (wheel)
-  useCustomFrontUsb?: boolean; // whether front USB height in projection mode overrides suggested value
+  useCustomFrontUsb?: boolean;
+  showAdvancedStepOverrides?: boolean; // whether front USB height in projection mode overrides suggested value
 };
 
 export type AppPersistedState = {

@@ -59,6 +59,7 @@ function ensureHardwareConfig<T extends { id: string; name: string; }>(
 }
 
 export function readPersistedState(): AppPersistedState {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loadedGlobal = _load<any>('t_global', DEFAULT_GLOBAL);
   const legacyConstants = _load<MachineConstants>('t_constants', DEFAULT_CONSTANTS);
   
@@ -104,6 +105,7 @@ export function readPersistedState(): AppPersistedState {
 
   // Migrate session steps (usbOverride -> usbId)
   sessionSteps = sessionSteps.map(step => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyStep = step as any;
     if (anyStep.usbOverride !== undefined && !anyStep.usbId) {
       const res = ensureHardwareConfig(usbs, anyStep.usbOverride, 'Ds', 'usb', 'Custom USB');
@@ -167,6 +169,7 @@ export function parsePersistedState(raw: string): AppPersistedState | null {
     const version = Number(parsedObj.version) || 1;
     if (!isFinite(version) || version < 1) return null;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const globalRaw = parsedObj.global as any;
     const legacyConstantsRaw = parsedObj.constants;
     const machinesRaw = parsedObj.machines;
@@ -232,6 +235,7 @@ export function parsePersistedState(raw: string): AppPersistedState | null {
     if (globalRaw && !globalRaw.activeJigId) globalRaw.activeJigId = DEFAULT_JIGS[0].id;
 
     sessionSteps = sessionSteps.map(step => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const anyStep = step as any;
       if (anyStep.usbOverride !== undefined && !anyStep.usbId) {
         const res = ensureHardwareConfig(usbs, anyStep.usbOverride, 'Ds', 'usb', 'Custom USB');
