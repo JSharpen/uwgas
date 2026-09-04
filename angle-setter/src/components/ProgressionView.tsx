@@ -1,8 +1,7 @@
 import * as React from 'react';
 import type { CalcMode, WheelResult, MachineConfig, UsbConfig, Wheel, SessionStep } from '../types/core';
-import { IconEdgeLeading, IconEdgeTrailing, IconTrash } from '../icons';
+import { IconEdgeLeading, IconEdgeTrailing } from '../icons';
 import ActionSheetPicker from './calculator/ActionSheetPicker';
-import GrindDirToggle from './GrindDirToggle';
 
 type ProgressionViewProps = {
   wheelResults: WheelResult[];
@@ -38,7 +37,7 @@ function ProgressionView({
 }: ProgressionViewProps) {
   const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
   const [expandedStepId, setExpandedStepId] = React.useState<string | null>(null);
-  const [sheetConfig, setSheetConfig] = React.useState<{ type: 'wheel' | 'machine' | 'usb'; stepId: string } | null>(null);
+  const [sheetConfig, setSheetConfig] = React.useState<{ type: 'wheel' | 'machine' | 'usb' | 'base'; stepId: string } | null>(null);
 
   React.useEffect(() => {
     const handleCollapseAll = () => setExpandedStepId(null);
@@ -83,59 +82,61 @@ function ProgressionView({
         return (
           <div
             key={stepId}
-            className="bg-[#262626] rounded-3xl border border-white/10 shadow-lg relative flex flex-col motion-list-item transition-all duration-300 group"
+            className="relative flex flex-col motion-list-item transition-all duration-300 group"
             style={{ '--motion-order': index } as React.CSSProperties}
           >
-            {/* Subtle Edge Highlight */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0"></div>
-            
             {/* ===== View State (Clickable to Expand) ===== */}
             <div 
-              className="flex justify-between items-center p-6 relative z-10 cursor-pointer hover:bg-white/5 active:bg-white/10 transition-colors rounded-3xl"
+              className="flex justify-between items-center p-6 relative z-20 cursor-pointer bg-[#262626] hover:bg-white/5 active:bg-white/10 transition-colors rounded-3xl border border-white/10 shadow-lg"
               onClick={() => setExpandedStepId(isExpanded ? null : stepId)}
             >
-              <div className="flex flex-col gap-1 min-w-0 flex-1 pr-4">
-                <div className="flex items-center gap-2 flex-wrap">
+              {/* Subtle Edge Highlight */}
+              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none rounded-3xl z-0"></div>
+              
+              <div className="flex flex-col gap-1 min-w-0 flex-1 pr-4 relative z-10">
+                {/* Primary readout: Wheel Name */}
+                <div className="flex items-center gap-2 w-full">
+                  <span className="text-base font-medium text-white tracking-wide truncate">
+                    {r.wheel.name}
+                  </span>
+                </div>
+                
+                {/* Secondary readout: Step Badge, Angle, and Base */}
+                <div className="flex items-center gap-2 flex-wrap mt-0.5">
                   {r.step && (
-                    <div className="w-6 h-6 rounded-full bg-black/40 flex items-center justify-center text-xs font-bold font-mono text-white border border-neutral-800 shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center text-[10px] font-bold font-mono text-white border border-neutral-800 shrink-0">
                       {index + 1}
                     </div>
                   )}
-                  <span className="text-lg font-semibold text-white tracking-wide truncate">
-                    {r.wheel.name}
-                  </span>
                   {hasOffset && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${angleOffset > 0 ? 'bg-[color-mix(in_srgb,var(--color-accent)_20%,transparent)] text-[var(--color-accent)]' : 'bg-danger/20 text-danger'}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 ${angleOffset > 0 ? 'bg-[color-mix(in_srgb,var(--color-accent)_20%,transparent)] text-[var(--color-accent)]' : 'bg-danger/20 text-danger'}`}>
                       {angleOffset > 0 ? '+' : ''}{angleOffset.toFixed(1)}°
                     </span>
                   )}
-                </div>
-                {/* Secondary readout: Angle and Base */}
-                <div className="flex items-center gap-2 pl-8">
                   {r.step && (
-                    <div className="flex items-center shrink-0" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
+                    <div className="flex items-center shrink-0 ml-1" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
                       {r.step.base === 'rear' ? <IconEdgeLeading className="w-3.5 h-3.5 text-[var(--color-accent)] opacity-80" /> : <IconEdgeTrailing className="w-3.5 h-3.5 text-[var(--color-focus)] opacity-80" />}
                     </div>
                   )}
-                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">
-                    {formatDeg(r.betaEffDeg)}° / {r.step?.base === 'front' ? 'FRONT BASE' : 'REAR BASE'}
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold truncate">
+                    {formatDeg(r.betaEffDeg)}° / {r.step?.base === 'front' ? 'FRONT' : 'REAR'}
                   </span>
                 </div>
               </div>
 
               {/* Massive USB/Projection Output */}
-              <div className="flex flex-col items-end shrink-0">
-                <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tighter">
+              <div className="flex flex-col items-end shrink-0 relative z-10">
+                <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                   {isProjectionMode ? (
                     r.isReachable !== false && r.requiredProjectionA != null ? (
-                      <>{r.requiredProjectionA.toFixed(2)}<span className="text-lg text-white/50 font-medium ml-1">mm</span></>
+                      <>{r.requiredProjectionA.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
                     ) : (
-                      <span className="text-danger text-2xl">OOR</span>
+                      <span className="text-danger text-xl">OOR</span>
                     )
                   ) : heightMode === 'hn' ? (
-                    <>{r.hnBase.toFixed(2)}<span className="text-lg text-white/50 font-medium ml-1">mm</span></>
+                    <>{r.hnBase.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
                   ) : (
-                    <>{r.hrWheel.toFixed(2)}<span className="text-lg text-white/50 font-medium ml-1">mm</span></>
+                    <>{r.hrWheel.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
                   )}
                 </span>
                 
@@ -147,7 +148,7 @@ function ProgressionView({
                     </span>
                   )}
                   {(showAdvancedStepOverrides || r.step?.usbId) && effectiveUsb && (
-                    <span className="text-[10px] text-[var(--color-focus)] uppercase tracking-widest font-bold">
+                    <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">
                       {effectiveUsb.name}
                     </span>
                   )}
@@ -160,10 +161,10 @@ function ProgressionView({
               </div>
             </div>
 
-            {/* ===== Expanded Edit Controls ===== */}
+            {/* ===== Edit State (Collapsible) ===== */}
             {r.step && onUpdateStep && (
               <div 
-                className={`relative z-10 bg-black/20 overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100 border-t border-white/5' : 'max-h-0 opacity-0'}`}
+                className={`relative z-10 bg-zinc-900 overflow-hidden transition-all duration-300 ease-in-out border border-white/5 border-t-0 rounded-b-3xl -mt-6 pt-6 ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 border-transparent'}`}
               >
                 <div className="p-6 flex flex-col gap-4">
                   
@@ -204,6 +205,18 @@ function ProgressionView({
                         >+</button>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Base Override */}
+                  <div className="flex flex-col gap-1.5 w-full">
+                    <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Sharpening Base</label>
+                    <button 
+                      className="flex items-center justify-between w-full p-3 bg-black/30 hover:bg-white/5 border border-white/5 rounded-2xl text-xs font-semibold text-white transition"
+                      onClick={() => setSheetConfig({ type: 'base', stepId })}
+                    >
+                      <span className="truncate">{r.step?.base === 'front' ? 'Front Base (Edge Trailing)' : 'Rear Base (Edge Leading)'}</span>
+                      <span className="text-white/30 ml-2">▼</span>
+                    </button>
                   </div>
 
                   {/* Advanced Step Overrides (Conditionally rendered) */}
@@ -302,6 +315,20 @@ function ProgressionView({
             value={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.usbId || ''}
             onChange={val => {
               onUpdateStep(sheetConfig.stepId, { usbId: val || undefined });
+              setSheetConfig(null);
+            }}
+          />
+          <ActionSheetPicker
+            isOpen={sheetConfig.type === 'base'}
+            onClose={() => setSheetConfig(null)}
+            title="Sharpening Base"
+            options={[
+              { value: 'front', label: 'Front Base (Edge Trailing)' },
+              { value: 'rear', label: 'Rear Base (Edge Leading)' }
+            ]}
+            value={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.base || 'front'}
+            onChange={val => {
+              onUpdateStep(sheetConfig.stepId, { base: val as 'front' | 'rear' });
               setSheetConfig(null);
             }}
           />

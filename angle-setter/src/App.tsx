@@ -5,7 +5,7 @@ import { computeWheelResults } from "./math/tormek";
 // ==============================================================================
 
 import * as React from 'react';
-import { IconKebab, IconCalculator, IconDisc, IconSettings } from './icons';
+import { IconCalculator, IconDisc, IconSettings } from './icons';
 import ImportExportPanel from './components/ImportExportPanel';
 import SettingsRootView from './components/settings/SettingsRootView';
 import MeasurementSettingsView from './components/settings/MeasurementSettingsView';
@@ -31,7 +31,6 @@ import {
   normalizeWheel,
 } from './utils/normalizers';
 import { readPersistedState, writePersistedState } from './state/storage';
-import { BTN } from './ui/buttons';
 import { APP_VERSION, APP_VERSION_DISPLAY } from './version';
 
 
@@ -71,8 +70,6 @@ export default function App() {
   const [sessionSteps, setSessionSteps] = React.useState<SessionStep[]>(initialState.sessionSteps);
   const [sessionPresets, setSessionPresets] = React.useState<SessionPreset[]>(initialState.sessionPresets);
   const [heightMode, setHeightMode] = React.useState<'hn' | 'hr'>(initialState.heightMode || 'hn');
-
-
 
   // Persistence effect
   React.useEffect(() => {
@@ -117,8 +114,6 @@ export default function App() {
     return () => document.removeEventListener('pointerdown', handleGlobalPointerDown);
   }, []);
 
-  const [isWheelConfigOpen, setIsWheelConfigOpen] = React.useState(false);
-
   // Preset dialogs state
   const [selectedPresetId, setSelectedPresetId] = React.useState<string>('');
   const [isPresetDialogOpen, setIsPresetDialogOpen] = React.useState(false);
@@ -127,35 +122,6 @@ export default function App() {
 
   const [isPresetManagerOpen, setIsPresetManagerOpen] = React.useState(false);
   const [isPresetManagerClosing, setIsPresetManagerClosing] = React.useState(false);
-
-  // Progression kebab menu
-  const [isProgressionMenuVisible, setIsProgressionMenuVisible] = React.useState(false);
-  const [isProgressionMenuClosing, setIsProgressionMenuClosing] = React.useState(false);
-  const progressionMenuRef = React.useRef<HTMLDivElement | null>(null);
-
-  React.useEffect(() => {
-    function handleClickOutside(event: MouseEvent | TouchEvent) {
-      if (
-        isProgressionMenuVisible &&
-        progressionMenuRef.current &&
-        !progressionMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsProgressionMenuClosing(true);
-        setTimeout(() => {
-          setIsProgressionMenuVisible(false);
-          setIsProgressionMenuClosing(false);
-        }, 160);
-      }
-    }
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [isProgressionMenuVisible]);
 
   // Import / Export sections
   const [exportSections, setExportSections] = React.useState<ImportSections>({
@@ -189,25 +155,14 @@ export default function App() {
   const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
     useModalLayout();
 
-  // Calibration state
-  
-  
-
   // ======= Calculations & Machine Configuration =======
   const targetAngleSymbol = 'θ';
-  const effectiveAngleSymbol = 'γ';
-  const progressionBodyPaddingX = 'px-3';
-  const progressionBodyPaddingY = 'py-2';
-  const progressionBodyGap = 'gap-2';
 
   const wheelResults = React.useMemo(
     () => computeWheelResults(wheels, sessionSteps, global, machines, jigs, usbs, defaultMachineId),
     [machines, defaultMachineId, global, sessionSteps, wheels, jigs, usbs]
   );
 
-  
-  
-  
   const handleAddWheel = (wheel: Omit<Wheel, 'id'>) => {
     setWheels(prev => [...prev, { ...wheel, id: crypto.randomUUID() }]);
   };
@@ -308,7 +263,21 @@ export default function App() {
     setIsPresetDialogOpen(false);
   };
 
-  const exportText = React.useMemo(() => JSON.stringify(null, null, 2), []);
+  const exportText = React.useMemo(() => {
+    const payload: Record<string, unknown> = {};
+    if (exportSections.global) payload.global = global;
+    if (exportSections.constants) {
+      payload.machines = machines;
+      if (defaultMachineId) payload.defaultMachineId = defaultMachineId;
+      payload.jigs = jigs;
+      payload.usbs = usbs;
+    }
+    if (exportSections.wheels) payload.wheels = wheels;
+    if (exportSections.sessionSteps) payload.sessionSteps = sessionSteps;
+    if (exportSections.sessionPresets) payload.sessionPresets = sessionPresets;
+    if (exportSections.heightMode) payload.heightMode = heightMode;
+    return JSON.stringify(payload, null, 2);
+  }, [exportSections, global, machines, defaultMachineId, jigs, usbs, wheels, sessionSteps, sessionPresets, heightMode]);
 
   const handleImportText = React.useCallback(
     (raw: string) => {
@@ -398,15 +367,17 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-dvh u-bg p-3 sm:p-4 pb-[140px] flex flex-col gap-4 max-w-4xl mx-auto">
+    <div className="min-h-dvh bg-[#09090b] text-white p-3 sm:p-4 pb-[140px] flex flex-col gap-4 max-w-4xl mx-auto selection:bg-amber-400/30 selection:text-white">
       {view === 'settings' && (
-        <div className="app-watermark" aria-label={`App version ${APP_VERSION}`}>
+        <div className="fixed top-3 right-4 text-xs text-white/30 font-mono tracking-wider pointer-events-none z-30" aria-label={`App version ${APP_VERSION}`}>
           v{APP_VERSION_DISPLAY}
         </div>
       )}
-      {showDevHeader && <h1 className="text-lg font-semibold u-text">UWGAS Dev build</h1>}
-
-
+      {showDevHeader && (
+        <div className="self-start px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-xs font-mono font-bold text-amber-400">
+          UWGAS DEV BUILD
+        </div>
+      )}
 
       {/* ================= CALCULATOR VIEW ================= */}
       {view === 'calculator' && (
@@ -435,34 +406,50 @@ export default function App() {
 
           {/* Progression Section */}
           <section className="flex flex-col gap-0 w-full max-w-[576px] mx-auto">
-            <div className="flex justify-between items-center mb-4 px-2">
-              <h2 className="text-lg font-bold text-neutral-200">Progression</h2>
-              <button
-                type="button"
-                className="text-xs font-bold text-red-500 bg-red-500/10 px-3 py-1.5 rounded-full hover:bg-red-500/20 transition disabled:opacity-50"
-                onClick={() => setSessionSteps([])}
-                disabled={sessionSteps.length === 0}
-              >
-                Clear All
-              </button>
+            <div className="sticky top-2 z-20 flex items-center justify-between mb-4 px-2 py-2 bg-[#262626]/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl">
+              <div className="flex-1 flex justify-start">
+                <button
+                  type="button"
+                  className="h-9 px-3 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500/10 text-red-500 hover:bg-red-500/20 active:bg-red-500/25 border border-red-500/20 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center active:scale-95"
+                  onClick={() => setSessionSteps([])}
+                  disabled={sessionSteps.length === 0}
+                >
+                  Clear All
+                </button>
+              </div>
+              
+              <h2 className="text-xs sm:text-sm font-bold text-white tracking-widest uppercase truncate px-2">
+                Progression
+              </h2>
+              
+              <div className="flex-1 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleAddStep}
+                  className="h-9 px-3 sm:px-4 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.2)] flex items-center justify-center active:scale-95"
+                >
+                  + Add Step
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-3 w-full">
               <div className="mt-1">
                 {sessionSteps.length === 0 ? (
-                  <div className="text-sm text-white/40 border border-dashed border-white/10 rounded-3xl p-8 flex flex-col gap-4 items-center text-center">
-                    <p>No sharpening steps defined yet.</p>
-                    <div className="flex flex-col w-full gap-3 mt-2">
+                  <div className="text-sm text-white/40 bg-[#262626] border border-white/10 rounded-3xl p-8 flex flex-col gap-4 items-center text-center shadow-lg relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+                    <p className="text-white/60 relative z-10 font-medium">No sharpening steps defined yet.</p>
+                    <div className="flex flex-col w-full gap-3 mt-2 relative z-10">
                       <button
                         type="button"
-                        className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-4 rounded-2xl transition"
+                        className="w-full bg-white/10 hover:bg-white/20 active:bg-white/25 text-white font-bold h-12 px-4 rounded-2xl transition flex items-center justify-center text-sm"
                         onClick={handleLoadDefaultProgression}
                       >
                         Load Standard Progression
                       </button>
                       <button
                         type="button"
-                        className="w-full border border-white/10 hover:bg-white/5 text-white/60 font-bold py-3 px-4 rounded-2xl transition"
+                        className="w-full border border-white/10 hover:bg-white/5 active:bg-white/10 text-white/70 hover:text-white font-bold h-12 px-4 rounded-2xl transition flex items-center justify-center text-sm"
                         onClick={handleAddStep}
                       >
                         Add Blank Step
@@ -470,30 +457,22 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <ProgressionView
-                    wheelResults={wheelResults}
-                    machines={machines}
-                    defaultMachineId={defaultMachineId}
-                    usbs={usbs}
-                    wheels={wheels}
-                    globalUsbId={global.activeUsbId}
-                    heightMode={heightMode}
-                    calcMode={global.calcMode}
-                    showAdvancedStepOverrides={global.showAdvancedStepOverrides}
-                    onUpdateStep={(id, patch) =>
-                      setSessionSteps(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s))
-                    }
-                    onDeleteStep={id => setSessionSteps(prev => prev.filter(s => s.id !== id))}
-                    onMoveStep={(index, direction) => {
-                      const newSteps = [...sessionSteps];
-                      if (index + direction >= 0 && index + direction < newSteps.length) {
-                        const temp = newSteps[index];
-                        newSteps[index] = newSteps[index + direction];
-                        newSteps[index + direction] = temp;
-                        setSessionSteps(newSteps);
-                      }
-                    }}
-                  />
+                  <div className="flex flex-col gap-6 w-full">
+                    <ProgressionView
+                      wheelResults={wheelResults}
+                      machines={machines}
+                      defaultMachineId={defaultMachineId}
+                      usbs={usbs}
+                      wheels={wheels}
+                      globalUsbId={global.activeUsbId}
+                      heightMode={heightMode}
+                      calcMode={global.calcMode}
+                      showAdvancedStepOverrides={global.showAdvancedStepOverrides}
+                      onUpdateStep={handleUpdateStep}
+                      onDeleteStep={handleDeleteStep}
+                      onMoveStep={handleMoveStep}
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -530,8 +509,13 @@ export default function App() {
 
           {settingsView === 'hardware' && (
             <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200">
-              <button type="button" onClick={() => setSettingsView('root')} className="text-neutral-400 hover:text-white p-2 -ml-2 self-start flex items-center gap-2">
-                &larr; Back
+              <button 
+                type="button" 
+                onClick={() => setSettingsView('root')} 
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 text-white/70 hover:text-white transition w-fit min-h-[44px] text-xs font-bold"
+              >
+                <span>&larr;</span>
+                <span>Back to Settings</span>
               </button>
               <HardwareManagerView
                 jigs={jigs}
@@ -549,8 +533,13 @@ export default function App() {
 
           {settingsView === 'machine' && (
             <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200">
-              <button type="button" onClick={() => setSettingsView('root')} className="text-neutral-400 hover:text-white p-2 -ml-2 self-start flex items-center gap-2">
-                &larr; Back
+              <button 
+                type="button" 
+                onClick={() => setSettingsView('root')} 
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 text-white/70 hover:text-white transition w-fit min-h-[44px] text-xs font-bold"
+              >
+                <span>&larr;</span>
+                <span>Back to Settings</span>
               </button>
               <MachineManagerView jigs={jigs} usbs={usbs}
                 global={global}
@@ -568,8 +557,13 @@ export default function App() {
           
           {settingsView === 'import' && (
             <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200 pb-20">
-              <button type="button" onClick={() => setSettingsView('root')} className="text-neutral-400 hover:text-white p-2 -ml-2 self-start flex items-center gap-2">
-                &larr; Back
+              <button 
+                type="button" 
+                onClick={() => setSettingsView('root')} 
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 text-white/70 hover:text-white transition w-fit min-h-[44px] text-xs font-bold"
+              >
+                <span>&larr;</span>
+                <span>Back to Settings</span>
               </button>
               <ImportExportPanel
                 exportText={exportText}
@@ -592,8 +586,13 @@ export default function App() {
 
           {settingsView === 'glossary' && (
             <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200">
-              <button type="button" onClick={() => setSettingsView('root')} className="text-neutral-400 hover:text-white p-2 -ml-2 self-start flex items-center gap-2">
-                &larr; Back
+              <button 
+                type="button" 
+                onClick={() => setSettingsView('root')} 
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 text-white/70 hover:text-white transition w-fit min-h-[44px] text-xs font-bold"
+              >
+                <span>&larr;</span>
+                <span>Back to Settings</span>
               </button>
               <GlossaryPage />
             </div>
@@ -641,27 +640,36 @@ export default function App() {
       />
 
       {/* ================= BOTTOM TAB BAR ================= */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-neutral-950 border-t border-neutral-800 flex items-center justify-around z-40 pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#18181b]/95 backdrop-blur-lg border-t border-white/10 flex items-center justify-around z-40 pb-safe shadow-2xl">
         <button
           type="button"
           onClick={() => setView('calculator')}
-          className={`flex flex-col items-center justify-center w-full h-full ${view === 'calculator' ? 'text-accent' : 'text-neutral-500 hover:text-neutral-300'}`}
+          className={`flex flex-col items-center justify-center w-full h-full transition-colors ${view === 'calculator' ? 'text-amber-400 font-bold' : 'text-white/40 hover:text-white/80'}`}
+          aria-label="Calculator View"
         >
-          <IconCalculator className="w-6 h-6" />
+          <div className={`flex items-center justify-center w-12 h-10 rounded-2xl transition-all ${view === 'calculator' ? 'bg-amber-400/10' : ''}`}>
+            <IconCalculator className="w-6 h-6" />
+          </div>
         </button>
         <button
           type="button"
           onClick={() => setView('wheels')}
-          className={`flex flex-col items-center justify-center w-full h-full ${view === 'wheels' ? 'text-accent' : 'text-neutral-500 hover:text-neutral-300'}`}
+          className={`flex flex-col items-center justify-center w-full h-full transition-colors ${view === 'wheels' ? 'text-amber-400 font-bold' : 'text-white/40 hover:text-white/80'}`}
+          aria-label="Wheels View"
         >
-          <IconDisc className="w-6 h-6" />
+          <div className={`flex items-center justify-center w-12 h-10 rounded-2xl transition-all ${view === 'wheels' ? 'bg-amber-400/10' : ''}`}>
+            <IconDisc className="w-6 h-6" />
+          </div>
         </button>
         <button
           type="button"
           onClick={() => setView('settings')}
-          className={`flex flex-col items-center justify-center w-full h-full ${view === 'settings' ? 'text-accent' : 'text-neutral-500 hover:text-neutral-300'}`}
+          className={`flex flex-col items-center justify-center w-full h-full transition-colors ${view === 'settings' ? 'text-amber-400 font-bold' : 'text-white/40 hover:text-white/80'}`}
+          aria-label="Settings View"
         >
-          <IconSettings className="w-6 h-6" />
+          <div className={`flex items-center justify-center w-12 h-10 rounded-2xl transition-all ${view === 'settings' ? 'bg-amber-400/10' : ''}`}>
+            <IconSettings className="w-6 h-6" />
+          </div>
         </button>
       </div>
     </div>

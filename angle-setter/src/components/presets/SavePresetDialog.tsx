@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { BTN, BTN_MUTED } from '../../ui/buttons';
 import { blurOnEnter } from '../../utils/dom';
 import ModalShell from '../ModalShell';
 
@@ -37,40 +36,45 @@ export function SavePresetDialog({
       overlayStyle={overlayStyle}
       dialogStyle={dialogStyle}
     >
-      <div className="mt-3">
-        <input
-          type="text"
-          className="w-full rounded border u-border u-surface px-2 py-1 text-xs u-text placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
-          placeholder="Preset name…"
-          value={presetNameDraft}
-          onKeyDown={e => {
-            blurOnEnter(e);
-            if (e.key === 'Enter' && canSave) {
-              onSave();
-            }
-          }}
-          onChange={e => setPresetNameDraft(e.target.value)}
-          autoFocus
-        />
-      </div>
+      <div className="flex flex-col gap-4">
+        <div className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-0.5">
+            Preset Name
+          </label>
+          <input
+            type="text"
+            className="w-full h-12 bg-black/30 border border-white/10 focus:border-amber-400/60 rounded-xl px-4 text-base text-white placeholder-white/30 font-medium focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition"
+            placeholder="Preset name…"
+            value={presetNameDraft}
+            onKeyDown={e => {
+              blurOnEnter(e);
+              if (e.key === 'Enter' && canSave) {
+                onSave();
+              }
+            }}
+            onChange={e => setPresetNameDraft(e.target.value)}
+            autoFocus
+          />
+        </div>
 
-      <div className="mt-4 flex justify-end gap-2">
-        <button
-          type="button"
-          className={BTN_MUTED}
-          onClick={onClose}
-        >
-          Cancel
-        </button>
+        <div className="flex justify-end items-center gap-3 pt-2">
+          <button
+            type="button"
+            className="h-12 px-5 rounded-2xl bg-white/10 hover:bg-white/15 active:bg-white/20 text-white font-semibold text-sm transition-colors"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
 
-        <button
-          type="button"
-          className={BTN.primary}
-          onClick={onSave}
-          disabled={!canSave}
-        >
-          Save
-        </button>
+          <button
+            type="button"
+            className="h-12 px-6 rounded-2xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 disabled:opacity-30 disabled:hover:bg-amber-400 disabled:cursor-not-allowed text-black font-bold text-sm shadow-lg shadow-amber-950/30 transition-all"
+            onClick={onSave}
+            disabled={!canSave}
+          >
+            Save Preset
+          </button>
+        </div>
       </div>
     </ModalShell>
   );

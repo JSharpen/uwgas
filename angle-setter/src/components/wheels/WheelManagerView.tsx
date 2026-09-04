@@ -1,6 +1,5 @@
 import * as React from 'react';
 import type { Wheel } from '../../types/core';
-import { BTN } from '../../ui/buttons';
 import { IconDisc, IconEdit, IconTrash } from '../../icons';
 import ModalShell from '../ModalShell';
 import WheelFormFields, { type WheelFormValue } from './WheelFormFields';
@@ -22,8 +21,7 @@ export function WheelManagerView({
   const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
     useModalLayout();
 
-      const [deletingWheelId, setDeletingWheelId] = React.useState<string | null>(null);
-  
+  const [deletingWheelId, setDeletingWheelId] = React.useState<string | null>(null);
 
   // Modal states
   const [isAddWheelModalVisible, setIsAddWheelModalVisible] = React.useState(false);
@@ -45,12 +43,11 @@ export function WheelManagerView({
     isHoning: false,
   });
 
-    const sortedWheels = React.useMemo(() => {
+  const sortedWheels = React.useMemo(() => {
     const list = [...wheels];
     return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   }, [wheels]);
 
-  
   const editingWheel = React.useMemo(
     () => (editingWheelId ? wheels.find(w => w.id === editingWheelId) || null : null),
     [editingWheelId, wheels]
@@ -112,27 +109,25 @@ export function WheelManagerView({
   const isAddWheelSaveDisabled = !newWheelNameTrimmed || !isNewWheelDiameterValid;
 
   return (
-    <section className="panel-card panel-card--strong motion-panel flex flex-col gap-0 max-w-3xl mx-auto">
-      <div className="panel-card__header flex items-center gap-2">
-        <h2 className="text-sm font-semibold u-text panel-header">Wheel Manager</h2>
+    <section className="flex flex-col gap-6 max-w-3xl mx-auto pb-20 w-full">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-wide">Wheel Manager</h2>
         <button
           type="button"
-          className={`${BTN.primaryFlat} ml-auto`}
+          className="px-4 h-11 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider rounded-2xl shadow-sm transition flex items-center justify-center cursor-pointer"
           onClick={openAddWheelModal}
         >
           + Add Wheel
         </button>
       </div>
 
-      <div className="panel-card__body flex flex-col gap-3">
-        
-
+      <div className="flex flex-col gap-4">
         {wheels.length === 0 ? (
-          <div className="text-xs u-text-muted border border-dashed u-border rounded p-3 u-surface">
-            No wheels saved yet. Click <span className="font-semibold u-text">Add Wheel</span> to create your first wheel.
+          <div className="bg-[#262626] rounded-3xl border border-dashed border-white/10 p-8 text-center text-xs text-white/50 flex flex-col gap-2">
+            No wheels saved yet. Click <span className="font-bold text-white">Add Wheel</span> to create your first wheel.
           </div>
         ) : (
-                    <div className="grid card-grid md:grid-cols-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {sortedWheels.map((w, idx) => {
               const diameterDisplay =
                 w.DText !== undefined ? w.DText : Number.isNaN(w.D) ? '' : String(w.D);
@@ -145,52 +140,70 @@ export function WheelManagerView({
               return (
                 <div
                   key={w.id}
-                  className="card-elevated wheel-card flex flex-col gap-2 motion-card"
+                  className="bg-[#262626] rounded-3xl border border-white/10 shadow-lg p-6 flex flex-col justify-between gap-4 relative overflow-hidden group transition-all"
                   style={{ '--motion-order': idx } as React.CSSProperties}
                 >
+                  {/* Subtle Top Edge Highlight */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+
                   {deletingWheelId === w.id ? (
-                    <div className="flex flex-col gap-2 p-3 items-center justify-center min-h-[96px]">
-                      <span className="text-sm font-semibold u-text">Delete this wheel?</span>
-                      <div className="flex gap-2 w-full mt-2">
-                        <button type="button" className={`${BTN.ghost} flex-1`} onClick={() => setDeletingWheelId(null)}>Cancel</button>
-                        <button type="button" className={`${BTN.danger} flex-1`} onClick={() => { onDeleteWheel(w.id); setDeletingWheelId(null); }}>Delete</button>
+                    <div className="flex flex-col gap-3 p-4 items-center justify-center bg-red-500/10 border border-red-500/20 rounded-2xl text-center relative z-10">
+                      <span className="text-sm font-bold text-red-400">Delete this wheel?</span>
+                      <div className="flex gap-3 w-full max-w-xs mt-2">
+                        <button
+                          type="button"
+                          className="flex-1 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 font-semibold text-xs uppercase tracking-wide transition flex items-center justify-center cursor-pointer"
+                          onClick={() => setDeletingWheelId(null)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="flex-1 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-xs uppercase tracking-wide shadow-lg transition flex items-center justify-center cursor-pointer"
+                          onClick={() => { onDeleteWheel(w.id); setDeletingWheelId(null); }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ) : (
                     <>
-                      <div className="card-elevated__header wheel-card__header flex items-center justify-between gap-2 p-3 pb-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <IconDisc className="w-5 h-5 text-primary shrink-0" />
-                          <div className="text-sm font-semibold u-text truncate">
+                      <div className="flex items-center justify-between gap-3 relative z-10">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <IconDisc className="w-6 h-6 text-[var(--color-accent)] shrink-0" />
+                          <div className="font-bold text-base text-white tracking-wide truncate">
                             {w.name || 'Untitled wheel'}
                           </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             type="button"
-                            className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5 u-text-muted hover:u-text transition-colors"
+                            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center transition cursor-pointer"
                             onClick={() => openEditWheelModal(w)}
-                            title="Edit"
+                            title="Edit Wheel"
                           >
                             <IconEdit className="w-4 h-4" />
                           </button>
                           <button
                             type="button"
-                            className="p-1.5 rounded hover:bg-red-500/10 text-red-500/70 hover:text-red-500 transition-colors"
+                            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-400 flex items-center justify-center transition cursor-pointer"
                             onClick={() => setDeletingWheelId(w.id)}
-                            title="Delete"
+                            title="Delete Wheel"
                           >
                             <IconTrash className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
 
-                      <div className="p-3 pt-1 flex flex-col gap-2">
-                        <span className="font-mono u-text text-sm">
-                          D: {diameterDisplay || '-'} mm
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          <span className="px-2 py-0.5 rounded-full border u-border bg-black/5 dark:bg-white/5 text-[11px] font-medium u-text-muted">
+                      <div className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-3 relative z-10">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Diameter</span>
+                          <span className="font-mono text-2xl font-extrabold text-white tracking-tight">
+                            {diameterDisplay || '-'}<span className="text-xs text-white/50 font-medium ml-1">mm</span>
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          <span className="px-2.5 py-1 rounded-full border border-white/5 bg-white/5 text-[10px] font-bold uppercase tracking-wider text-white/70">
                             {baseLabel}
                           </span>
                         </div>
@@ -201,7 +214,8 @@ export function WheelManagerView({
               );
             })}
           </div>
-        )}      </div>
+        )}
+      </div>
 
       {/* Edit Wheel Modal */}
       {isEditWheelModalVisible && (editingWheelDraft || editingWheel) && (
@@ -242,7 +256,7 @@ export function WheelManagerView({
                 <div className="mt-4 flex justify-end gap-2">
                   <button
                     type="button"
-                    className={BTN.danger}
+                    className="px-4 h-11 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold text-xs uppercase tracking-wide transition cursor-pointer flex items-center justify-center"
                     onClick={() => {
                       if (!editingWheelId) return;
                       onDeleteWheel(editingWheelId);
@@ -253,14 +267,14 @@ export function WheelManagerView({
                   </button>
                   <button
                     type="button"
-                    className={BTN.ghost}
+                    className="px-4 h-11 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 font-semibold text-xs uppercase tracking-wide transition cursor-pointer flex items-center justify-center"
                     onClick={closeEditWheelModal}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
-                    className={BTN.primary}
+                    className="px-6 h-11 rounded-xl bg-[var(--color-accent)] hover:brightness-110 text-neutral-950 font-bold text-xs uppercase tracking-wide shadow-lg transition flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                     disabled={saveDisabled}
                     onClick={() => {
                       if (!editingWheelId || !editingWheelDraft) return;
@@ -296,7 +310,7 @@ export function WheelManagerView({
           <div className="mt-4 flex justify-end gap-2">
             <button
               type="button"
-              className={BTN.ghost}
+              className="px-4 h-11 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 font-semibold text-xs uppercase tracking-wide transition cursor-pointer flex items-center justify-center"
               onClick={closeAddWheelModal}
             >
               Cancel
@@ -304,7 +318,7 @@ export function WheelManagerView({
 
             <button
               type="button"
-              className={BTN.primary}
+              className="px-6 h-11 rounded-xl bg-[var(--color-accent)] hover:brightness-110 text-neutral-950 font-bold text-xs uppercase tracking-wide shadow-lg transition flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               disabled={isAddWheelSaveDisabled}
               onClick={handleSaveNewWheel}
             >
@@ -318,3 +332,4 @@ export function WheelManagerView({
 }
 
 export default WheelManagerView;
+

@@ -39,8 +39,8 @@ function MiniSelect({
   React.useEffect(() => {
     // We hoist overflow on both the card and its containing panel to allow menus to escape.
     if (!liftOnOpen || !isMenuVisible) return;
-    const hostCard = rootRef.current?.closest<HTMLElement>('.card-elevated');
-    const hostPanel = rootRef.current?.closest<HTMLElement>('.panel-card');
+    const hostCard = rootRef.current?.closest<HTMLElement>('.card-elevated, .bg-\\[\\#262626\\]');
+    const hostPanel = rootRef.current?.closest<HTMLElement>('.panel-card, .bg-\\[\\#262626\\]');
     const cleanups: (() => void)[] = [];
     const apply = (el: HTMLElement | null | undefined) => {
       if (!el) return;
@@ -147,21 +147,16 @@ function MiniSelect({
     };
   }, []);
 
-  const alignClass =
-    align === 'right' ? 'dropdown-menu--align-right' : 'dropdown-menu--align-left';
-
   return (
     <div
       ref={rootRef}
-      className={`dropdown text-xs ${widthClass ?? 'flex-shrink-0'} ${
-        isMenuVisible ? 'dropdown--open' : ''
-      }`}
+      className={`relative text-xs ${widthClass ?? 'flex-shrink-0'}`}
     >
       <button
         type="button"
-        className={`dropdown-trigger dropdown-trigger--sm w-full flex items-center justify-between gap-1.5 min-w-0 ${
-          isMenuVisible ? 'dropdown-trigger--open' : ''
-        }`}
+        className={`w-full min-h-[42px] bg-black/30 hover:bg-white/5 active:bg-white/10 border ${
+          isMenuVisible ? 'border-amber-400/60 ring-2 ring-amber-400/20' : 'border-white/10 hover:border-white/20'
+        } rounded-xl px-3.5 py-2 text-xs font-semibold text-white flex items-center justify-between gap-2 min-w-0 transition-all`}
         aria-label={ariaLabel}
         onClick={() => {
           if (isMenuVisible && !isMenuClosing) {
@@ -171,14 +166,14 @@ function MiniSelect({
           }
         }}
       >
-        <span className="truncate min-w-0 flex-1 text-left">
+        <span className="truncate min-w-0 flex-1 text-left font-medium">
           {renderLabel ? renderLabel(selected) : selected?.label ?? ''}
         </span>
         <svg
           viewBox="0 0 24 24"
           className={
-            'w-3 h-3 shrink-0 transition-transform ' +
-            (isMenuVisible ? 'rotate-180' : 'rotate-0')
+            'w-3.5 h-3.5 text-white/50 shrink-0 transition-transform duration-200 ' +
+            (isMenuVisible ? 'rotate-180 text-amber-400' : 'rotate-0')
           }
           aria-hidden="true"
         >
@@ -186,7 +181,7 @@ function MiniSelect({
             d="M7 10l5 5 5-5"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -195,13 +190,15 @@ function MiniSelect({
 
       {isMenuVisible && (
         <div
-          className={`dropdown-menu z-30 ${alignClass} ${
+          className={`absolute z-30 mt-1.5 ${
+            align === 'right' ? 'right-0' : 'left-0'
+          } ${menuWidthClass ?? 'w-48 sm:w-56 min-w-full'} bg-[#262626] border border-white/10 rounded-2xl shadow-2xl p-1.5 backdrop-blur-md overflow-hidden ${
             isMenuClosing ? 'dropdown-menu--closing' : 'dropdown-menu--opening'
-          } ${menuWidthClass ?? 'w-32'}`}
+          }`}
         >
-          <div className="dropdown-menu__body">
+          <div className="max-h-64 overflow-y-auto overflow-x-hidden flex flex-col gap-1">
             {options.length === 0 ? (
-              <div className="dropdown-empty text-[0.7rem]">{emptyLabel}</div>
+              <div className="p-3 text-center text-xs text-white/40">{emptyLabel}</div>
             ) : (
               options.map(opt => {
                 const isActive = opt.value === value;
@@ -209,7 +206,11 @@ function MiniSelect({
                   <button
                     key={opt.value}
                     type="button"
-                    className={`dropdown-item ${isActive ? 'dropdown-item--active' : ''}`}
+                    className={`w-full min-h-[40px] px-3.5 py-2 rounded-xl text-xs transition-colors flex items-center justify-between gap-2 text-left disabled:opacity-40 disabled:hover:bg-transparent ${
+                      isActive
+                        ? 'bg-amber-400/10 border border-amber-400/30 text-amber-300 font-bold'
+                        : 'text-white/80 hover:bg-white/10 hover:text-white border border-transparent'
+                    }`}
                     disabled={opt.disabled}
                     onClick={() => {
                       if (opt.disabled) return;
@@ -221,8 +222,14 @@ function MiniSelect({
                       renderOption(opt, isActive)
                     ) : (
                       <>
-                        <div className="dropdown-item__title">{opt.label}</div>
-                        {opt.meta ? <div className="dropdown-item__meta">{opt.meta}</div> : null}
+                        <span className={`truncate flex-1 font-medium ${isActive ? 'text-amber-300 font-bold' : 'text-white'}`}>
+                          {opt.label}
+                        </span>
+                        {opt.meta ? (
+                          <span className={`text-[10px] font-mono shrink-0 ${isActive ? 'text-amber-300/80 font-bold' : 'text-white/40'}`}>
+                            {opt.meta}
+                          </span>
+                        ) : null}
                       </>
                     )}
                   </button>

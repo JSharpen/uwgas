@@ -1066,9 +1066,14 @@ menu_server() {
         echo -e "  ${C_YELLOW}[0]${C_RESET} Back to Main Menu"
         echo ""
         echo -en "${C_WHITE}${C_BOLD}Select option (0-6, r):${C_RESET} "
-        read -r choice
+        read -t 3 -n 1 -r choice || { sleep 0.1; choice=""; }
+
+        [[ -n "$choice" ]] && echo ""
+
 
         case "$choice" in
+
+            "") continue ;; # Auto-refresh timeout
             1) start_server; pause ;;
             2) stop_server; pause ;;
             3) restart_server; pause ;;
@@ -1097,9 +1102,14 @@ menu_git() {
         echo -e "  ${C_YELLOW}[0]${C_RESET} Back to Main Menu"
         echo ""
         echo -en "${C_WHITE}${C_BOLD}Select option (0-5, r):${C_RESET} "
-        read -r choice
+        read -t 3 -n 1 -r choice || { sleep 0.1; choice=""; }
+
+        [[ -n "$choice" ]] && echo ""
+
 
         case "$choice" in
+
+            "") continue ;; # Auto-refresh timeout
             1) git_show_status; pause ;;
             2) git_start_work; pause ;;
             3) git_commit_and_push_dev; pause ;;
@@ -1128,9 +1138,14 @@ menu_quality() {
         echo -e "  ${C_YELLOW}[0]${C_RESET} Back to Main Menu"
         echo ""
         echo -en "${C_WHITE}${C_BOLD}Select option (0-6, r):${C_RESET} "
-        read -r choice
+        read -t 3 -n 1 -r choice || { sleep 0.1; choice=""; }
+
+        [[ -n "$choice" ]] && echo ""
+
 
         case "$choice" in
+
+            "") continue ;; # Auto-refresh timeout
             1) run_lint; pause ;;
             2) run_typecheck; pause ;;
             3) run_build; pause ;;
@@ -1159,9 +1174,14 @@ menu_diffs() {
         echo -e "  ${C_YELLOW}[0]${C_RESET} Back to Main Menu"
         echo ""
         echo -en "${C_WHITE}${C_BOLD}Select option (0-5, r):${C_RESET} "
-        read -r choice
+        read -t 3 -n 1 -r choice || { sleep 0.1; choice=""; }
+
+        [[ -n "$choice" ]] && echo ""
+
 
         case "$choice" in
+
+            "") continue ;; # Auto-refresh timeout
             1) save_diff_export "unstaged"; pause ;;
             2) save_diff_export "staged"; pause ;;
             3) git_stash_wip; pause ;;
@@ -1190,9 +1210,14 @@ menu_main() {
         echo -e "  ${C_RED}[0]${C_RESET} Exit Console"
         echo ""
         echo -en "${C_WHITE}${C_BOLD}Select Category (1-4, r, 0):${C_RESET} "
-        read -r main_choice
+        read -t 3 -n 1 -r main_choice || { sleep 0.1; main_choice=""; }
+
+        [[ -n "$main_choice" ]] && echo ""
+
 
         case "$main_choice" in
+
+            "") continue ;; # Auto-refresh timeout
             1) menu_server ;;
             2) menu_git ;;
             3) menu_quality ;;

@@ -1,9 +1,37 @@
 # Changelog & Autonomous Session Log
 
 > **Universal Wet Grinder Angle Setter (UWGAS)**
-> **Universal Wet Grinder Angle Setter (UWGAS)**
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [0.9.8] — 2026-09-03 (Session: Modern Sleek Dark Theme Visual Refactor)
+
+### 💄 UI & Modern Sleek Design System Overhaul (JOB-022)
+- **Universal Dark Zinc / Amber Aesthetic**:
+  - Fully refactored all modal shells, pickers, settings views, managers, wizards, cards, and application shell to strictly align with the `ProgressionView.tsx` design tokens (`bg-[#262626]`, `border-white/10`, `rounded-3xl` containers, `rounded-2xl` inner wells, `rounded-xl` controls, amber `#f59e0b` accents, sky blue `#38bdf8` focus states, and $\ge 44\text{px}$ touch targets).
+  - Eliminated all residual light-mode colors and hardcoded backgrounds (`bg-white`, `bg-neutral-800`, light borders) in favor of high-contrast workshop dark theme styling.
+- **Modals, Dialogs & Selectors**:
+  - `ModalShell.tsx`: Standardized dark modal container with smooth backdrop (`bg-black/70`), crisp border (`border-white/10`), rounded corners (`rounded-3xl`), and responsive padding.
+  - `ActionSheetPicker.tsx`: Refactored bottom drawer / centered dialog with high-contrast active item indicators and tactile option items.
+  - `MiniSelect.tsx`: Transformed into a dark floating dropdown with `bg-[#262626]`, `rounded-2xl`, `border-white/10`, and amber selection highlights.
+  - `SavePresetDialog.tsx` & `PresetManagerModal.tsx`: Modern sleek dark preset dialogs with `rounded-3xl` cards, `rounded-2xl` preset list items, amber badges, and high-contrast action buttons.
+- **Settings & Managers**:
+  - `SettingsRootView.tsx`: Modern sleek tabbed settings shell with clear section headers, `rounded-2xl` navigation items, and smooth transitions.
+  - `MeasurementSettingsView.tsx`: Dark settings cards with tactile segmented switches and high-contrast labels.
+  - `HardwareManagerView.tsx` & `MachineManagerView.tsx`: Refactored hardware/machine profile lists with `rounded-2xl` wells, steppers, and modal add/edit forms.
+  - `WheelManagerView.tsx` & `WheelFormFields.tsx`: Dark wheel library management with grit badges, `rounded-2xl` input containers, and `bg-black/30` wells.
+  - `ImportExportPanel.tsx`: Modern sleek backup/restore panel with dark JSON preview areas and `bg-red-500/10` danger zone cards.
+- **Wizards, Reference & Interactive Controls**:
+  - `CalibrationWizard.tsx`: Upgraded 3-step calibration flow (Intro, Measuring, Results) with massive monospace readouts, real-time error residual indicators ($\varepsilon$), and `rounded-3xl` cards.
+  - `GlossaryPage.tsx` & `GlossaryCard.tsx`: Modern sleek glossary index with search bar, category chips, formula highlight blocks, and amber badge readouts.
+  - `GrindDirToggle.tsx` & `ExpandToggle.tsx`: Tactile segmented direction toggle and circular chevron expand controls.
+- **Application Shell & Global Setup**:
+  - `GlobalSetupCard.tsx`: Unified dark setup drawer with `rounded-3xl` container, `rounded-2xl` parameter wells, responsive workshop steppers, and quick-adjust pickers.
+  - `App.tsx` & `src/index.css`: Root container styling, fixed top bar, bottom tab navigation bar, responsive max-width wrapper, and custom scrollbar dark theming.
+
+### 🛡️ Technical Verification & Logic Preservation
+- Verified 100% preservation of all React state hooks, event handlers, and pure mathematical calculation engine (`src/math/tormek.ts`).
+- Passed all verification gates with 0 errors: `npm run typecheck`, `npm run lint`, and `npm run build`.
 
 ## [0.9.7] — 2026-09-01 (Session: Mobile-First UX Overhaul)
 

@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { BTN } from '../ui/buttons';
 
 type ImportExportResult = { error?: string; summary?: string };
 type ImportSectionKey =
@@ -8,8 +7,7 @@ type ImportSectionKey =
   | 'wheels'
   | 'sessionSteps'
   | 'sessionPresets'
-  | 'heightMode'
-
+  | 'heightMode';
 
 type ImportExportPanelProps = {
   exportText: string;
@@ -43,21 +41,21 @@ function CollapseToggle({
   return (
     <button
       type="button"
-      className={`btn-toggle ${open ? 'btn-toggle--open' : ''}`}
+      className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-white/60 hover:text-white transition cursor-pointer"
       aria-expanded={open}
       aria-label={label}
       onClick={onToggle}
     >
       <svg
         viewBox="0 0 24 24"
-        className={'w-3 h-3 transition-transform ' + (open ? 'rotate-180' : 'rotate-0')}
+        className={'w-4 h-4 transition-transform ' + (open ? 'rotate-180' : 'rotate-0')}
         aria-hidden="true"
       >
         <path
           d="M7 10l5 5 5-5"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -100,22 +98,26 @@ function ImportPanel({
   };
 
   return (
-    <section className="panel-card panel-card--strong flex flex-col gap-0 motion-panel">
-      <div className="panel-card__header flex items-center justify-between">
-        <h2 className="text-sm font-semibold u-text panel-header">Import</h2>
+    <section className="bg-[#262626] rounded-3xl border border-white/10 shadow-lg relative flex flex-col overflow-hidden">
+      {/* Subtle Top Edge Highlight */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+
+      <div className="relative z-10 flex items-center justify-between p-6 border-b border-white/5">
+        <h2 className="text-lg font-bold text-white tracking-wide">Import Data</h2>
         <CollapseToggle
           open={open}
           onToggle={() => setOpen(v => !v)}
           label={open ? 'Collapse import' : 'Expand import'}
         />
       </div>
+
       {open && (
-        <div className="panel-card__body flex flex-col gap-3 text-xs">
+        <div className="relative z-10 p-6 flex flex-col gap-4 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[0.75rem] u-text">Sections</span>
+            <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Sections</span>
             <button
               type="button"
-              className={BTN.base}
+              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-semibold transition cursor-pointer"
               onClick={() => {
                 const next = !allImportChecked;
                 (Object.keys(importSections) as ImportSectionKey[]).forEach(k => {
@@ -127,53 +129,57 @@ function ImportPanel({
               {allImportChecked ? 'Uncheck all' : 'Check all'}
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(Object.keys(SECTION_LABELS) as ImportSectionKey[]).map(key => {
               const checked = importSections[key];
               const mode = importModes[key] || 'merge';
               return (
-                <div key={key} className="flex flex-col gap-1 rounded px-2 py-1 hover:bg-accent-tint">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                <div key={key} className="bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/10 rounded-2xl p-3.5 flex flex-col gap-2 transition-all">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
-                      className="accent-accent"
+                      className="accent-[var(--color-accent)] w-4 h-4 rounded cursor-pointer"
                       checked={checked}
                       onChange={() => onToggleImportSection(key)}
                     />
-                    <span className="u-text">{SECTION_LABELS[key] || key}</span>
+                    <span className="text-sm font-semibold text-white">{SECTION_LABELS[key] || key}</span>
                   </label>
-                  <div className="flex items-center gap-2 pl-6 text-[0.7rem] u-text-muted">
-                    <span>Mode:</span>
-                    <label className="flex items-center gap-1 cursor-pointer">
+                  <div className="flex items-center gap-3 pl-6 text-xs text-white/50">
+                    <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Mode:</span>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="radio"
-                        className="accent-accent"
+                        name={`import-mode-${key}`}
+                        className="accent-[var(--color-accent)]"
                         checked={mode === 'merge'}
                         onChange={() => onChangeImportMode(key, 'merge')}
                       />
                       <span>Merge (safe)</span>
                     </label>
-                    <label className="flex items-center gap-1 cursor-pointer">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="radio"
+                        name={`import-mode-${key}`}
                         className="accent-amber-500"
                         checked={mode === 'overwrite'}
                         onChange={() => onChangeImportMode(key, 'overwrite')}
                       />
-                      <span>Overwrite</span>
+                      <span className="text-amber-400">Overwrite</span>
                     </label>
                   </div>
                 </div>
               );
             })}
           </div>
+
           {!Object.values(importSections).some(Boolean) && (
-            <div className="text-warning text-[0.7rem]">
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl p-3 text-xs">
               Warning: no sections selected - importing will only update version metadata.
             </div>
           )}
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/5">
             <input
               ref={fileInputRef}
               type="file"
@@ -183,12 +189,12 @@ function ImportPanel({
             />
             <button
               type="button"
-              className={BTN.base}
+              className="px-5 h-11 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider transition flex items-center justify-center cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
             >
               Choose JSON to import
             </button>
-            <span className="text-[0.75rem] u-text-muted">Upload & apply selected sections</span>
+            <span className="text-xs text-white/40">Upload & apply selected sections</span>
           </div>
         </div>
       )}
@@ -214,22 +220,26 @@ function ExportPanel({
   const anyChecked = Object.values(exportSections).some(Boolean);
 
   return (
-    <section className="panel-card panel-card--strong flex flex-col gap-0 motion-panel">
-      <div className="panel-card__header flex items-center justify-between">
-        <h2 className="text-sm font-semibold u-text panel-header">Export</h2>
+    <section className="bg-[#262626] rounded-3xl border border-white/10 shadow-lg relative flex flex-col overflow-hidden">
+      {/* Subtle Top Edge Highlight */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+
+      <div className="relative z-10 flex items-center justify-between p-6 border-b border-white/5">
+        <h2 className="text-lg font-bold text-white tracking-wide">Export Data</h2>
         <CollapseToggle
           open={open}
           onToggle={() => setOpen(v => !v)}
           label={open ? 'Collapse export' : 'Expand export'}
         />
       </div>
+
       {open && (
-        <div className="panel-card__body flex flex-col gap-3 text-xs">
+        <div className="relative z-10 p-6 flex flex-col gap-4 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[0.75rem] u-text">Sections</span>
+            <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Sections</span>
             <button
               type="button"
-              className={BTN.base}
+              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-semibold transition cursor-pointer"
               onClick={() => {
                 const next = !allChecked;
                 (Object.keys(exportSections) as ImportSectionKey[]).forEach(k => {
@@ -241,39 +251,42 @@ function ExportPanel({
               {allChecked ? 'Uncheck all' : 'Check all'}
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(Object.keys(SECTION_LABELS) as ImportSectionKey[]).map(key => {
               const checked = exportSections[key];
               return (
                 <label
                   key={key}
-                  className="flex items-center gap-2 rounded px-2 py-1 hover:bg-accent-tint cursor-pointer select-none"
+                  className="bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/10 rounded-2xl p-3.5 flex items-center gap-2.5 cursor-pointer select-none transition-all"
                 >
                   <input
                     type="checkbox"
-                    className="accent-accent"
+                    className="accent-[var(--color-accent)] w-4 h-4 rounded cursor-pointer"
                     checked={checked}
                     onChange={() => onToggleExportSection(key)}
                   />
-                  <span className="u-text">{SECTION_LABELS[key] || key}</span>
+                  <span className="text-sm font-semibold text-white">{SECTION_LABELS[key] || key}</span>
                 </label>
               );
             })}
           </div>
+
           {!anyChecked && (
-            <div className="text-warning text-[0.7rem]">
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl p-3 text-xs">
               Warning: nothing selected - export will only include version metadata.
             </div>
           )}
 
           <textarea
-            className="w-full h-28 rounded border u-border u-surface px-2 py-1 font-mono text-[0.75rem] u-text"
+            className="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-4 font-mono text-xs text-white/90 focus:border-[var(--color-accent)] outline-none resize-y"
             value={exportText}
             readOnly
           />
+
           <button
             type="button"
-            className={`${BTN.primary} self-start`}
+            className="px-6 h-11 bg-[var(--color-accent)] hover:brightness-110 text-neutral-950 font-bold text-xs uppercase tracking-wide rounded-2xl shadow-lg transition self-start flex items-center justify-center cursor-pointer"
             onClick={onDownload}
           >
             Download JSON
@@ -297,7 +310,7 @@ function ImportExportPanel({
   const [status, setStatus] = React.useState<string | null>(null);
 
   return (
-    <div className="flex flex-col gap-4 max-w-xl">
+    <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-20 w-full">
       <ImportPanel
         onImportText={onImportText}
         importSections={importSections}
@@ -324,9 +337,14 @@ function ImportExportPanel({
         setStatus={setStatus}
       />
 
-      {status && <div className="text-[0.75rem] text-warning-soft">{status}</div>}
+      {status && (
+        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-2xl p-4 text-xs font-medium flex items-center gap-2">
+          {status}
+        </div>
+      )}
     </div>
   );
 }
 
 export default ImportExportPanel;
+

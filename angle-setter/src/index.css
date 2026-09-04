@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./theme.css";
 @import "./primitives.css";
+@import "./neumorphic.css";
 
 html, body {
   margin: 0;
@@ -494,65 +495,25 @@ html, body {
   color: var(--color-text-muted);
 }
 
-/* Tailwind-to-theme bridge (keeps JSX classNames working while sourcing from vars) */
-.bg-neutral-950 { background-color: var(--color-panel) !important; }
-.bg-neutral-950\/40 { background-color: color-mix(in srgb, var(--color-panel) 40%, transparent) !important; }
-.bg-neutral-950\/20 { background-color: color-mix(in srgb, var(--color-panel) 20%, transparent) !important; }
-.bg-neutral-950\/60 { background-color: color-mix(in srgb, var(--color-panel) 60%, transparent) !important; }
-.bg-neutral-950\/80 { background-color: color-mix(in srgb, var(--color-panel) 80%, transparent) !important; }
+/* Theme utilities */
+.text-danger { color: var(--color-danger); }
+.text-danger-soft { color: var(--color-danger-soft); }
+.border-danger { border-color: var(--color-danger); }
+.bg-danger-tint { background-color: color-mix(in srgb, var(--color-danger) 30%, transparent); }
 
-.bg-neutral-900 { background-color: var(--color-panel-strong) !important; }
-.bg-neutral-900\/80 { background-color: color-mix(in srgb, var(--color-panel-strong) 80%, transparent) !important; }
-.bg-neutral-900\/70 { background-color: color-mix(in srgb, var(--color-panel-strong) 70%, transparent) !important; }
-.bg-neutral-900\/40 { background-color: color-mix(in srgb, var(--color-panel-strong) 40%, transparent) !important; }
-.bg-neutral-900\/30 { background-color: color-mix(in srgb, var(--color-panel-strong) 30%, transparent) !important; }
-.bg-neutral-900\/20 { background-color: color-mix(in srgb, var(--color-panel-strong) 20%, transparent) !important; }
+.text-warning { color: var(--color-warning); }
+.text-warning-soft { color: var(--color-warning-soft); }
+.border-warning { border-color: var(--color-warning); }
+.bg-warning-tint { background-color: color-mix(in srgb, var(--color-warning) 24%, transparent); }
 
-.bg-neutral-800 { background-color: color-mix(in srgb, var(--color-panel-strong) 85%, transparent) !important; }
+.text-accent { color: var(--color-accent); }
+.text-accent-soft { color: var(--color-accent-soft); }
+.border-accent { border-color: var(--color-accent); }
+.bg-accent-tint { background-color: color-mix(in srgb, var(--color-accent-strong) 45%, transparent); }
 
-.border-neutral-700 { border-color: var(--color-border) !important; }
-.border-neutral-800 { border-color: var(--color-border-strong) !important; }
+.text-disabled { color: var(--color-disabled); }
+.accent-accent { accent-color: var(--color-accent); }
 
-.text-neutral-50,
-.text-neutral-100,
-.text-neutral-200,
-.text-neutral-300 { color: var(--color-text) !important; }
-.text-neutral-400 { color: var(--color-text-muted) !important; }
-.text-neutral-500 { color: var(--color-disabled) !important; }
-
-.text-emerald-50,
-.text-emerald-100,
-.text-emerald-200,
-.text-emerald-300 { color: var(--color-accent) !important; }
-.border-emerald-500 { border-color: var(--color-accent) !important; }
-.bg-emerald-900\/40 { background-color: color-mix(in srgb, var(--color-accent-strong) 50%, transparent) !important; }
-.hover\:bg-emerald-900:hover { background-color: color-mix(in srgb, var(--color-accent-strong) 70%, transparent) !important; }
-
-.text-sky-200 { color: var(--color-focus) !important; }
-.border-sky-400 { border-color: var(--color-focus) !important; }
-.bg-sky-900\/40 { background-color: color-mix(in srgb, var(--color-focus) 35%, transparent) !important; }
-
-.text-red-200,
-.text-red-300 { color: var(--color-danger-soft) !important; }
-.text-red-400 { color: var(--color-danger) !important; }
-.border-red-400 { border-color: var(--color-danger) !important; }
-.bg-red-900\/40 { background-color: color-mix(in srgb, var(--color-danger) 40%, transparent) !important; }
-.bg-red-900\/30 { background-color: color-mix(in srgb, var(--color-danger) 30%, transparent) !important; }
-.hover\:bg-red-900:hover { background-color: color-mix(in srgb, var(--color-danger) 55%, transparent) !important; }
-.accent-red-500 { accent-color: var(--color-danger) !important; }
-
-.text-amber-200 { color: var(--color-warning-soft) !important; }
-.text-amber-300 { color: var(--color-warning) !important; }
-.accent-amber-500 { accent-color: var(--color-warning) !important; }
-
-.border-red-500\/70 { border-color: color-mix(in srgb, var(--color-danger) 70%, transparent) !important; }
-
-body {
-  margin: 0;
-  min-height: 100dvh;        /* dynamic viewport height for mobile */
-  background: var(--color-bg);
-  overscroll-behavior-y: none; /* optional: reduce bounce showing white */
-}
 
 
 

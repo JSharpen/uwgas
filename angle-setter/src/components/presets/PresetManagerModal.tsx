@@ -1,6 +1,5 @@
 import * as React from 'react';
 import type { SessionPreset } from '../../types/core';
-import { BTN } from '../../ui/buttons';
 import ModalShell from '../ModalShell';
 
 export type PresetManagerModalProps = {
@@ -60,11 +59,13 @@ export function PresetManagerModal({
       overlayStyle={overlayStyle}
       dialogStyle={dialogStyle}
     >
-      <div className="max-h-64 overflow-y-auto text-xs">
+      <div className="max-h-[60vh] overflow-y-auto pr-0.5 flex flex-col gap-3">
         {sessionPresets.length === 0 ? (
-          <div className="text-neutral-500">No presets saved yet.</div>
+          <div className="bg-black/20 border border-white/5 rounded-2xl p-6 text-center text-sm text-white/40">
+            No presets saved yet.
+          </div>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-2.5">
             {sessionPresets.map(preset => {
               const isEditing = presetRenameId === preset.id;
               const renameTrimmed = presetRenameValue.trim();
@@ -77,18 +78,19 @@ export function PresetManagerModal({
                 );
               const renameDisabled =
                 !isEditing || renameTrimmed.length === 0 || renameConflicts;
+              const isSelected = selectedPresetId === preset.id;
 
               return (
                 <li
                   key={preset.id}
-                  className="flex items-start justify-between gap-2 rounded border u-border u-surface px-2 py-2"
+                  className="bg-black/25 hover:bg-black/35 border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
                 >
-                  <div className="flex-1 flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
                       {isEditing ? (
                         <input
                           type="text"
-                          className="w-full rounded border u-border u-surface px-2 py-1 text-xs u-text placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+                          className="w-full h-11 bg-black/40 border border-amber-400/60 rounded-xl px-3.5 text-sm text-white font-semibold focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                           value={presetRenameValue}
                           onChange={e => setPresetRenameValue(e.target.value)}
                           onKeyDown={e => {
@@ -102,29 +104,34 @@ export function PresetManagerModal({
                           autoFocus
                         />
                       ) : (
-                        <span className="u-text">{preset.name}</span>
-                      )}
-                      {selectedPresetId === preset.id && (
-                        <span className="text-[0.65rem] text-accent-soft border border-accent rounded px-1 py-[2px]">
-                          active
-                        </span>
+                        <>
+                          <span className="text-base font-semibold text-white tracking-wide truncate">
+                            {preset.name}
+                          </span>
+                          {isSelected && (
+                            <span className="bg-amber-400/10 border border-amber-400/30 text-amber-400 text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full shrink-0">
+                              active
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
-                    <div className="text-[0.7rem] u-text-muted">
+                    <div className="text-xs text-white/40 font-mono font-medium">
                       {preset.steps.length} step{preset.steps.length === 1 ? '' : 's'}
                     </div>
                     {isEditing && renameConflicts && (
-                      <div className="text-[0.65rem] text-warning">
+                      <div className="text-xs text-amber-400 font-medium">
                         A preset with that name already exists.
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col gap-1 self-start">
+
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                     {isEditing ? (
-                      <div className="flex gap-1">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className={BTN.primary}
+                          className="h-10 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 disabled:opacity-30 disabled:hover:bg-amber-400 disabled:cursor-not-allowed text-black font-bold text-xs shadow-sm transition-all"
                           disabled={renameDisabled}
                           onClick={handleCommitRename}
                         >
@@ -132,17 +139,17 @@ export function PresetManagerModal({
                         </button>
                         <button
                           type="button"
-                          className={BTN.ghost}
+                          className="h-10 px-3.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/25 text-white font-semibold text-xs transition-colors"
                           onClick={handleCancelRename}
                         >
                           Cancel
                         </button>
                       </div>
                     ) : (
-                      <div className="flex flex-wrap gap-1 justify-end">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className={BTN.base}
+                          className="h-10 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-bold text-xs shadow-sm transition-all flex items-center justify-center"
                           onClick={() => {
                             onLoadPreset(preset.id);
                             onClose();
@@ -152,14 +159,14 @@ export function PresetManagerModal({
                         </button>
                         <button
                           type="button"
-                          className={BTN.base}
+                          className="h-10 px-3.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/25 text-white font-semibold text-xs transition-colors flex items-center justify-center"
                           onClick={() => handleBeginRename(preset)}
                         >
                           Rename
                         </button>
                         <button
                           type="button"
-                          className={BTN.danger}
+                          className="h-10 px-3.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-400 hover:text-red-300 font-semibold text-xs transition-colors flex items-center justify-center"
                           onClick={() => onDeletePreset(preset.id)}
                         >
                           Delete
