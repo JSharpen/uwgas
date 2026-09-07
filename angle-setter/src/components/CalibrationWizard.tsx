@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { generateId } from "../utils/id";
 import type {
   GlobalState,
   Wheel,
@@ -162,7 +163,7 @@ export default function CalibrationWizard({
 
   const handleSave = () => {
     const profile: CalibrationProfile = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: calibName.trim(),
       createdAt: new Date().toISOString(),
       scope,

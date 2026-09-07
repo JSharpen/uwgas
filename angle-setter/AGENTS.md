@@ -36,6 +36,9 @@ Whenever you or the user discuss a feature, bug fix, improvement, or idea:
 
 - **Math Purity**: All trigonometric calculations belong in `src/math/tormek.ts`. Never alter formulas without verifying against [`docs/MATH_REFERENCE.md`](docs/MATH_REFERENCE.md).
 - **State Safety**: Never introduce breaking changes to `AppPersistedState` without incrementing `PERSIST_VERSION` in `src/state/storage.ts` and providing default migrations.
-- **Workshop Touch Ergonomics**: Minimum $44\text{px} \times 44\text{px}$ touch targets, large font sizes for numbers ($h_n, h_r, A, \beta$), and full keyboard modal dismissal.
+- **Workshop Touch Ergonomics**: Minimum $44\text{px} \times 44\text{px}$ touch targets, large font sizes for numbers. **Viewport Targets**: Strict minimum of `360px` (crowding allowed, zero overlap/wrapping) and a comfortable baseline of `390px`. Full keyboard modal dismissal.
 - **Verification Gate**: Before ending any turn with code modifications, ensure that `npm run typecheck`, `npm run lint`, and `npm run build` all pass with **0 errors**.
+- **Comprehensive Reversions**: When removing or reverting a feature, you must completely remove all associated side-effects (orphaned classes like `touch-none`, event listeners, structural layout wrappers, etc.) that were introduced specifically for that feature. Never leave behind residual code that alters intended behavior. If unsure about the extent of the side-effects, explicitly ask the user before proceeding.
 
+- **Scrollable Padding (Safari Fix)**: Never rely on `padding-bottom` (e.g., `pb-6`) on `overflow-y-auto` containers to provide bottom clearance for content, as mobile Safari ignores it. Instead, always append an invisible spacer block as the final child *inside* the scroll container.
+- **Flex Gap Math for Spacers**: When placing a spacer inside a `flex` container that uses `gap`, remember the spacer receives the gap spacing from the preceding element. To make the bottom scroll padding exactly match the container's gap, use a 1px spacer (e.g., `<div className="h-px shrink-0 w-full" />`).

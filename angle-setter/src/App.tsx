@@ -1,4 +1,5 @@
 import { computeWheelResults } from "./math/tormek";
+import { generateId } from "./utils/id";
 // ==============================================================================
 // UWGAS (Universal Wet Grinder Angle Setter)
 // Precision Tormek / Wet Grinder USB Height Calculator
@@ -48,6 +49,7 @@ type ImportModes = {
 };
 
 export default function App() {
+
   // ======= Core state =======
   const [initialState] = React.useState(() => readPersistedState());
   const [global, setGlobal] = React.useState<GlobalState>(initialState.global);
@@ -90,22 +92,66 @@ export default function App() {
   // ======= Navigation & UI States =======
 
   const [view, setView] = React.useState<'calculator' | 'wheels' | 'settings'>('calculator');
+  const headerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!headerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      if (headerRef.current) {
+        const section = headerRef.current;
+        const stickyHeader = section.firstElementChild as HTMLElement;
+        if (stickyHeader) {
+          // absolute top relative to the viewport (ignoring scroll) is just section's offsetTop relative to the document
+          // minus window.scrollY? No, we want the resting position relative to the TOP of the viewport!
+          // So if the user is scrolled to the very top (scrollY = 0), where is the header?
+          // It's at section.offsetTop!
+          // So the resting bottom edge is: section.offsetTop + stickyHeader.offsetHeight
+          const restingBottom = section.offsetTop + stickyHeader.offsetHeight;
+          document.documentElement.style.setProperty('--progression-header-bottom', `${restingBottom}px`);
+        }
+      }
+    });
+    observer.observe(headerRef.current);
+    const section = headerRef.current;
+        const stickyHeader = section.firstElementChild as HTMLElement;
+        if (stickyHeader) {
+          // absolute top relative to the viewport (ignoring scroll) is just section's offsetTop relative to the document
+          // minus window.scrollY? No, we want the resting position relative to the TOP of the viewport!
+          // So if the user is scrolled to the very top (scrollY = 0), where is the header?
+          // It's at section.offsetTop!
+          // So the resting bottom edge is: section.offsetTop + stickyHeader.offsetHeight
+          const restingBottom = section.offsetTop + stickyHeader.offsetHeight;
+          document.documentElement.style.setProperty('--progression-header-bottom', `${restingBottom}px`);
+        }
+    return () => observer.disconnect();
+  }, [view]);
   const [settingsView, setSettingsView] = React.useState<
     'root' | 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary'
   >('root');
-
+  
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent("collapseAll"));
+  }, [view]);
+  
   const showDevHeader = import.meta.env.DEV;
+  const [isConfirmingClear, setIsConfirmingClear] = React.useState(false);
+
+  // Setup panel (Summary Pill)
   const [isSetupPanelOpen, setIsSetupPanelOpen] = React.useState(false);
+  React.useEffect(() => {
+    if (isSetupPanelOpen) {
+      window.dispatchEvent(new CustomEvent("collapseAll"));
+    }
+  }, [isSetupPanelOpen]);
   // Global click-outside to collapse panels
   React.useEffect(() => {
     const handleGlobalPointerDown = (e: PointerEvent | MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement;
       // If clicking inside a card, drawer, or action sheet, don't collapse.
       // We look for common container classes or explicit interactables.
-      const isInteractive = target.closest('.bg-\\[\\#262626\\], .bg-neutral-900, .action-sheet, button, input, select, [role="dialog"]');
+      const isInteractive = target.closest('#global-setup-card, .motion-list-item, .bg-\\[\\#262626\\], .bg-neutral-900, .action-sheet, button, input, select, [role="dialog"]');
       if (!isInteractive) {
         setIsSetupPanelOpen(false);
-        window.dispatchEvent(new CustomEvent('collapseAll'));
       }
     };
     
@@ -164,7 +210,7 @@ export default function App() {
   );
 
   const handleAddWheel = (wheel: Omit<Wheel, 'id'>) => {
-    setWheels(prev => [...prev, { ...wheel, id: crypto.randomUUID() }]);
+    setWheels(prev => [...prev, { ...wheel, id: generateId() }]);
   };
   const handleDeleteWheel = (id: string) => {
     setWheels(prev => prev.filter(w => w.id !== id));
@@ -184,7 +230,7 @@ export default function App() {
 
   const handleAddStep = () => {
     setSessionSteps(prev => [...prev, {
-      id: crypto.randomUUID(),
+      id: generateId(),
       wheelId: wheels[0]?.id ?? '',
       base: 'front',
       angleOffset: 0
@@ -209,7 +255,7 @@ export default function App() {
   const handleLoadDefaultProgression = () => {
     if (wheels.length > 0) {
       setSessionSteps([{
-        id: crypto.randomUUID(),
+        id: generateId(),
         wheelId: wheels[0].id,
         base: 'front',
         angleOffset: 0
@@ -224,7 +270,7 @@ export default function App() {
     if (!preset) return;
     
     setSessionSteps(preset.steps.map(s => ({
-      id: crypto.randomUUID(),
+      id: generateId(),
       wheelId: s.wheelId,
       base: s.base,
       angleOffset: s.angleOffset,
@@ -243,7 +289,7 @@ export default function App() {
     setSessionPresets(prev => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: generateId(),
         name: presetNameDraft.trim(),
         createdAt: new Date().toISOString(),
         version: 1,
@@ -374,7 +420,7 @@ export default function App() {
         </div>
       )}
       {showDevHeader && (
-        <div className="self-start px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-xs font-mono font-bold text-amber-400">
+        <div className="fixed top-1 left-1 opacity-40 pointer-events-none z-[100] px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-[9px] font-mono font-bold text-amber-400">
           UWGAS DEV BUILD
         </div>
       )}
@@ -405,32 +451,65 @@ export default function App() {
           />
 
           {/* Progression Section */}
-          <section className="flex flex-col gap-0 w-full max-w-[576px] mx-auto">
-            <div className="sticky top-2 z-20 flex items-center justify-between mb-4 px-2 py-2 bg-[#262626]/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl">
-              <div className="flex-1 flex justify-start">
-                <button
-                  type="button"
-                  className="h-9 px-3 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500/10 text-red-500 hover:bg-red-500/20 active:bg-red-500/25 border border-red-500/20 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center active:scale-95"
-                  onClick={() => setSessionSteps([])}
-                  disabled={sessionSteps.length === 0}
-                >
-                  Clear All
-                </button>
-              </div>
-              
-              <h2 className="text-xs sm:text-sm font-bold text-white tracking-widest uppercase truncate px-2">
-                Progression
-              </h2>
-              
-              <div className="flex-1 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleAddStep}
-                  className="h-9 px-3 sm:px-4 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.2)] flex items-center justify-center active:scale-95"
-                >
-                  + Add Step
-                </button>
-              </div>
+          <section ref={headerRef} className="flex flex-col gap-0 w-full max-w-[576px] mx-auto">
+            <div className="sticky top-2 z-20 flex items-center justify-between mb-4 px-2 py-2 bg-[#262626]/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl transition-all duration-300">
+              {isConfirmingClear ? (
+                <>
+                  <div className="flex-1 flex justify-start">
+                    <button
+                      type="button"
+                      className="h-9 px-3 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 text-white/60 hover:bg-white/10 active:bg-white/15 border border-white/10 transition flex items-center justify-center active:scale-95"
+                      onClick={() => setIsConfirmingClear(false)}
+                    >
+                      No
+                    </button>
+                  </div>
+                  
+                  <h2 className="text-xs sm:text-sm font-bold text-red-400 tracking-widest uppercase truncate px-2">
+                    Clear Progression?
+                  </h2>
+                  
+                  <div className="flex-1 flex justify-end">
+                    <button
+                      type="button"
+                      className="h-9 px-3 sm:px-4 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500 text-white hover:bg-red-400 active:bg-red-600 transition shadow-[0_0_15px_rgba(239,68,68,0.2)] flex items-center justify-center active:scale-95"
+                      onClick={() => {
+                        setSessionSteps([]);
+                        setIsConfirmingClear(false);
+                      }}
+                    >
+                      Yes
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex-1 flex justify-start">
+                    <button
+                      type="button"
+                      className="h-9 px-3 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500/10 text-red-500 hover:bg-red-500/20 active:bg-red-500/25 border border-red-500/20 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center active:scale-95"
+                      onClick={() => setIsConfirmingClear(true)}
+                      disabled={sessionSteps.length === 0}
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  
+                  <h2 className="text-xs sm:text-sm font-bold text-white tracking-widest uppercase truncate px-2">
+                    Progression
+                  </h2>
+                  
+                  <div className="flex-1 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleAddStep}
+                      className="h-9 px-3 sm:px-4 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.2)] flex items-center justify-center active:scale-95"
+                    >
+                      + Add Step
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col gap-3 w-full">
@@ -459,6 +538,8 @@ export default function App() {
                 ) : (
                   <div className="flex flex-col gap-6 w-full">
                     <ProgressionView
+                      jigs={jigs}
+                      globalJigId={global.activeJigId}
                       wheelResults={wheelResults}
                       machines={machines}
                       defaultMachineId={defaultMachineId}
@@ -643,7 +724,7 @@ export default function App() {
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#18181b]/95 backdrop-blur-lg border-t border-white/10 flex items-center justify-around z-40 pb-safe shadow-2xl">
         <button
           type="button"
-          onClick={() => setView('calculator')}
+          onClick={() => { setView('calculator'); setIsSetupPanelOpen(false); }}
           className={`flex flex-col items-center justify-center w-full h-full transition-colors ${view === 'calculator' ? 'text-amber-400 font-bold' : 'text-white/40 hover:text-white/80'}`}
           aria-label="Calculator View"
         >
@@ -653,7 +734,7 @@ export default function App() {
         </button>
         <button
           type="button"
-          onClick={() => setView('wheels')}
+          onClick={() => { setView('wheels'); setIsSetupPanelOpen(false); }}
           className={`flex flex-col items-center justify-center w-full h-full transition-colors ${view === 'wheels' ? 'text-amber-400 font-bold' : 'text-white/40 hover:text-white/80'}`}
           aria-label="Wheels View"
         >
@@ -663,7 +744,7 @@ export default function App() {
         </button>
         <button
           type="button"
-          onClick={() => setView('settings')}
+          onClick={() => { setView('settings'); setIsSetupPanelOpen(false); }}
           className={`flex flex-col items-center justify-center w-full h-full transition-colors ${view === 'settings' ? 'text-amber-400 font-bold' : 'text-white/40 hover:text-white/80'}`}
           aria-label="Settings View"
         >

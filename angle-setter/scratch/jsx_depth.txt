@@ -1,0 +1,55 @@
+Line: 159	            <div | Depth: 1
+Line: 164	                <div className="flex flex-col gap-2.5 mt-2"> | Depth: 2
+Line: 170	                    <div className="flex flex-col items-start min-w-0 pr-2"> | Depth: 3
+Line: 175	                    </div> | Depth: 2
+Line: 176	                    <div className="text-xs font-bold text-amber-400 px-3.5 py-1.5 neu-concave border border-black/40 rounded-full shrink-0"> | Depth: 3
+Line: 178	                    </div> | Depth: 2
+Line: 180	                  <div className="flex gap-2.5"> | Depth: 3
+Line: 195	                  </div> | Depth: 2
+Line: 196	                </div> | Depth: 1
+Line: 200	                <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3"> | Depth: 2
+Line: 201	                  <div className="text-center"> | Depth: 3
+Line: 203	                  </div> | Depth: 2
+Line: 216	                  <div className="flex gap-2 w-full mt-1"> | Depth: 3
+Line: 221	                  </div> | Depth: 2
+Line: 222	                </div> | Depth: 1
+Line: 228	                  <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3"> | Depth: 2
+Line: 229	                    <div className="flex items-center justify-between"> | Depth: 3
+Line: 231	                      <div | Depth: 4
+Line: 235	                        <div className="absolute top-1 bottom-1 left-1 right-1 pointer-events-none"> | Depth: 5
+Line: 237	                        </div> | Depth: 4
+Line: 238	                        <div className="relative z-10 flex w-full"> | Depth: 5
+Line: 239	                          <div className={`flex-1 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-wider uppercase transition-colors duration-300 ${activeUsbTab === 'rear' ? 'text-white' : 'text-white/40'}`}> | Depth: 6
+Line: 241	                          </div> | Depth: 5
+Line: 242	                          <div className={`flex-1 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-wider uppercase transition-colors duration-300 ${activeUsbTab === 'front' ? 'text-white' : 'text-white/40'}`}> | Depth: 6
+Line: 244	                          </div> | Depth: 5
+Line: 245	                        </div> | Depth: 4
+Line: 246	                      </div> | Depth: 3
+Line: 247	                    </div> | Depth: 2
+Line: 251	                        <div className="relative flex justify-center items-center w-full"> | Depth: 3
+Line: 268	                        </div> | Depth: 2
+Line: 269	                        <div className="flex gap-2 w-full mt-1"> | Depth: 3
+Line: 274	                        </div> | Depth: 2
+Line: 278	                        <div className="relative flex justify-center items-center w-full"> | Depth: 3
+Line: 292	                          <div className="absolute right-0 flex items-center justify-end w-16"> | Depth: 4
+Line: 300	                          </div> | Depth: 3
+Line: 301	                        </div> | Depth: 2
+Line: 302	                        <div className={`flex gap-2 w-full mt-1 transition-opacity duration-300 ${global.useCustomFrontUsb ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}> | Depth: 3
+Line: 307	                        </div> | Depth: 2
+Line: 310	                  </div> | Depth: 1
+Line: 312	                  <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3"> | Depth: 2
+Line: 313	                    <div className="text-center"> | Depth: 3
+Line: 317	                    </div> | Depth: 2
+Line: 332	                    <div className="flex gap-2 w-full mt-1"> | Depth: 3
+Line: 337	                    </div> | Depth: 2
+Line: 338	                  </div> | Depth: 1
+Line: 345	                    <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3"> | Depth: 2
+Line: 346	                      <div className="text-center"> | Depth: 3
+Line: 348	                      </div> | Depth: 2
+Line: 359	                      <div className="flex gap-2 w-full mt-1"> | Depth: 3
+Line: 364	                      </div> | Depth: 2
+Line: 365	                    </div> | Depth: 1
+Line: 371	                <div className="flex flex-row-reverse flex-wrap-reverse gap-2.5 w-full"> | Depth: 2
+Line: 396	                </div> | Depth: 1
+Line: 397	              </div> | Depth: 0
+Line: 400	            </div> | Depth: -1

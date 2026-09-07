@@ -34,3 +34,43 @@ All updated components must implement responsive scaling for large typography (e
 - [ ] `npm run typecheck` passes with 0 errors.
 - [ ] `npm run lint` passes with 0 errors.
 - [ ] `npm run build` succeeds.
+
+## Follow-up — 2026-09-07T10:49:19Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: [none — teamwork routes from the description]
+
+Review the codebase, provide a critical architecture audit ("roast"), and rigorously verify the drafted Zustand refactoring plan. The goal is to elevate the code structure to a professional standard while establishing an ironclad separation between the UI and the math engine. No code modifications should be made.
+
+Working directory: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Codebase Audit ("The Roast")
+Critically analyze `App.tsx` and the current state management approach. Identify specific anti-patterns, performance bottlenecks, and tight coupling. 
+
+### R2. Refactoring Plan Verification
+Review the `implementation_plan.md` artifact (the proposed Zustand refactor). Evaluate if it fully addresses the identified issues, or if alternative approaches are more appropriate for a professional-grade React application.
+
+### R3. User Data Storage Audit
+Review the current user data storage structure (`storage.ts`). Critique its design and recommend improvements (e.g., migrating to Zustand's persist middleware, handling schema migrations).
+
+### R4. Component Structure & Scalability
+Analyze the `src/` directory and component groupings. Recommend a professional organizational pattern that scales cleanly as new calculators and UI features are added.
+
+### R5. STRICT CONSTRAINT: Math Engine Isolation
+The math engine (`src/math/tormek.ts` and any future math calculations) is the absolute core of the app and must be treated as sacred. The architecture recommendation MUST outline a strategy that structurally guarantees the math logic is isolated from UI state, ensuring that future UI tweaks cannot inadvertently break or mutate the calculations.
+
+## Acceptance Criteria
+
+### Assessment Rubric
+- [ ] The report explicitly identifies at least three distinct architectural flaws or anti-patterns in the current implementation.
+- [ ] The report explains the exact performance or maintainability impact of each identified flaw.
+- [ ] The report provides a definitive verdict on whether to proceed with the `implementation_plan.md` as written, modify it, or reject it for a better approach.
+- [ ] The report includes a dedicated section critiquing the current data storage/persistence structure and provides explicit recommendations.
+- [ ] The report details a strict architectural boundary strategy to permanently protect the math engine from UI-related side effects.
+- [ ] The report lists the specific, actionable steps the user must approve before implementation begins.

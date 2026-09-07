@@ -205,5 +205,8 @@ The styling uses **Tailwind CSS v4** with a custom CSS variable design token lay
   - `--color-border-subtle`, `--color-border-focus`
 - **Workshop Usability Standards**:
   - Minimum touch target: $44\text{px} \times 44\text{px}$ for interactive elements.
+  - **Viewport Constraints**:
+    - **Strict Minimum (360px)**: Covers base Androids (e.g., Galaxy S23). Crowding is permitted, but overlapping, wrapping, or layout breaks are strictly prohibited.
+    - **Comfortable Baseline (390px - 393px)**: Target for modern devices (iPhone 13+, Pixel 8). UI should feel spacious and balanced.
   - Large-scale high-contrast monospace fonts for numerical readouts ($h_n, h_r$).
   - Full keyboard navigation support (Enter/Escape modal handling, number incrementers).

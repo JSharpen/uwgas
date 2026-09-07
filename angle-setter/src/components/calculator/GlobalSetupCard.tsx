@@ -140,24 +140,24 @@ export function GlobalSetupCard({
       <div 
         className="fixed bottom-[72px] left-3 right-3 sm:left-auto sm:right-auto sm:w-[576px] z-30 mx-auto pointer-events-none flex flex-col justify-end"
       >
-        <div className="relative w-full flex flex-col justify-end pointer-events-none">
-          {/* === DRAWER BODY (Expands upwards from behind the pill) === */}
+        <div id="global-setup-card" className="relative w-full flex flex-col justify-end pointer-events-none max-h-[calc(100dvh-var(--progression-header-bottom,66px)-92px)] min-h-0">
+                              {/* === DRAWER BODY (Expands upwards from behind the pill) === */}
           <div 
-            className={`w-full neu-convex border border-black/40 shadow-2xl rounded-t-3xl rounded-b-none pb-6 transition-all duration-300 ease-in-out relative overflow-hidden flex flex-col z-0 -mb-6 pt-2 ${isSetupPanelOpen ? 'max-h-[calc(100dvh-300px)] opacity-100 pointer-events-auto' : 'max-h-0 opacity-0 pointer-events-none border-transparent pt-0 pb-0'}`}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            className={`w-full neu-convex border border-black/40 shadow-2xl rounded-t-3xl rounded-b-none pb-6 transition-all duration-300 ease-in-out relative overflow-hidden flex flex-col z-0 -mb-6 pt-2 min-h-0 ${isSetupPanelOpen ? 'max-h-[100dvh] opacity-100 pointer-events-auto' : 'max-h-0 opacity-0 pointer-events-none border-transparent pt-0 pb-0'}`}
           >
             {/* NIB AREA (Drag handle to close) */}
             <div 
               className="flex items-center justify-center w-full pt-2 pb-2 touch-none shrink-0 cursor-pointer relative z-10"
               onClick={() => setIsSetupPanelOpen(false)}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
             >
               <div className="w-12 h-1.5 rounded-full bg-white/10 neu-concave mx-auto mb-1" />
             </div>
 
             {/* INPUTS AREA */}
             <div 
-              className={`px-5 pb-0 pt-2 flex flex-col gap-4 min-h-0 max-h-[calc(100dvh-358px)] overflow-y-auto overscroll-contain transition-opacity duration-300 relative z-10 ${isSetupPanelOpen ? 'opacity-100 delay-150' : 'opacity-0'}`}
+              className={`px-5 pb-0 pt-2 flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overscroll-contain transition-opacity duration-300 relative z-10 ${isSetupPanelOpen ? 'opacity-100 delay-150' : 'opacity-0'}`}
               style={{ maskImage: 'linear-gradient(to bottom, transparent, black 12px, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 12px, black 100%)' }}
             >
                 {/* PRESET TRIGGER */}
@@ -205,7 +205,7 @@ export function GlobalSetupCard({
                     type="number"
                     inputMode="decimal"
                     step="any"
-                    className="w-full bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-amber-400 amber-glow focus:outline-none focus:text-amber-300 transition-colors"
+                    className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-amber-400 amber-glow focus:outline-none focus:text-amber-300 transition-colors"
                     value={global.targetAngle}
                     onFocus={handleInputFocus}
                     onKeyDown={blurOnEnter}
@@ -228,41 +228,44 @@ export function GlobalSetupCard({
                   <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] font-bold text-white/40 tracking-widest uppercase">Fixed USB Height</label>
-                      <div className="flex neu-concave rounded-full border border-black/40 p-1 select-none w-36">
-                        <button
-                          type="button"
-                          className={`flex-1 rounded-full text-[10px] font-bold tracking-wider py-1.5 uppercase transition ${activeUsbTab === 'rear' ? 'neu-button text-white shadow-sm' : 'text-white/40 hover:text-white'}`}
-                          onClick={() => setActiveUsbTab('rear')}
-                        >
-                          Rear
-                        </button>
-                        <button
-                          type="button"
-                          className={`flex-1 rounded-full text-[10px] font-bold tracking-wider py-1.5 uppercase transition ${activeUsbTab === 'front' ? 'neu-button text-white shadow-sm' : 'text-white/40 hover:text-white'}`}
-                          onClick={() => setActiveUsbTab('front')}
-                        >
-                          Front
-                        </button>
+                      <div 
+                        className="relative flex neu-concave rounded-full border border-black/40 p-1 select-none w-36 cursor-pointer"
+                        onClick={() => setActiveUsbTab(activeUsbTab === 'rear' ? 'front' : 'rear')}
+                      >
+                        <div className="absolute top-1 bottom-1 left-1 right-1 pointer-events-none">
+                          <div className={`w-1/2 h-full neu-button rounded-full shadow-sm transition-transform duration-300 ease-out ${activeUsbTab === 'rear' ? 'translate-x-0' : 'translate-x-full'}`} />
+                        </div>
+                        <div className="relative z-10 flex w-full">
+                          <div className={`flex-1 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-wider uppercase transition-colors duration-300 ${activeUsbTab === 'rear' ? 'text-white' : 'text-white/40'}`}>
+                            Rear
+                          </div>
+                          <div className={`flex-1 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-wider uppercase transition-colors duration-300 ${activeUsbTab === 'front' ? 'text-white' : 'text-white/40'}`}>
+                            Front
+                          </div>
+                        </div>
                       </div>
                     </div>
                     
                     {activeUsbTab === 'rear' ? (
                       <>
-                        <input
-                          inputMode="decimal"
-                          step="any"
-                          className="w-full bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-white focus:outline-none focus:text-amber-400 transition-colors"
-                          value={global.fixedUsbRear ?? global.fixedUsbHeight ?? 150}
-                          onFocus={handleInputFocus}
-                          onKeyDown={blurOnEnter}
-                          onChange={e =>
-                            setGlobal(g => ({
-                              ...g,
-                              fixedUsbRear: _nz(e.target.value, g.fixedUsbRear ?? 150),
-                              fixedUsbHeight: _nz(e.target.value, g.fixedUsbRear ?? 150),
-                            }))
-                          }
-                        />
+                        <div className="relative flex justify-center items-center w-full">
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="any"
+                            className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-white focus:outline-none focus:text-amber-400 transition-colors"
+                            value={global.fixedUsbRear ?? global.fixedUsbHeight ?? 150}
+                            onFocus={handleInputFocus}
+                            onKeyDown={blurOnEnter}
+                            onChange={e =>
+                              setGlobal(g => ({
+                                ...g,
+                                fixedUsbRear: _nz(e.target.value, g.fixedUsbRear ?? 150),
+                                fixedUsbHeight: _nz(e.target.value, g.fixedUsbRear ?? 150),
+                              }))
+                            }
+                          />
+                        </div>
                         <div className="flex gap-2 w-full mt-1">
                           <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(-5)}>-5</button>
                           <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(-1)}>-1</button>
@@ -271,12 +274,13 @@ export function GlobalSetupCard({
                         </div>
                       </>
                     ) : (
-                      <div className="flex flex-col gap-3">
-                         <input
+                      <>
+                        <div className="relative flex justify-center items-center w-full">
+                          <input
                             type="number"
                             inputMode="decimal"
                             step="any"
-                            className="w-full bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center focus:outline-none transition-colors disabled:opacity-40 disabled:text-white/40 disabled:bg-transparent text-white focus:text-amber-400"
+                            className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center focus:outline-none transition-colors disabled:opacity-50 disabled:text-white/30 disabled:bg-transparent text-white focus:text-amber-400"
                             value={global.useCustomFrontUsb ? (global.fixedUsbFront ?? Math.round(suggestedFrontUsb * 100) / 100) : suggestedFrontUsb.toFixed(2)}
                             onFocus={handleInputFocus}
                             onKeyDown={blurOnEnter}
@@ -285,26 +289,23 @@ export function GlobalSetupCard({
                               setGlobal(g => ({ ...g, fixedUsbFront: _nz(e.target.value, g.fixedUsbFront ?? suggestedFrontUsb) }))
                             }
                           />
-                          {global.useCustomFrontUsb ? (
-                             <div className="flex gap-2 w-full mt-1">
-                               <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-5)}>-5</button>
-                               <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-1)}>-1</button>
-                               <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(1)}>+1</button>
-                               <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(5)}>+5</button>
-                             </div>
-                          ) : (
-                            <div className="w-full text-center py-4 bg-black/40 rounded-xl border border-dashed border-white/10 text-xs text-white/40 uppercase tracking-wider font-bold">Auto computed from rear</div>
-                          )}
-                          <label className="flex items-center justify-center gap-2 mt-2 cursor-pointer select-none text-xs font-semibold text-white/60 hover:text-white">
-                            <input
-                              type="checkbox"
-                              className="rounded accent-amber-400 w-4 h-4"
-                              checked={Boolean(global.useCustomFrontUsb)}
-                              onChange={e => setGlobal(g => ({ ...g, useCustomFrontUsb: e.target.checked, fixedUsbFront: e.target.checked ? suggestedFrontUsb : g.fixedUsbFront }))}
-                            />
-                            <span>Override Auto Front USB</span>
-                          </label>
-                      </div>
+                          <div className="absolute right-0 flex items-center justify-end w-16">
+                            <button
+                              type="button"
+                              onClick={() => setGlobal(g => ({ ...g, useCustomFrontUsb: !g.useCustomFrontUsb, fixedUsbFront: !g.useCustomFrontUsb ? suggestedFrontUsb : g.fixedUsbFront }))}
+                              className={`px-2 py-1 rounded-md text-[9px] font-bold tracking-widest uppercase transition-colors border ${global.useCustomFrontUsb ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-black/40 text-white/40 border-black/60 shadow-inner'}`}
+                            >
+                              {global.useCustomFrontUsb ? 'Custom' : 'Auto'}
+                            </button>
+                          </div>
+                        </div>
+                        <div className={`flex gap-2 w-full mt-1 transition-opacity duration-300 ${global.useCustomFrontUsb ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-5)}>-5</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-1)}>-1</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(1)}>+1</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(5)}>+5</button>
+                        </div>
+                      </>
                     )}
                   </div>
                 ) : (
@@ -318,7 +319,7 @@ export function GlobalSetupCard({
                       type="number"
                       inputMode="decimal"
                       step="any"
-                      className={`w-full bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center focus:outline-none transition-colors ${global.useProtrusionMode ? 'text-amber-400' : 'text-white focus:text-amber-400'}`}
+                      className={`touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center focus:outline-none transition-colors ${global.useProtrusionMode ? 'text-amber-400' : 'text-white focus:text-amber-400'}`}
                       value={global.useProtrusionMode ? global.protrusion : global.projection}
                       onFocus={handleInputFocus}
                       onKeyDown={blurOnEnter}
@@ -349,7 +350,7 @@ export function GlobalSetupCard({
                         type="number"
                         inputMode="decimal"
                         step="any"
-                        className="w-full bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-amber-400 focus:outline-none transition-colors"
+                        className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-amber-400 focus:outline-none transition-colors"
                         value={global.protrusion}
                         onFocus={handleInputFocus}
                         onKeyDown={blurOnEnter}
@@ -393,13 +394,15 @@ export function GlobalSetupCard({
                     <span className="text-xs font-bold text-white/90 truncate w-full text-center font-mono">{machines.find(m => m.id === defaultMachineId)?.name || 'Default'}</span>
                   </button>
                 </div>
+                {/* Invisible spacer to ensure scrollable bottom padding (Safari fix) */}
+                <div className="h-px shrink-0 w-full" />
               </div>
             </div>
 
-          {/* === SUMMARY PILL (Front Layer, Static) === */}
+            {/* === SUMMARY PILL (Front Layer, Static) === */}
           <button 
             type="button"
-            className={`relative z-10 pointer-events-auto w-full ${isSetupPanelOpen ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} border border-black/20 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-5 touch-none transition-all group overflow-hidden`}
+            className={`relative z-10 pointer-events-auto w-full ${isSetupPanelOpen ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} shrink-0 border border-black/20 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-5 touch-none transition-all group overflow-hidden`}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             onClick={() => setIsSetupPanelOpen(!isSetupPanelOpen)}

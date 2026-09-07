@@ -1,0 +1,3 @@
+#!/bin/bash
+sed -i 's/<div className="w-full flex justify-center py-2 opacity-20 cursor-pointer touch-none" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={onToggleExpand}>/<div className="flex items-center justify-center w-full pt-3 pb-2 touch-none shrink-0 cursor-pointer relative z-10" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={onToggleExpand}>/' src/components/ProgressionView.tsx
+sed -i 's/<div className="w-8 h-1 rounded-full bg-white"><\/div>/<div className="w-12 h-1.5 rounded-full bg-white\/10 neu-concave mx-auto mb-1"><\/div>/' src/components/ProgressionView.tsx

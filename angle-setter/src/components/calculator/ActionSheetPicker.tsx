@@ -39,7 +39,7 @@ export default function ActionSheetPicker({ isOpen, onClose, title, options, val
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end pointer-events-auto">
+    <div className="action-sheet fixed inset-0 z-50 flex flex-col justify-end pointer-events-auto">
       {/* Backdrop */}
       <div 
         className={`absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-250 ${isClosing ? 'opacity-0' : 'opacity-100 animate-in fade-in'}`}

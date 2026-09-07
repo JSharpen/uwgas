@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .drawer-transition {
+    transition: max-height 0.3s ease-in-out, opacity 0.3s;
+  }
+</style>
+</head>
+<body class="bg-gray-900 h-[800px] m-0 p-0 text-white">
+  <div class="fixed bottom-[72px] left-4 right-4 flex flex-col justify-end">
+    
+    <!-- Parent constraint -->
+    <div id="global-setup-card" class="relative w-full flex flex-col justify-end max-h-[calc(100vh-150px)] min-h-0">
+      
+      <!-- Drawer Body -->
+      <div id="drawer-body" class="w-full flex flex-col z-0 bg-green-500/50 min-h-0 drawer-transition max-h-0 opacity-0 overflow-hidden">
+        
+        <div class="h-10 bg-black/50 shrink-0">Drag Handle</div>
+        
+        <!-- Inner Scroll -->
+        <div class="flex-1 min-h-0 overflow-y-auto bg-yellow-500/50 p-4">
+          <div class="h-[1000px] bg-white/20 text-black">TALL CONTENT (1000px)</div>
+        </div>
+
+      </div>
+      
+      <div id="pill" class="relative z-10 w-full bg-purple-500 shrink-0 p-4 cursor-pointer" onclick="toggle()">
+        Click to Toggle Pill<br>Line 2<br>Line 3
+      </div>
+
+    </div>
+  </div>
+  <script>
+    let open = false;
+    function toggle() {
+      open = !open;
+      const b = document.getElementById('drawer-body');
+      if (open) {
+        b.classList.remove('max-h-0', 'opacity-0');
+        b.classList.add('max-h-[100vh]', 'opacity-100');
+      } else {
+        b.classList.add('max-h-0', 'opacity-0');
+        b.classList.remove('max-h-[100vh]', 'opacity-100');
+      }
+    }
+  </script>
+</body>
+</html>

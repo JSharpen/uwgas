@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { generateId } from "../../utils/id";
 import type { JigConfig, UsbConfig, MachineConfig, GlobalState, Wheel, CalibrationProfile } from '../../types/core';
 import ModalShell from '../ModalShell';
 import { IconGrinder, IconEdit, IconTrash } from '../../icons';
@@ -291,7 +292,7 @@ export default function MachineManagerView({
                 disabled={!draftName.trim()}
                 onClick={() => {
                   onAddMachine({
-                    id: crypto.randomUUID(),
+                    id: generateId(),
                     name: draftName.trim(),
                     axleDiameter: draftAxleDiameter,
                     constants: draftConstants,

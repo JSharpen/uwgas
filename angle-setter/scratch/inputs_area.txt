@@ -1,0 +1,248 @@
+   158	            {/* INPUTS AREA */}
+   159	            <div 
+   160	              className={`px-5 pb-0 pt-2 flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overscroll-contain transition-opacity duration-300 relative z-10 ${isSetupPanelOpen ? 'opacity-100 delay-150' : 'opacity-0'}`}
+   161	              style={{ maskImage: 'linear-gradient(to bottom, transparent, black 12px, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 12px, black 100%)' }}
+   162	            >
+   163	                {/* PRESET TRIGGER */}
+   164	                <div className="flex flex-col gap-2.5 mt-2">
+   165	                  <button 
+   166	                    type="button" 
+   167	                    className="flex items-center justify-between p-4 neu-button rounded-2xl transition-all w-full text-left"
+   168	                    onClick={() => setActiveSheet('preset')}
+   169	                  >
+   170	                    <div className="flex flex-col items-start min-w-0 pr-2">
+   171	                      <span className="text-[10px] uppercase font-bold text-white/40 tracking-widest mb-0.5">Active Preset</span>
+   172	                      <span className={`text-sm font-bold truncate max-w-[220px] ${activePreset ? 'text-white' : 'text-white/40'}`}>
+   173	                        {activePreset ? activePreset.name : 'None selected'}
+   174	                      </span>
+   175	                    </div>
+   176	                    <div className="text-xs font-bold text-amber-400 px-3.5 py-1.5 neu-concave border border-black/40 rounded-full shrink-0">
+   177	                      Change
+   178	                    </div>
+   179	                  </button>
+   180	                  <div className="flex gap-2.5">
+   181	                    <button 
+   182	                      type="button"
+   183	                      className="flex-1 h-11 py-2 text-xs font-bold text-white/70 hover:text-white neu-button rounded-xl transition flex items-center justify-center"
+   184	                      onClick={onOpenSavePreset}
+   185	                    >
+   186	                      Save Current
+   187	                    </button>
+   188	                    <button 
+   189	                      type="button"
+   190	                      className="flex-1 h-11 py-2 text-xs font-bold text-white/70 hover:text-white neu-button rounded-xl transition flex items-center justify-center"
+   191	                      onClick={onOpenManagePresets}
+   192	                    >
+   193	                      Manage Presets
+   194	                    </button>
+   195	                  </div>
+   196	                </div>
+   197	                <div className="h-px bg-white/5 w-full" />
+   198	
+   199	                {/* TARGET ANGLE */}
+   200	                <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
+   201	                  <div className="text-center">
+   202	                    <label className="text-[10px] font-bold text-white/40 tracking-widest uppercase">Target Angle {targetAngleSymbol}°</label>
+   203	                  </div>
+   204	                  <input
+   205	                    type="number"
+   206	                    inputMode="decimal"
+   207	                    step="any"
+   208	                    className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-amber-400 amber-glow focus:outline-none focus:text-amber-300 transition-colors"
+   209	                    value={global.targetAngle}
+   210	                    onFocus={handleInputFocus}
+   211	                    onKeyDown={blurOnEnter}
+   212	                    onChange={e =>
+   213	                      setGlobal(g => ({ ...g, targetAngle: _nz(e.target.value, g.targetAngle) }))
+   214	                    }
+   215	                  />
+   216	                  <div className="flex gap-2 w-full mt-1">
+   217	                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(-1)}>-1°</button>
+   218	                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(-0.5)}>-.5°</button>
+   219	                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(0.5)}>+.5°</button>
+   220	                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(1)}>+1°</button>
+   221	                  </div>
+   222	                </div>
+   223	
+   224	                <div className="h-px bg-white/5 w-full" />
+   225	
+   226	                {/* PROJECTION OR FIXED USB HEIGHT */}
+   227	                {isProjectionMode ? (
+   228	                  <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
+   229	                    <div className="flex items-center justify-between">
+   230	                      <label className="text-[10px] font-bold text-white/40 tracking-widest uppercase">Fixed USB Height</label>
+   231	                      <div 
+   232	                        className="relative flex neu-concave rounded-full border border-black/40 p-1 select-none w-36 cursor-pointer"
+   233	                        onClick={() => setActiveUsbTab(activeUsbTab === 'rear' ? 'front' : 'rear')}
+   234	                      >
+   235	                        <div className="absolute top-1 bottom-1 left-1 right-1 pointer-events-none">
+   236	                          <div className={`w-1/2 h-full neu-button rounded-full shadow-sm transition-transform duration-300 ease-out ${activeUsbTab === 'rear' ? 'translate-x-0' : 'translate-x-full'}`} />
+   237	                        </div>
+   238	                        <div className="relative z-10 flex w-full">
+   239	                          <div className={`flex-1 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-wider uppercase transition-colors duration-300 ${activeUsbTab === 'rear' ? 'text-white' : 'text-white/40'}`}>
+   240	                            Rear
+   241	                          </div>
+   242	                          <div className={`flex-1 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-wider uppercase transition-colors duration-300 ${activeUsbTab === 'front' ? 'text-white' : 'text-white/40'}`}>
+   243	                            Front
+   244	                          </div>
+   245	                        </div>
+   246	                      </div>
+   247	                    </div>
+   248	                    
+   249	                    {activeUsbTab === 'rear' ? (
+   250	                      <>
+   251	                        <div className="relative flex justify-center items-center w-full">
+   252	                          <input
+   253	                            type="number"
+   254	                            inputMode="decimal"
+   255	                            step="any"
+   256	                            className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-white focus:outline-none focus:text-amber-400 transition-colors"
+   257	                            value={global.fixedUsbRear ?? global.fixedUsbHeight ?? 150}
+   258	                            onFocus={handleInputFocus}
+   259	                            onKeyDown={blurOnEnter}
+   260	                            onChange={e =>
+   261	                              setGlobal(g => ({
+   262	                                ...g,
+   263	                                fixedUsbRear: _nz(e.target.value, g.fixedUsbRear ?? 150),
+   264	                                fixedUsbHeight: _nz(e.target.value, g.fixedUsbRear ?? 150),
+   265	                              }))
+   266	                            }
+   267	                          />
+   268	                        </div>
+   269	                        <div className="flex gap-2 w-full mt-1">
+   270	                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(-5)}>-5</button>
+   271	                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(-1)}>-1</button>
+   272	                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(1)}>+1</button>
+   273	                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(5)}>+5</button>
+   274	                        </div>
+   275	                      </>
+   276	                    ) : (
+   277	                      <>
+   278	                        <div className="relative flex justify-center items-center w-full">
+   279	                          <input
+   280	                            type="number"
+   281	                            inputMode="decimal"
+   282	                            step="any"
+   283	                            className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center focus:outline-none transition-colors disabled:opacity-50 disabled:text-white/30 disabled:bg-transparent text-white focus:text-amber-400"
+   284	                            value={global.useCustomFrontUsb ? (global.fixedUsbFront ?? Math.round(suggestedFrontUsb * 100) / 100) : suggestedFrontUsb.toFixed(2)}
+   285	                            onFocus={handleInputFocus}
+   286	                            onKeyDown={blurOnEnter}
+   287	                            disabled={!global.useCustomFrontUsb}
+   288	                            onChange={e =>
+   289	                              setGlobal(g => ({ ...g, fixedUsbFront: _nz(e.target.value, g.fixedUsbFront ?? suggestedFrontUsb) }))
+   290	                            }
+   291	                          />
+   292	                          <div className="absolute right-0 flex items-center justify-end w-16">
+   293	                            <button
+   294	                              type="button"
+   295	                              onClick={() => setGlobal(g => ({ ...g, useCustomFrontUsb: !g.useCustomFrontUsb, fixedUsbFront: !g.useCustomFrontUsb ? suggestedFrontUsb : g.fixedUsbFront }))}
+   296	                              className={`px-2 py-1 rounded-md text-[9px] font-bold tracking-widest uppercase transition-colors border ${global.useCustomFrontUsb ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-black/40 text-white/40 border-black/60 shadow-inner'}`}
+   297	                            >
+   298	                              {global.useCustomFrontUsb ? 'Custom' : 'Auto'}
+   299	                            </button>
+   300	                          </div>
+   301	                        </div>
+   302	                        <div className={`flex gap-2 w-full mt-1 transition-opacity duration-300 ${global.useCustomFrontUsb ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}>
+   303	                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-5)}>-5</button>
+   304	                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-1)}>-1</button>
+   305	                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(1)}>+1</button>
+   306	                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(5)}>+5</button>
+   307	                        </div>
+   308	                      </>
+   309	                    )}
+   310	                  </div>
+   311	                ) : (
+   312	                  <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
+   313	                    <div className="text-center">
+   314	                      <label className={`text-[10px] font-bold tracking-widest uppercase ${global.useProtrusionMode ? 'text-amber-400' : 'text-white/40'}`}>
+   315	                        {global.useProtrusionMode ? "Blade Protrusion Pb" : "Projection A"}
+   316	                      </label>
+   317	                    </div>
+   318	                    <input
+   319	                      type="number"
+   320	                      inputMode="decimal"
+   321	                      step="any"
+   322	                      className={`touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center focus:outline-none transition-colors ${global.useProtrusionMode ? 'text-amber-400' : 'text-white focus:text-amber-400'}`}
+   323	                      value={global.useProtrusionMode ? global.protrusion : global.projection}
+   324	                      onFocus={handleInputFocus}
+   325	                      onKeyDown={blurOnEnter}
+   326	                      onChange={e => {
+   327	                        const val = _nz(e.target.value, global.useProtrusionMode ? global.protrusion : global.projection);
+   328	                        if (global.useProtrusionMode) setGlobal(g => ({ ...g, protrusion: val }));
+   329	                        else setGlobal(g => ({ ...g, projection: val }));
+   330	                      }}
+   331	                    />
+   332	                    <div className="flex gap-2 w-full mt-1">
+   333	                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(-5)}>-5</button>
+   334	                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(-1)}>-1</button>
+   335	                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(1)}>+1</button>
+   336	                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(5)}>+5</button>
+   337	                    </div>
+   338	                  </div>
+   339	                )}
+   340	
+   341	                {/* Protrusion Addon in Projection Mode */}
+   342	                {isProjectionMode && global.useProtrusionMode && (
+   343	                  <>
+   344	                    <div className="h-px bg-white/5 w-full" />
+   345	                    <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
+   346	                      <div className="text-center">
+   347	                        <label className="text-[10px] font-bold text-amber-400 tracking-widest uppercase">Blade Protrusion Pb</label>
+   348	                      </div>
+   349	                      <input
+   350	                        type="number"
+   351	                        inputMode="decimal"
+   352	                        step="any"
+   353	                        className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-amber-400 focus:outline-none transition-colors"
+   354	                        value={global.protrusion}
+   355	                        onFocus={handleInputFocus}
+   356	                        onKeyDown={blurOnEnter}
+   357	                        onChange={e => setGlobal(g => ({ ...g, protrusion: _nz(e.target.value, g.protrusion) }))}
+   358	                      />
+   359	                      <div className="flex gap-2 w-full mt-1">
+   360	                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(-5)}>-5</button>
+   361	                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(-1)}>-1</button>
+   362	                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(1)}>+1</button>
+   363	                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(5)}>+5</button>
+   364	                      </div>
+   365	                    </div>
+   366	                  </>
+   367	                )}
+   368	
+   369	                <div className="h-px bg-white/5 w-full" />
+   370	                {/* Hardware Selection Action Sheet Triggers */}
+   371	                <div className="flex flex-row-reverse flex-wrap-reverse gap-2.5 w-full">
+   372	                  <button 
+   373	                    type="button" 
+   374	                    className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
+   375	                    onClick={() => setActiveSheet('jig')}
+   376	                  >
+   377	                    <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Jig</span>
+   378	                    <span className="text-xs font-bold text-white/90 truncate w-full text-center font-mono">{activeJig?.name}</span>
+   379	                  </button>
+   380	                  <button 
+   381	                    type="button" 
+   382	                    className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
+   383	                    onClick={() => setActiveSheet('usb')}
+   384	                  >
+   385	                    <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">USB</span>
+   386	                    <span className="text-xs font-bold text-white/90 truncate w-full text-center font-mono">{activeUsb?.name}</span>
+   387	                  </button>
+   388	                  <button 
+   389	                    type="button" 
+   390	                    className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
+   391	                    onClick={() => setActiveSheet('machine')}
+   392	                  >
+   393	                    <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Machine</span>
+   394	                    <span className="text-xs font-bold text-white/90 truncate w-full text-center font-mono">{machines.find(m => m.id === defaultMachineId)?.name || 'Default'}</span>
+   395	                  </button>
+   396	                </div>
+   397	              </div>
+   398	              {/* Invisible spacer to ensure scrollable bottom padding (Safari fix) */}
+   399	              <div className="h-12 shrink-0 w-full" />
+   400	            </div>
+   401	
+   402	            {/* === SUMMARY PILL (Front Layer, Static) === */}
+   403	          <button 
+   404	            type="button"
+   405	            className={`relative z-10 pointer-events-auto w-full ${isSetupPanelOpen ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} shrink-0 border border-black/20 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-5 touch-none transition-all group overflow-hidden`}

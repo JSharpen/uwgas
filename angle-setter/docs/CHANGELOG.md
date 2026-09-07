@@ -4,6 +4,21 @@
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.9.10] — 2026-09-07 (Session: Safari Layout & Padding Fixes)
+
+### 🐛 Bug Fixes & UI Polish
+- **Safari Scroll Padding Fix**: Resolved layout issues in the Global Setup Card drawer where content was abruptly cut off by the Summary Pill overlapping the scroll area.
+- **Flex Gap Math Alignment**: Implemented a dynamic `h-px` spacer at the precise bottom of the `Inputs Area` flex container to perfectly balance the 16px `gap-4` padding requirement, providing pixel-perfect bottom clearance without relying on unreliable CSS padding that mobile Safari ignores.
+- **Drawer Overlap Geometry**: Verified DOM tree geometry to ensure the `Drawer Body` successfully wraps the inner scroll area and gracefully slides behind the overlapping `Summary Pill` without structural leakage.
+
+## [0.9.9] — 2026-09-05 (Session: Progression View Neumorphic Polish)
+
+### 💄 UI & Ergonomics (JOB-023)
+- **Neumorphic Step Cards**: Refactored `ProgressionView.tsx` to use `neu-convex` for the view state and `neu-concave` for the expanded edit area, perfectly matching `GlobalSetupCard.tsx`.
+- **Turn Calculator**: Display exact turns (e.g., `UP 1T 2M`) based on `threadPitch` and `microAdjustMarks` for the active USB (Height mode) or Jig (Projection mode) when navigating between steps.
+- **Smart Scroll**: Expanding a step now elegantly scrolls it into the center of the viewport, ensuring it sits clearly above the bottom global setup drawer.
+- **Swipe-to-Collapse**: Mirroring the setup drawer, you can now swipe up on an expanded step to collapse it.
+
 ## [0.9.8] — 2026-09-03 (Session: Modern Sleek Dark Theme Visual Refactor)
 
 ### 💄 UI & Modern Sleek Design System Overhaul (JOB-022)
