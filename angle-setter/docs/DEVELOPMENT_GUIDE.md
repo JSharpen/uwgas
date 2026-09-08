@@ -81,11 +81,12 @@ Whenever a user discusses a feature, proposed improvement, bug fix, or architect
 - Ensure all angles are converted between degrees and radians accurately (`deg2rad`, `rad2deg`).
 - Keep math functions **pure** (no React state or DOM dependencies).
 
-### 4. State & Migration Safety
-- Never introduce breaking changes to `AppPersistedState` without:
-  1. Incrementing `PERSIST_VERSION` in `src/state/storage.ts`.
-  2. Providing backwards-compatible default fallbacks in `_load()`.
-  3. Testing JSON import / export round-trips.
+### 4. Data Storage & Backwards Compatibility
+- **Zustand Primary**: All global state lives in `src/state/store.ts`. Ephemeral UI state lives in `src/state/uiStore.ts`.
+- **The Zod Shield**: Never introduce breaking changes to the state. Always update `src/state/schema.ts` using `.optional()` or `.catch()` to gracefully handle legacy user data and guarantee backwards compatibility.
+- **Migration Strategy**: If altering a core type, increment the internal version in `store.ts` and ensure the Zod `merge` function provides backwards-compatible fallbacks for legacy `localStorage` keys.
+- **Import/Export Testing**: If you change the data structure, you must verify that the JSON Import/Export panel still correctly parses legacy backup files.
+- **Prop-Drilling Ban**: Use `useShallow` and atomic selectors to subscribe components directly to the store.
 
 ### 5. UI & Workshop Ergonomics
 - Keep touch targets at or above $44\text{px} \times 44\text{px}$.

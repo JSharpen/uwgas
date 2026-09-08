@@ -5,19 +5,17 @@ import ModalShell from '../ModalShell';
 import WheelFormFields, { type WheelFormValue } from './WheelFormFields';
 import useModalLayout from '../../hooks/useModalLayout';
 
-export type WheelManagerViewProps = {
-  wheels: Wheel[];
-  onAddWheel: (draft: Omit<Wheel, 'id'>) => void;
-  onUpdateWheel: (id: string, patch: Partial<Wheel>) => void;
-  onDeleteWheel: (id: string) => void;
-};
+import { useWheelState } from '../../state/store';
 
-export function WheelManagerView({
-  wheels,
-  onAddWheel,
-  onUpdateWheel,
-  onDeleteWheel,
-}: WheelManagerViewProps) {
+export type WheelManagerViewProps = Record<string, never>;
+
+export function WheelManagerView() {
+  const {
+    wheels,
+    addWheel: onAddWheel,
+    updateWheel: onUpdateWheel,
+    deleteWheel: onDeleteWheel,
+  } = useWheelState();
   const { overlayStyle: modalOverlayStyle, getDialogStyle: getModalDialogStyle } =
     useModalLayout();
 

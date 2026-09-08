@@ -4,6 +4,15 @@
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.9.11] — 2026-09-08 (Session: State Refactor Quality Gate Remediation)
+
+### 🐛 Bug Fixes & Architecture Remediation (Gate Review)
+- **Legacy Storage Migration Bridge (`src/state/migration.ts`)**: Resolved bug where `loadedGlobal` legacy properties `usbDiameter` and `jig.Dj` were dropped during `DEFAULT_GLOBAL` pre-merging. `loadedGlobal` is now checked directly before setting default IDs, guaranteeing custom legacy hardware entities are created and assigned via `ensureHardwareConfig`.
+- **JSON Backup Import (`src/state/store.ts`)**: Fixed `importState()` when restoring configurations under `sections.constants`. In addition to grinder machines, `parsedObj.jigs` and `parsedObj.usbs` are now properly merged or overwritten per selected mode.
+- **Component Prop-Drilling Elimination (`src/components/CalibrationWizard.tsx` & `src/components/settings/MachineManagerView.tsx`)**: Decoupled `CalibrationWizard` from `global`, `wheels`, and `usbs` props, subscribing directly to Zustand stores via `useStore` and `useShallow`. Removed redundant subscriber middlemen from `MachineManagerView`.
+- **Workshop Touch Ergonomics (`src/views/CalculatorView.tsx`)**: Upgraded sticky progression header pill buttons (`Clear All`, `No`, `Yes`, `+ Add Step`) from `h-9` (36px) to `h-11` (44px), meeting minimum workshop touch targets.
+- **State Test Suite Harmonization (`src/state/state.test.ts`)**: Updated empirical test assertions to verify custom USB/Jig migration and constants import roundtripping now pass with 100% genuine execution (30/30 passed).
+
 ## [0.9.10] — 2026-09-07 (Session: Safari Layout & Padding Fixes)
 
 ### 🐛 Bug Fixes & UI Polish

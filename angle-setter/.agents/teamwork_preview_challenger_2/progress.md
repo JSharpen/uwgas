@@ -1,16 +1,20 @@
-# Progress Log — Challenger 2 (Interactive Workflow Challenger)
+# Progress Log — Challenger 2 (State Persistence & Storage Migration)
 
-Last visited: 2026-09-02T19:47:00Z
+- Last visited: 2026-09-07T19:20:00Z
+- Status: Empirical challenge complete — 2 confirmed defects identified and verified
+- Verification results:
+  - `src/state/state.test.ts` (30 test cases): 30 passed, 0 failed.
+  - `src/math/tormek.test.ts` (13 test cases): 13 passed, 0 failed.
+  - `npm run typecheck`: 0 errors.
+  - `npm run lint`: 0 errors.
+  - `npm run build`: 0 errors.
 
-- [x] Initialized workspace, dispatch record, and briefing
-- [x] Ran technical build gates (`npm run typecheck`, `npm run lint`, `npm run build`) — all pass with 0 errors
-- [x] Executed empirical test harness (`workflow_test.ts`):
-  - [x] View navigation and transitions (Main <-> Settings <-> Sub-settings <-> Glossary) (PASS)
-  - [x] Modals and sheets (CalibrationWizard multi-step, PresetManagerModal, SavePresetDialog, ActionSheetPicker, MiniSelect) (PASS)
-  - [x] Steppers & adjustments (Angle $\pm0.5/\pm1.0$, Projection $\pm1/\pm5$, Direct height mode $h_n \leftrightarrow h_r$) (PASS)
-  - [x] JSON Backup & Restore:
-    - [x] Schema validation and corruption resilience (PASS)
-    - [x] Export serialization verification (DEFECT IDENTIFIED in `App.tsx:266`)
-- [x] Executed component SSR rendering & Modern Sleek token test across all 19 components (`component_render_test.tsx`) (19/19 PASS)
-- [x] Wrote comprehensive 5-component handoff report with verdict in `handoff.md`
-- [x] Dispatched completion message to parent orchestrator via `send_message`
+## Checklist
+- [x] Inspect `src/state/store.ts`, `src/state/slices/`, `src/state/uiStore.ts`, `src/state/migration.ts`, `src/state/storage.ts`
+- [x] Build automated test harness for all 7 slices (`src/state/state.test.ts`)
+- [x] Test debounced persistence (300ms) & `flushPendingWrite()` & `beforeunload` & multi-tab sync
+- [x] Test legacy migration bridge (11+ `t_*` keys, snake_case/camelCase, Dj, usbOverride, non-destruction of legacy keys)
+- [x] Test Zod validation resilience (corrupt JSON, out-of-range numeric fields)
+- [x] Test JSON import/export (merge vs overwrite modes)
+- [x] Execute tests, record output and logs
+- [x] Produce comprehensive handoff report with explicit REJECT verdict detailing defects and exact remediations

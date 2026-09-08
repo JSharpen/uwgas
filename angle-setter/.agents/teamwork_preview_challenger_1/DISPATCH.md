@@ -1,16 +1,22 @@
-## 2026-09-02T19:41:00Z
-You are Challenger 1 (Responsive & Ergonomics Challenger) for the UWGAS Modern Sleek Visual Refactor project.
-Your assigned working directory is: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/teamwork_preview_challenger_1/
+## 2026-09-07T19:11:45Z
+You are Challenger 1 (Math & Calculation Engine Challenger).
+Identity: teamwork_preview_challenger_1
+Working Directory: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/teamwork_preview_challenger_1
+Original User Request: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/ORIGINAL_REQUEST.md
+Project Plan: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/teamwork_preview_orchestrator_3/PROJECT.md
 
-MANDATORY INPUTS:
-1. /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/ORIGINAL_REQUEST.md
-2. /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/PROJECT.md
-3. /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/src/components/ProgressionView.tsx
+Objective:
+Empirically challenge and stress-test the Tier 1 Sacred Pure Math Engine (`src/math/tormek.ts`) and Tier 2 Calculation Adapter (`src/services/calculationService.ts`):
+1. Write and execute test harnesses to verify:
+   - Round-trip identities: Forward Dutchman ($h_n \leftrightarrow A$) across 100+ randomized parameter sets with $\Delta < 10^{-10}\text{ mm}$.
+   - Boundary & singular inputs: Non-positive wheel diameter ($D \le 0$), invalid USB diameter ($D_s \le 0$), projection $A \le D_s/2$, angles $\le 0^\circ$ or $\ge 90^\circ$, verifying runtime validation guards throw `RangeError`.
+   - Dev mode immutability: Verify that modifying outputs from `computeTonHeights` or `computeRequiredProjection` throws a TypeError under `Object.freeze`.
+   - Worn wheels ($D=200\text{mm}$ to $250\text{mm}$) and micro-bevel angle offsets.
+   - Front USB height matching solver precision.
+   - Stop-collar turn calculations in Tier 2 adapter.
+2. Confirm that no React/Zustand imports exist in `src/math/`.
+Write a comprehensive report with test code, execution outputs, and an explicit verdict (APPROVE or REJECT) to `/home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/teamwork_preview_challenger_1/handoff.md`.
+Send a completion message back to the orchestrator when done.
 
-TASK REQUIREMENTS:
-1. Empirically verify and stress-test mobile responsiveness, layout robustness, and touch ergonomics:
-   - Viewport scaling: verify components render cleanly without unwanted horizontal scrollbars or clipping down to 380px width (check classes, flex-wrap, truncate, responsive grid, max-w constraints).
-   - Touch targets: check buttons, steppers, select triggers, close buttons, and tab pills to confirm min dimensions (44x44px or `w-10 h-10` with surrounding hit area).
-   - Modal ergonomics: check backdrop dismissal, safe-area padding (`pb-safe` / `env(safe-area-inset-bottom)`), and scrollable body containers (`max-h-[85vh] overflow-y-auto`).
-2. Run build and typecheck commands: `npm run typecheck`, `npm run build`.
-3. Write your empirical challenge report and verdict (APPROVE or REQUEST_CHANGES) in `.agents/teamwork_preview_challenger_1/handoff.md` and notify parent orchestrator via `send_message`.
+## 2026-09-07T19:15:00Z
+Error: The stream was interrupted. Please continue the task you were working on.

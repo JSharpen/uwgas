@@ -2,13 +2,15 @@ import * as React from 'react';
 import { IconChevronRight } from '../../icons';
 import { APP_VERSION, APP_VERSION_DISPLAY } from '../../version';
 
+import { useUIStore } from '../../state/uiStore';
+
 export type SettingsSection = 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary';
 
-type Props = {
-  onSelectSection: (section: SettingsSection) => void;
-};
+export type SettingsRootViewProps = Record<string, never>;
 
-export default function SettingsRootView({ onSelectSection }: Props) {
+export default function SettingsRootView() {
+  const setSettingsView = useUIStore((s) => s.setSettingsView);
+  const onSelectSection = setSettingsView;
   const sections: { id: SettingsSection; label: string; desc: string }[] = [
     { id: 'machine', label: 'Machines', desc: 'Profiles, constants, and calibration' },
     { id: 'hardware', label: 'Hardware', desc: 'Jigs and Universal Support Bars' },

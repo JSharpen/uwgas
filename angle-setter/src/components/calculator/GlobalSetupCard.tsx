@@ -1,53 +1,50 @@
 import * as React from 'react';
-import type { GlobalState, MachineConstants } from '../../types/core';
 import { DEFAULT_CONSTANTS } from '../../state/defaults';
 import { computeSuggestedFrontUsbHeight } from '../../math/tormek';
 import { _nz } from '../../utils/numbers';
 import { blurOnEnter } from '../../utils/dom';
 import ActionSheetPicker from './ActionSheetPicker';
-import type { JigConfig, UsbConfig, SessionStep, SessionPreset, MachineConfig } from "../../types/core";
 
-type GlobalSetupCardProps = {
-  jigs: JigConfig[];
-  usbs: UsbConfig[];
-  machines: MachineConfig[];
-  defaultMachineId?: string;
-  setDefaultMachineId: (id: string) => void;
-  sessionSteps: SessionStep[];
-  sessionPresets: SessionPreset[];
-  selectedPresetId: string | null;
-  onLoadPreset: (id: string) => void;
-  onOpenSavePreset: () => void;
-  onOpenManagePresets: () => void;
-  global: GlobalState;
-  setGlobal: React.Dispatch<React.SetStateAction<GlobalState>>;
-  isSetupPanelOpen: boolean;
-  setIsSetupPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  heightMode?: 'hn' | 'hr';
-  setHeightMode?: React.Dispatch<React.SetStateAction<'hn' | 'hr'>>;
-  targetAngleSymbol?: string;
-  constants?: MachineConstants;
-};
+import { useShallow } from 'zustand/react/shallow';
+import { useStore } from '../../state/store';
+import { useUIStore } from '../../state/uiStore';
 
-export function GlobalSetupCard({
-  global,
-  setGlobal,
-  jigs,
-  usbs,
-  machines,
-  defaultMachineId,
-  setDefaultMachineId,
-  sessionPresets,
-  selectedPresetId,
-  onLoadPreset,
-  onOpenSavePreset,
-  onOpenManagePresets,
-  isSetupPanelOpen,
-  setIsSetupPanelOpen,
-  heightMode,
-  targetAngleSymbol = '\u03b2',
-  constants,
-}: GlobalSetupCardProps) {
+export type GlobalSetupCardProps = Record<string, never>;
+
+export function GlobalSetupCard() {
+  // Store subscriptions using atomic selectors
+  const global = useStore((s) => s.global);
+  const setGlobal = useStore((s) => s.setGlobal);
+  const machines = useStore(useShallow((s) => s.machines));
+  const defaultMachineId = useStore((s) => s.defaultMachineId);
+  const setDefaultMachineId = useStore((s) => s.setDefaultMachineId);
+  const jigs = useStore(useShallow((s) => s.jigs));
+  const usbs = useStore(useShallow((s) => s.usbs));
+  const sessionPresets = useStore(useShallow((s) => s.sessionPresets));
+  const loadPreset = useStore((s) => s.loadPreset);
+  const heightMode = useStore((s) => s.heightMode);
+
+  // UI Store subscriptions
+  const isSetupPanelOpen = useUIStore((s) => s.isSetupPanelOpen);
+  const setIsSetupPanelOpen = useUIStore((s) => s.setSetupPanelOpen);
+  const selectedPresetId = useUIStore((s) => s.selectedPresetId);
+  const setSelectedPresetId = useUIStore((s) => s.setSelectedPresetId);
+  const setPresetDialogOpen = useUIStore((s) => s.setPresetDialogOpen);
+  const setPresetManagerOpen = useUIStore((s) => s.setPresetManagerOpen);
+
+  const onLoadPreset = (id: string) => {
+    setSelectedPresetId(id);
+    if (id) loadPreset(id);
+  };
+
+  const onOpenSavePreset = () => setPresetDialogOpen(true);
+  const onOpenManagePresets = () => setPresetManagerOpen(true);
+
+  const targetAngleSymbol = '\u03b2';
+  const constants =
+    machines.find((m) => m.id === defaultMachineId)?.constants ||
+    machines[0]?.constants ||
+    DEFAULT_CONSTANTS;
   const isProjectionMode = global.calcMode === 'projection';
   const [activeUsbTab, setActiveUsbTab] = React.useState<'rear' | 'front'>('rear');
   const [activeSheet, setActiveSheet] = React.useState<'none' | 'jig' | 'usb' | 'preset' | 'machine'>('none');

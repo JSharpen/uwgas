@@ -1,18 +1,25 @@
-## 2026-09-02T19:40:58Z
+## 2026-09-07T19:11:45Z
+You are Reviewer 2 (UI Prop-Drilling & App.tsx Decomposition Reviewer).
+Identity: teamwork_preview_reviewer_2
+Working Directory: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/teamwork_preview_reviewer_2
+Original User Request: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/ORIGINAL_REQUEST.md
+Project Plan: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/teamwork_preview_orchestrator_3/PROJECT.md
 
-You are Reviewer 2 (Technical & Logic Preservation Reviewer) for the UWGAS Modern Sleek Visual Refactor project.
-Your assigned working directory is: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/teamwork_preview_reviewer_2/
-
-MANDATORY INPUTS:
-1. /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/ORIGINAL_REQUEST.md
-2. /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/PROJECT.md
-3. /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/AGENTS.md
-
-TASK REQUIREMENTS:
-1. Conduct a deep architectural and logic preservation review of the entire codebase after the visual refactoring:
-   - Verify that NO React hooks (`useState`, `useEffect`, `useCallback`, `useMemo`, `useRef`) were removed, broken, or improperly mutated.
-   - Verify that ALL component prop interfaces and callback contracts (`onClose`, `onSave`, `onSelect`, `onDelete`, etc.) remain 100% backwards-compatible.
-   - Verify that ALL mathematical functions and calibration algorithms in `src/math/tormek.ts` and their integration in components (`CalibrationWizard`, `GlobalSetupCard`, `ProgressionView`) remain completely pure and unaltered.
-   - Verify persistence in `src/state/storage.ts` has no breaking changes.
-2. Run verification commands: `npm run typecheck`, `npm run lint`, `npm run build`.
-3. Output your clear verdict (APPROVE or REQUEST_CHANGES) in `.agents/teamwork_preview_reviewer_2/handoff.md` and notify the parent orchestrator via `send_message`.
+Objective:
+Rigorously review the UI refactoring and App.tsx decomposition of Milestones 4 and 5:
+1. Inspect `src/App.tsx`:
+   - Verify it contains ABSOLUTELY ZERO `useState` hooks managing domain data.
+   - Verify line count is reduced from 759 down to ~100 lines.
+   - Verify it acts purely as a structural layout shell and tab router.
+2. Inspect `src/views/CalculatorView.tsx` and `src/views/SettingsView.tsx`.
+3. Inspect all UI components (`GlobalSetupCard`, `ProgressionView`, `StepCard`, `WheelManagerView`, `MachineManagerView`, `HardwareManagerView`, `MeasurementSettingsView`, `SettingsRootView`, `CalibrationWizard`, `ImportExportPanel`, `PresetManagerModal`, `SavePresetDialog`):
+   - Verify all 11 components receive 0 global state variables via React props, fetching exclusively from `useStore()` and `useUIStore()`.
+   - Verify selector hygiene (atomic primitive selectors or `useShallow`) is consistently followed.
+4. Verify dead code purge: check that `GrindDirToggle.tsx`, `ExpandToggle.tsx`, `useAppState.ts`, `buttons.ts`, `tormek.cjs`, `core.js`, and `.u-btn` classes were cleanly removed with 0 residual references.
+5. Execute verification commands:
+   - `npm test`
+   - `npm run lint`
+   - `npm run typecheck`
+   - `npm run build`
+Write a comprehensive report to `/home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/teamwork_preview_reviewer_2/handoff.md` with an explicit verdict: APPROVE or REQUEST_CHANGES.
+Send a completion message back to the orchestrator when done.

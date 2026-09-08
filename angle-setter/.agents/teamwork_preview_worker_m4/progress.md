@@ -1,18 +1,13 @@
-# Progress Log - M4 Implementation Worker
+# Progress Log — teamwork_preview_worker_m4
 
-Last visited: 2026-09-02T19:38:00Z
+Last visited: 2026-09-07T12:02:00Z
 
-## Current Status: Completed & Verified
-
-- [x] Initialized workspace and briefing
-- [x] Read mandatory inputs & reference standard (ProgressionView.tsx, survey docs, ORIGINAL_REQUEST.md, PROJECT.md)
-- [x] Analyzed current `src/components/calculator/GlobalSetupCard.tsx`, `src/App.tsx`, and `src/index.css`
-- [x] Refactored `src/index.css` (cleaned conflicting `!important` utility bridges, maintained dark theme base tokens)
-- [x] Refactored `src/components/calculator/GlobalSetupCard.tsx` (Modern Sleek Drawer body, steppers, hardware triggers, Summary Pill with edge lighting, massive typography, and >=44px touch targets)
-- [x] Refactored `src/App.tsx` (Dark background `#09090b`, frosted bottom tab dock, modern back buttons, progression section, cleaned unused variables)
-- [x] Verification Gate:
-  - `npm run typecheck` $\rightarrow$ 0 errors
-  - `npx eslint src/App.tsx src/components/calculator/GlobalSetupCard.tsx` $\rightarrow$ 0 errors, 0 warnings
-  - `npm run build` $\rightarrow$ Built successfully in 818ms
-- [x] Updated BRIEFING.md
-- [x] Write `handoff.md` and notify parent orchestrator
+## Steps
+1. [x] Initialize environment, DISPATCH.md, BRIEFING.md, progress.md.
+2. [ ] Read survey report and project plan, inspect current state of assigned files and services/stores.
+3. [ ] Plan step-by-step refactoring.
+4. [ ] Refactor components: GlobalSetupCard, ProgressionView, WheelManagerView, MachineManagerView, HardwareManagerView, MeasurementSettingsView, SettingsRootView, CalibrationWizard, ImportExportPanel, PresetManagerModal, SavePresetDialog.
+5. [ ] Create views: CalculatorView, SettingsView.
+6. [ ] Refactor App.tsx to minimal layout shell.
+7. [ ] Run tests, typecheck, lint, build. Fix any issues.
+8. [ ] Self-critique, final verification, handoff.md, notify orchestrator.

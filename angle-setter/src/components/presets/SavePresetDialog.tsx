@@ -1,30 +1,44 @@
 import * as React from 'react';
 import { blurOnEnter } from '../../utils/dom';
 import ModalShell from '../ModalShell';
+import useModalLayout from '../../hooks/useModalLayout';
+import { useUIStore } from '../../state/uiStore';
+import { usePresetState, useStore } from '../../state/store';
 
-export type SavePresetDialogProps = {
-  isOpen: boolean;
-  isClosing: boolean;
-  onClose: () => void;
-  presetNameDraft: string;
-  setPresetNameDraft: (val: string) => void;
-  onSave: () => void;
-  canSave: boolean;
-  overlayStyle?: React.CSSProperties;
-  dialogStyle?: React.CSSProperties;
-};
+export type SavePresetDialogProps = Record<string, never>;
 
-export function SavePresetDialog({
-  isOpen,
-  isClosing,
-  onClose,
-  presetNameDraft,
-  setPresetNameDraft,
-  onSave,
-  canSave,
-  overlayStyle,
-  dialogStyle,
-}: SavePresetDialogProps) {
+export function SavePresetDialog() {
+  const { overlayStyle, getDialogStyle } = useModalLayout();
+
+  const isOpen = useUIStore((s) => s.isPresetDialogOpen);
+  const isClosing = useUIStore((s) => s.isPresetDialogClosing);
+  const setIsOpen = useUIStore((s) => s.setPresetDialogOpen);
+  const setIsClosing = useUIStore((s) => s.setPresetDialogClosing);
+  const presetNameDraft = useUIStore((s) => s.presetNameDraft);
+  const setPresetNameDraft = useUIStore((s) => s.setPresetNameDraft);
+
+  const presetState = usePresetState();
+  const sessionStepsCount = useStore((s) => s.sessionSteps.length);
+
+  const onClose = React.useCallback(() => {
+    setIsClosing(true);
+    window.setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, 180);
+  }, [setIsClosing, setIsOpen]);
+
+  const onSave = React.useCallback(() => {
+    const trimmed = presetNameDraft.trim();
+    if (!trimmed) return;
+    presetState.savePreset(trimmed);
+    setPresetNameDraft('');
+    onClose();
+  }, [presetNameDraft, presetState, setPresetNameDraft, onClose]);
+
+  const canSave = sessionStepsCount > 0 && presetNameDraft.trim().length > 0;
+  const dialogStyle = getDialogStyle();
+
   if (!isOpen) return null;
 
   return (

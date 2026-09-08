@@ -1,7 +1,9 @@
 import * as React from 'react';
+import { useStore } from '../state/store';
+import { useUIStore } from '../state/uiStore';
 
 type ImportExportResult = { error?: string; summary?: string };
-type ImportSectionKey =
+export type ImportSectionKey =
   | 'global'
   | 'constants'
   | 'wheels'
@@ -9,16 +11,7 @@ type ImportSectionKey =
   | 'sessionPresets'
   | 'heightMode';
 
-type ImportExportPanelProps = {
-  exportText: string;
-  onImportText: (raw: string) => ImportExportResult;
-  exportSections: Record<ImportSectionKey, boolean>;
-  onToggleExportSection: (key: ImportSectionKey) => void;
-  importSections: Record<ImportSectionKey, boolean>;
-  importModes: Record<ImportSectionKey, 'merge' | 'overwrite'>;
-  onToggleImportSection: (key: ImportSectionKey) => void;
-  onChangeImportMode: (key: ImportSectionKey, mode: 'merge' | 'overwrite') => void;
-};
+export type ImportExportPanelProps = Record<string, never>;
 
 const SECTION_LABELS: Record<ImportSectionKey, string> = {
   global: 'Global settings',
@@ -41,7 +34,7 @@ function CollapseToggle({
   return (
     <button
       type="button"
-      className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-white/60 hover:text-white transition cursor-pointer"
+      className="min-w-[44px] min-h-[44px] rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center text-white/60 hover:text-white transition cursor-pointer"
       aria-expanded={open}
       aria-label={label}
       onClick={onToggle}
@@ -297,16 +290,48 @@ function ExportPanel({
   );
 }
 
-function ImportExportPanel({
-  exportText,
-  onImportText,
-  exportSections,
-  onToggleExportSection,
-  importSections,
-  importModes,
-  onToggleImportSection,
-  onChangeImportMode,
-}: ImportExportPanelProps) {
+function ImportExportPanel() {
+  const exportSections = useUIStore((s) => s.exportSections);
+  const setExportSections = useUIStore((s) => s.setExportSections);
+  const importSections = useUIStore((s) => s.importSections);
+  const setImportSections = useUIStore((s) => s.setImportSections);
+  const importModes = useUIStore((s) => s.importModes);
+  const setImportModes = useUIStore((s) => s.setImportModes);
+  const importState = useStore((s) => s.importState);
+
+  const onToggleExportSection = (key: ImportSectionKey) => {
+    setExportSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const onToggleImportSection = (key: ImportSectionKey) => {
+    setImportSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const onChangeImportMode = (key: ImportSectionKey, mode: 'merge' | 'overwrite') => {
+    setImportModes((prev) => ({ ...prev, [key]: mode }));
+  };
+
+  const onImportText = (raw: string) => {
+    return importState(raw, importSections, importModes);
+  };
+
+  const computedExportText = React.useMemo(() => {
+    const s = useStore.getState();
+    const payload: Record<string, unknown> = {};
+    if (exportSections.global) payload.global = s.global;
+    if (exportSections.constants) {
+      payload.machines = s.machines;
+      if (s.defaultMachineId) payload.defaultMachineId = s.defaultMachineId;
+      payload.jigs = s.jigs;
+      payload.usbs = s.usbs;
+    }
+    if (exportSections.wheels) payload.wheels = s.wheels;
+    if (exportSections.sessionSteps) payload.sessionSteps = s.sessionSteps;
+    if (exportSections.sessionPresets) payload.sessionPresets = s.sessionPresets;
+    if (exportSections.heightMode) payload.heightMode = s.heightMode;
+    return JSON.stringify(payload, null, 2);
+  }, [exportSections]);
+
   const [status, setStatus] = React.useState<string | null>(null);
 
   return (
@@ -321,11 +346,11 @@ function ImportExportPanel({
       />
 
       <ExportPanel
-        exportText={exportText}
+        exportText={computedExportText}
         exportSections={exportSections}
         onToggleExportSection={onToggleExportSection}
         onDownload={() => {
-          const blob = new Blob([exportText], { type: 'application/json' });
+          const blob = new Blob([computedExportText], { type: 'application/json' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;

@@ -94,34 +94,16 @@ Residual diagnostics ($\varepsilon_i$) and maximum error bounds are presented to
 
 ## 💾 State Architecture & Persistence
 
-State is managed client-side and saved to `localStorage` with versioned migrations (`src/state/storage.ts`).
+State is managed client-side using a **slice-based Zustand store** (`src/state/store.ts`). All global data is persisted to the browser's `localStorage` under the key `uwgas_app_state_v1` with a **300ms debounce** to prevent main-thread freezing during continuous UI interactions. Ephemeral UI state (like active tabs or open modals) is kept completely separate in an unpersisted `useUIStore`.
 
-### Schema Definition (`AppPersistedState`)
+### The Zod Migration Bridge (`src/state/schema.ts`)
 
-```typescript
-export type CalcMode = 'height' | 'projection';
+To guarantee strict data safety and absolute backwards compatibility, UWGAS uses **Zod** as a runtime schema validator.
 
-export type GlobalState = {
-  projection: number;             // A (used when calcMode is 'height')
-  usbDiameter: number;            // Ds
-  targetAngle: number;            // β per side
-  jig: { Dj: number };            // jig diameter
-  calcMode?: CalcMode;            // 'height' (default) or 'projection'
-  fixedUsbHeight?: number;        // legacy fallback fixed USB height (mm)
-};
-
-export type AppPersistedState = {
-  version: number;                // Incremented on schema changes
-  global: GlobalState;            // Global calculator settings & active solver mode
-  constants: MachineConstants;    // { rear: { hc, o }, front: { hc, o } }
-  wheels: Wheel[];                // Array of available wheels (D, grit, honing flag, etc.)
-  sessionSteps: SessionStep[];    // Active progression sequence
-  sessionPresets: SessionPreset[];// User saved progression presets
-  heightMode?: 'hn' | 'hr';      // Preferred readout display mode
-  calibSnapshots?: CalibrationSnapshot[]; // Historical calibration records
-  calibAppliedIds?: { rear: string; front: string };
-};
-```
+When the application boots (or when a user imports a `.json` backup), the Zustand `merge` function intercepts the raw data from `localStorage` and passes it through the Zod schema.
+1. **Validation**: Zod strips out any corrupted or strictly invalid data (e.g., `NaN` resulting from a bad math calculation).
+2. **Seamless Upgrades**: If a user's data is from an older version of the app and is missing newly added features (e.g., a new "grit" property on wheels), Zod automatically injects safe default values (`.optional()` or `.catch()`).
+3. **Legacy Fallback**: This ensures the app never crashes on boot due to outdated state schemas, and user data is permanently protected across app updates.
 
 ### Dual Solver Architectural Flow
 1. **Height Solver Mode (`calcMode: 'height'`)**:
@@ -133,15 +115,14 @@ export type AppPersistedState = {
 
 ### Schema Version History & Migrations
 
-| Schema Version | Release | Changes & Fallback Migrations |
+| Schema Version | Storage Key | Migration Strategy |
 | :--- | :--- | :--- |
-| **`PERSIST_VERSION = 1`** | `v0.9.0` | Initial baseline: `global`, `constants`, `wheels`, `sessionSteps`, `sessionPresets`, `calibSnapshots`, `calibAppliedIds`. |
-| **`PERSIST_VERSION = 2`** | `v1.0.0 (Target)` | Multi-Machine Profiles: `machines: MachineConfig[]`, active machine pointer `activeMachineId: string`. Legacy `constants` will migrate to default machine. |
+| **Legacy v0** | Multiple Keys | Unversioned synchronous localStorage. Migrated seamlessly by Zustand initialization. |
+| **`v1` (Zustand)** | `uwgas_app_state_v1` | Unified debounced JSON. Schema changes managed via Zod `.catch()` and `.optional()` fallbacks. |
 
 ### Migration Rules
-- When updating schema properties, never remove existing fields without providing a migration fallback in `_load()`.
-- Always increment `PERSIST_VERSION` in `src/state/storage.ts` when adding non-backwards-compatible attributes.
-- Ensure `ImportExportPanel.tsx` validates imported JSON against the active schema before overwriting state.
+- **NEVER** introduce breaking changes to the state. Always update `src/state/schema.ts` to gracefully handle legacy user data.
+- Ensure `ImportExportPanel.tsx` continues to validate imported JSON against the Zod schema before overwriting state.
 
 ---
 

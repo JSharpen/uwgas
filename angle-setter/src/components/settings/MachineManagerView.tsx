@@ -1,36 +1,24 @@
 import * as React from 'react';
 import { generateId } from "../../utils/id";
-import type { JigConfig, UsbConfig, MachineConfig, GlobalState, Wheel, CalibrationProfile } from '../../types/core';
+import type { MachineConfig, CalibrationProfile } from '../../types/core';
 import ModalShell from '../ModalShell';
 import { IconGrinder, IconEdit, IconTrash } from '../../icons';
 import useModalLayout from '../../hooks/useModalLayout';
 import CalibrationWizard from '../CalibrationWizard';
 
-type Props = {
-  jigs: JigConfig[];
-  usbs: UsbConfig[];
-  global: GlobalState;
-  wheels: Wheel[];
-  machines: MachineConfig[];
-  defaultMachineId?: string;
-  onAddMachine: (m: MachineConfig) => void;
-  onUpdateMachine: (id: string, m: Partial<MachineConfig>) => void;
-  onDeleteMachine: (id: string) => void;
-  onSetDefaultMachine: (id: string) => void;
-};
+import { useMachineState } from '../../state/store';
 
-export default function MachineManagerView({
-  jigs,
-  usbs,
-  global,
-  wheels,
-  machines,
-  defaultMachineId,
-  onAddMachine,
-  onUpdateMachine,
-  onDeleteMachine,
-  onSetDefaultMachine,
-}: Props) {
+export type MachineManagerViewProps = Record<string, never>;
+
+export default function MachineManagerView() {
+  const {
+    machines,
+    defaultMachineId,
+    addMachine: onAddMachine,
+    updateMachine: onUpdateMachine,
+    deleteMachine: onDeleteMachine,
+    setDefaultMachineId: onSetDefaultMachine,
+  } = useMachineState();
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   
@@ -78,10 +66,8 @@ export default function MachineManagerView({
   if (calibratingMachineId) {
     const activeMachine = machines.find(m => m.id === calibratingMachineId) || machines[0];
     return (
-      <CalibrationWizard jigs={jigs} usbs={usbs}
-        global={global}
+      <CalibrationWizard
         activeMachine={activeMachine}
-        wheels={wheels}
         onSaveProfile={(profile) => {
           const newProfiles = [...(activeMachine.calibrationProfiles || []), profile];
           const newConstants = { ...activeMachine.constants };

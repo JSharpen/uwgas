@@ -1,70 +1,56 @@
-# BRIEFING — 2026-09-02T19:44:00Z
+# BRIEFING — 2026-09-08T05:16:00Z
 
 ## Mission
-Adversarially verify and stress-test mobile responsiveness, layout robustness, and touch ergonomics for UWGAS Modern Sleek Visual Refactor.
+Empirically challenge and stress-test the Tier 1 Sacred Pure Math Engine (src/math/tormek.ts) and Tier 2 Calculation Adapter (src/services/calculationService.ts).
 
 ## 🔒 My Identity
-- Archetype: EMPIRICAL CHALLENGER
+- Archetype: empirical challenger
 - Roles: critic, specialist
-- Working directory: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/teamwork_preview_challenger_1/
-- Original parent: 5621ad4c-fe00-4ed4-9024-37aac2add112
-- Milestone: Modern Sleek Visual Refactor
+- Working directory: /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/.agents/teamwork_preview_challenger_1
+- Original parent: 6fedca73-ef37-4988-8c06-9f6566f6a92f
+- Milestone: Math & Calculation Engine Empirical Challenge
 - Instance: 1 of 1
 
 ## 🔒 Key Constraints
-- Review-only — do NOT modify implementation code directly; find bugs through empirical testing and verification
-- Minimum touch targets: 44x44px or w-10 h-10 with surrounding hit area
-- Workshop ergonomics: large font sizes for key outputs, touch accessibility, no horizontal overflow down to 380px width
-- Must run build and tests, reproduce all bugs empirically
+- Review-only — do NOT modify implementation code
+- .agents/ must contain only metadata — source, tests, or data there is a violation
+- Empirical Challenger: Must write and execute tests; do not trust claims without empirical verification
 
 ## Current Parent
-- Conversation ID: 5621ad4c-fe00-4ed4-9024-37aac2add112
-- Updated: 2026-09-02T19:44:00Z
+- Conversation ID: 6fedca73-ef37-4988-8c06-9f6566f6a92f
+- Updated: 2026-09-08T05:16:00Z
 
 ## Review Scope
-- **Files to review**:
-  - src/components/ProgressionView.tsx
-  - src/components/ModalShell.tsx
-  - src/components/calculator/ActionSheetPicker.tsx
-  - src/components/MiniSelect.tsx
-  - src/components/presets/SavePresetDialog.tsx
-  - src/components/presets/PresetManagerModal.tsx
-  - src/components/settings/SettingsRootView.tsx
-  - src/components/settings/MeasurementSettingsView.tsx
-  - src/components/settings/HardwareManagerView.tsx
-  - src/components/settings/MachineManagerView.tsx
-  - src/components/wheels/WheelManagerView.tsx
-  - src/components/wheels/WheelFormFields.tsx
-  - src/components/ImportExportPanel.tsx
-  - src/components/CalibrationWizard.tsx
-  - src/components/GlossaryPage.tsx
-  - src/components/GlossaryCard.tsx
-  - src/components/GrindDirToggle.tsx
-  - src/components/ExpandToggle.tsx
-  - src/components/calculator/GlobalSetupCard.tsx
-  - src/App.tsx
-  - src/index.css
-  - src/hooks/useModalLayout.ts
-- **Interface contracts**: PROJECT.md, AGENTS.md, docs/DEVELOPMENT_GUIDE.md
-- **Review criteria**: Mobile responsiveness down to 380px, touch target sizes (44x44px min), modal ergonomics (backdrop, safe area, scrolling), layout robustness, build/typecheck cleanliness.
+- **Files to review**: src/math/tormek.ts, src/math/types.ts, src/services/calculationService.ts
+- **Interface contracts**: docs/MATH_REFERENCE.md, docs/ARCHITECTURE.md, docs/PROJECT_PLAN.md
+- **Review criteria**: correctness, numerical precision, boundary/singularity guards, immutability, zero React/Zustand imports in math engine
 
 ## Attack Surface
 - **Hypotheses tested**:
-  1. H1: Narrow viewport (380px width) causes horizontal clipping or overflow in cards, steppers, or modals. [PASSED - flex-wrap, truncate, responsive grid classes provide clean scaling down to 380px].
-  2. H2: Touch targets for buttons, toggles, steppers, and pills fall below 44x44px. [PASSED - all interactive controls measure >= 44x44px or w-10 h-10 with surrounding hit area].
-  3. H3: Modal ergonomics fail under mobile virtual keyboard, safe-area inset, or nested scrolling. [PASSED - useModalLayout dynamically lifts on visualViewport shrink, safe-area-inset-bottom is applied on bottom nav & modals, scrollable containers enforce max-h-[60vh] to max-h-[90vh] with overflow-y-auto].
-  4. H4: Build and typecheck gates fail. [PASSED - npm run typecheck, npm run lint, and npm run build pass with 0 errors].
-- **Vulnerabilities found**: None.
-- **Untested angles**: Hardware-level native WebGL or non-standard browser user agents (out of scope for standard mobile browser responsive design).
+  1. Forward <-> Inverse Dutchman round-trip precision across 250 randomized parameter sets with Δ < 1e-10 mm.
+  2. Input boundary and singularity guards (non-positive D, Ds; negative Dj; projection A <= Ds/2; angles <= 0° or >= 90°; fixedUsb <= 0) throwing RangeError.
+  3. Dev mode immutability: Object.freeze enforcement on all solver outputs throwing TypeError on mutation.
+  4. Wheel wear monotonicity (D=200..250mm) and micro-bevel angle offset sensitivity.
+  5. Front USB height matching solver precision and physical geometric limits (CA >= o_front).
+  6. Tier 2 stop-collar turn adjustments, thread pitch scaling, and null guards in protrusion/fixed modes.
+  7. Direct swap binary solver convergence and out-of-bounds rejection.
+  8. Purity of src/math (zero React/Zustand/UI/store imports).
+- **Vulnerabilities found**:
+  1. Geometric Reach Limit: When rear datum height is set below ~98.84 mm on T-8 (or ~89.2 mm on T-4), the rear CA distance is smaller than the front horizontal offset (o_front = 131.7 mm), making it geometrically impossible for the front base to match rear CA. The engine gracefully clamps yFront to 0 via Math.max(0, yFront2), but callers should be aware of this physical limitation.
+  2. Physical Usability Boundary: Combinations of small knife projection (A <= 76 mm) and worn wheel on the front base can produce negative datum height hn < 0 (USB submerged below datum sleeve). If fed directly into computeRequiredProjection, validateProjectionInput correctly rejects it with RangeError because fixedUsb.value must be > 0.
+  3. Peer Workspace Finding: An external file `src/state/state.test.ts` introduced 3 ESLint unused variable errors during concurrent execution. (Isolated to state test; src/math and src/services pass cleanly).
+- **Untested angles**:
+  - Non-standard machines with negative horizontal offsets (all supported Tormek T-8/T-4 have positive offsets).
 
 ## Loaded Skills
-- None explicitly loaded
+- None loaded
 
 ## Key Decisions Made
-- Confirmed empirical compliance across responsive layout (380px width), touch ergonomics (>= 44x44px hit areas), safe-area insets, and modal layout handling.
-- Issued verdict: APPROVE.
+- Executed 250 randomized adversarial trials via scratch/adversarial_challenge.ts using node and jiti.
+- Verified Tier 1 math engine and Tier 2 adapter pass all numerical and algorithmic tests with machine precision (~1e-13 mm).
+- Confirmed verdict: APPROVE Tier 1 and Tier 2 math implementations.
 
 ## Artifact Index
-- handoff.md — Final challenge report and verdict (APPROVE)
-- progress.md — Liveness heartbeat and step tracking
-- DISPATCH.md — Initial dispatch message log
+- handoff.md — Comprehensive Challenge Report, Test Code, Execution Logs, and Verdict
+- progress.md — Liveness heartbeat and execution log
+- scratch/adversarial_challenge.ts — Executable adversarial test harness

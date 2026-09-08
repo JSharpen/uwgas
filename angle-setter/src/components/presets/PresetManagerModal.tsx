@@ -1,32 +1,45 @@
 import * as React from 'react';
 import type { SessionPreset } from '../../types/core';
 import ModalShell from '../ModalShell';
+import useModalLayout from '../../hooks/useModalLayout';
+import { useUIStore } from '../../state/uiStore';
+import { usePresetState } from '../../state/store';
 
-export type PresetManagerModalProps = {
-  isOpen: boolean;
-  isClosing: boolean;
-  onClose: () => void;
-  sessionPresets: SessionPreset[];
-  selectedPresetId: string;
-  onLoadPreset: (id: string) => void;
-  onDeletePreset: (id: string) => void;
-  onRenamePreset: (id: string, newName: string) => void;
-  overlayStyle?: React.CSSProperties;
-  dialogStyle?: React.CSSProperties;
-};
+export type PresetManagerModalProps = Record<string, never>;
 
-export function PresetManagerModal({
-  isOpen,
-  isClosing,
-  onClose,
-  sessionPresets,
-  selectedPresetId,
-  onLoadPreset,
-  onDeletePreset,
-  onRenamePreset,
-  overlayStyle,
-  dialogStyle,
-}: PresetManagerModalProps) {
+export function PresetManagerModal() {
+  const { overlayStyle, getDialogStyle } = useModalLayout();
+
+  const isOpen = useUIStore((s) => s.isPresetManagerOpen);
+  const isClosing = useUIStore((s) => s.isPresetManagerClosing);
+  const setIsOpen = useUIStore((s) => s.setPresetManagerOpen);
+  const setIsClosing = useUIStore((s) => s.setPresetManagerClosing);
+  const selectedPresetId = useUIStore((s) => s.selectedPresetId);
+  const setSelectedPresetId = useUIStore((s) => s.setSelectedPresetId);
+
+  const presetState = usePresetState();
+  const sessionPresets = presetState.sessionPresets;
+
+  const onClose = React.useCallback(() => {
+    setIsClosing(true);
+    window.setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, 180);
+  }, [setIsClosing, setIsOpen]);
+
+  const onLoadPreset = React.useCallback(
+    (id: string) => {
+      setSelectedPresetId(id);
+      presetState.loadPreset(id);
+      onClose();
+    },
+    [setSelectedPresetId, presetState, onClose]
+  );
+
+  const onDeletePreset = presetState.deletePreset;
+  const onRenamePreset = presetState.renamePreset;
+  const dialogStyle = getDialogStyle();
   const [presetRenameId, setPresetRenameId] = React.useState<string | null>(null);
   const [presetRenameValue, setPresetRenameValue] = React.useState('');
 

@@ -1,13 +1,13 @@
-# Progress — Reviewer 2 (Technical & Logic Preservation Reviewer)
+# Progress — Reviewer 2 (UI Prop-Drilling & App.tsx Decomposition)
 
-Last visited: 2026-09-02T19:44:00Z
+Last visited: 2026-09-08T05:12:05+10:00
 
-- [x] Initialized workspace, DISPATCH.md, BRIEFING.md
-- [x] Inspect git status, git diff, and previous worker handoffs
-- [x] Run verification commands (`npm run typecheck`, `npm run lint`, `npm run build`, tests)
-- [x] Perform detailed hook & prop invariant audit across all components
-- [x] Verify math engine purity (`src/math/tormek.ts`) and caller integration
-- [x] Verify state persistence integrity (`src/state/storage.ts`)
-- [x] Conduct adversarial stress testing & integrity check
-- [x] Draft comprehensive handoff report (`handoff.md`)
-- [x] Notify parent orchestrator via `send_message`
+- [x] Initialized DISPATCH.md, BRIEFING.md, and progress.md
+- [x] Read Project Plan and Original Request
+- [x] Run test suite (`npm test`, `npm run lint`, `npm run typecheck`, `npm run build`)
+- [x] Inspect `src/App.tsx` (line count, useState hooks, layout shell role)
+- [x] Inspect `src/views/CalculatorView.tsx` and `src/views/SettingsView.tsx`
+- [x] Inspect all specified UI components for 0 prop-drilling & selector hygiene
+- [x] Check dead code purge (files & `.u-btn` classes)
+- [x] Adversarial testing & integrity review
+- [x] Compile handoff report and notify orchestrator

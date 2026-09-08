@@ -1,15 +1,17 @@
-import React from 'react';
-import type { GlobalState } from '../../types/core';
+import { useStore } from '../../state/store';
+import { useUIStore } from '../../state/uiStore';
 
-type Props = {
-  heightMode: 'hn' | 'hr';
-  setHeightMode: (mode: 'hn' | 'hr') => void;
-  global: GlobalState;
-  setGlobal: React.Dispatch<React.SetStateAction<GlobalState>>;
-  onBack: () => void;
-};
+export type MeasurementSettingsViewProps = Record<string, never>;
 
-export default function MeasurementSettingsView({ heightMode, setHeightMode, global, setGlobal, onBack }: Props) {
+export default function MeasurementSettingsView() {
+  const heightMode = useStore((s) => s.heightMode);
+  const setHeightMode = useStore((s) => s.setHeightMode);
+  const calcMode = useStore((s) => s.global.calcMode);
+  const useProtrusionMode = useStore((s) => s.global.useProtrusionMode);
+  const showAdvancedStepOverrides = useStore((s) => s.global.showAdvancedStepOverrides);
+  const setGlobal = useStore((s) => s.setGlobal);
+  const setSettingsView = useUIStore((s) => s.setSettingsView);
+  const onBack = () => setSettingsView('root');
   return (
     <section className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200 max-w-3xl mx-auto pb-20">
       <div className="flex items-center gap-3">
@@ -31,13 +33,13 @@ export default function MeasurementSettingsView({ heightMode, setHeightMode, glo
           
           <div className="flex bg-neutral-950 rounded-full border border-neutral-800/60 p-0.5 select-none text-xs w-full sm:w-48 shrink-0">
             <button
-              className={`flex-1 rounded-full font-bold tracking-wider py-1.5 uppercase ${global.calcMode !== 'projection' ? 'bg-neutral-800 text-neutral-200 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+              className={`flex-1 rounded-full font-bold tracking-wider py-1.5 uppercase ${calcMode !== 'projection' ? 'bg-neutral-800 text-neutral-200 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
               onClick={() => setGlobal(g => ({ ...g, calcMode: 'height' }))}
             >
               Height
             </button>
             <button
-              className={`flex-1 rounded-full font-bold tracking-wider py-1.5 uppercase ${global.calcMode === 'projection' ? 'bg-neutral-800 text-neutral-200 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+              className={`flex-1 rounded-full font-bold tracking-wider py-1.5 uppercase ${calcMode === 'projection' ? 'bg-neutral-800 text-neutral-200 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
               onClick={() => setGlobal(g => ({ ...g, calcMode: 'projection' }))}
             >
               Projection
@@ -56,13 +58,13 @@ export default function MeasurementSettingsView({ heightMode, setHeightMode, glo
           
           <div className="flex bg-neutral-950 rounded-full border border-neutral-800/60 p-0.5 select-none text-xs w-full sm:w-48 shrink-0">
             <button
-              className={`flex-1 rounded-full font-bold tracking-wider py-1.5 uppercase ${!global.useProtrusionMode ? 'bg-neutral-800 text-neutral-200 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+              className={`flex-1 rounded-full font-bold tracking-wider py-1.5 uppercase ${!useProtrusionMode ? 'bg-neutral-800 text-neutral-200 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
               onClick={() => setGlobal(g => ({ ...g, useProtrusionMode: false }))}
             >
               Proj A
             </button>
             <button
-              className={`flex-1 rounded-full font-bold tracking-wider py-1.5 uppercase ${global.useProtrusionMode ? 'bg-neutral-800 text-neutral-200 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+              className={`flex-1 rounded-full font-bold tracking-wider py-1.5 uppercase ${useProtrusionMode ? 'bg-neutral-800 text-neutral-200 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
               onClick={() => setGlobal(g => ({ ...g, useProtrusionMode: true }))}
             >
               Caliper Pb
@@ -106,9 +108,9 @@ export default function MeasurementSettingsView({ heightMode, setHeightMode, glo
           
           <label className="flex items-center cursor-pointer shrink-0 mr-2">
             <div className="relative">
-              <input type="checkbox" className="sr-only" checked={!!global.showAdvancedStepOverrides} onChange={e => setGlobal(g => ({ ...g, showAdvancedStepOverrides: e.target.checked }))} />
-              <div className={`block w-12 h-7 rounded-full transition-colors ${global.showAdvancedStepOverrides ? 'bg-primary' : 'bg-neutral-700'}`}></div>
-              <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${global.showAdvancedStepOverrides ? 'transform translate-x-5' : ''}`}></div>
+              <input type="checkbox" className="sr-only" checked={!!showAdvancedStepOverrides} onChange={e => setGlobal(g => ({ ...g, showAdvancedStepOverrides: e.target.checked }))} />
+              <div className={`block w-12 h-7 rounded-full transition-colors ${showAdvancedStepOverrides ? 'bg-primary' : 'bg-neutral-700'}`}></div>
+              <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${showAdvancedStepOverrides ? 'transform translate-x-5' : ''}`}></div>
             </div>
           </label>
         </div>

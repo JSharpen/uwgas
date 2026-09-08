@@ -1,26 +1,12 @@
 import * as React from 'react';
-import type { CalcMode, WheelResult, MachineConfig, UsbConfig, Wheel, SessionStep, JigConfig } from '../types/core';
+import type { WheelResult } from '../types/core';
 import { IconEdgeLeading, IconEdgeTrailing } from '../icons';
 import ActionSheetPicker from './calculator/ActionSheetPicker';
+import { useShallow } from 'zustand/react/shallow';
+import { useStore } from '../state/store';
+import { useWheelResults } from '../services/calculationService';
 
-type ProgressionViewProps = {
-  wheelResults: WheelResult[];
-  machines: MachineConfig[];
-  defaultMachineId?: string;
-  usbs: UsbConfig[];
-  jigs?: JigConfig[];
-  globalJigId?: string;
-  wheels?: Wheel[];
-  globalUsbId: string;
-  heightMode: 'hn' | 'hr';
-  calcMode?: CalcMode;
-  angleErrorById?: Record<string, number | null>;
-  onUpdateStep?: (id: string, patch: Partial<SessionStep>) => void;
-  onUpdateWheel?: (id: string, patch: Partial<Wheel>) => void;
-  onDeleteStep?: (id: string) => void;
-  onMoveStep?: (index: number, direction: -1 | 1) => void;
-  showAdvancedStepOverrides?: boolean;
-};
+export type ProgressionViewProps = Record<string, never>;
 
 type StepCardProps = {
   r: WheelResult;
@@ -29,44 +15,31 @@ type StepCardProps = {
   prevR?: WheelResult;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  machines: MachineConfig[];
-  defaultMachineId?: string;
-  usbs: UsbConfig[];
-  jigs?: JigConfig[];
-  globalJigId?: string;
-  globalUsbId: string;
-  heightMode: 'hn' | 'hr';
-  isProjectionMode: boolean;
-  showAdvancedStepOverrides?: boolean;
-  onUpdateStep?: (id: string, patch: Partial<SessionStep>) => void;
-  onUpdateWheel?: (id: string, patch: Partial<Wheel>) => void;
-  onDeleteStep?: (id: string) => void;
-  onMoveStep?: (index: number, direction: -1 | 1) => void;
   setSheetConfig: (conf: { type: 'wheel' | 'machine' | 'usb' | 'base'; stepId: string } | null) => void;
 };
 
-function StepCard({
+const StepCard = React.memo(function StepCard({
   r,
   index,
   totalSteps,
   prevR,
   isExpanded,
   onToggleExpand,
-  machines,
-  defaultMachineId,
-  usbs,
-  jigs,
-  globalJigId,
-  globalUsbId,
-  heightMode,
-  isProjectionMode,
-  showAdvancedStepOverrides,
-  onUpdateStep,
-  onUpdateWheel,
-  onDeleteStep,
-  onMoveStep,
-  setSheetConfig
+  setSheetConfig,
 }: StepCardProps) {
+  const heightMode = useStore((s) => s.heightMode);
+  const isProjectionMode = useStore((s) => s.global.calcMode === 'projection');
+  const showAdvancedStepOverrides = useStore((s) => s.global.showAdvancedStepOverrides);
+  const globalUsbId = useStore((s) => s.global.activeUsbId);
+  const globalJigId = useStore((s) => s.global.activeJigId);
+  const defaultMachineId = useStore((s) => s.defaultMachineId);
+  const machines = useStore(useShallow((s) => s.machines));
+  const usbs = useStore(useShallow((s) => s.usbs));
+  const jigs = useStore(useShallow((s) => s.jigs));
+  const onUpdateStep = useStore((s) => s.updateStep);
+  const onDeleteStep = useStore((s) => s.deleteStep);
+  const onMoveStep = useStore((s) => s.moveStep);
+  const onUpdateWheel = useStore((s) => s.updateWheel);
   const stepId = r.step?.id ?? r.wheel.id;
   const cardRef = React.useRef<HTMLDivElement>(null);
   const touchStartY = React.useRef(0);
@@ -336,25 +309,15 @@ function StepCard({
       )}
     </div>
   );
-}
+});
 
-function ProgressionView({
-  wheelResults,
-  machines,
-  defaultMachineId,
-  usbs,
-  jigs,
-  globalJigId,
-  wheels = [],
-  globalUsbId,
-  heightMode,
-  calcMode = 'height',
-  onUpdateStep,
-  onUpdateWheel,
-  onDeleteStep,
-  onMoveStep,
-  showAdvancedStepOverrides,
-}: ProgressionViewProps) {
+export function ProgressionView() {
+  const wheelResults = useWheelResults();
+  const wheels = useStore(useShallow((s) => s.wheels));
+  const machines = useStore(useShallow((s) => s.machines));
+  const usbs = useStore(useShallow((s) => s.usbs));
+  const onUpdateStep = useStore((s) => s.updateStep);
+
   const [expandedStepId, setExpandedStepId] = React.useState<string | null>(null);
   const [sheetConfig, setSheetConfig] = React.useState<{ type: 'wheel' | 'machine' | 'usb' | 'base'; stepId: string } | null>(null);
 
@@ -363,8 +326,6 @@ function ProgressionView({
     window.addEventListener('collapseAll', handleCollapseAll);
     return () => window.removeEventListener('collapseAll', handleCollapseAll);
   }, []);
-
-  const isProjectionMode = calcMode === 'projection';
 
   return (
     <div className="flex flex-col gap-5 text-xs pb-10 w-full">
@@ -388,19 +349,6 @@ function ProgressionView({
             prevR={prevR}
             isExpanded={isExpanded}
             onToggleExpand={() => setExpandedStepId(isExpanded ? null : stepId)}
-            machines={machines}
-            defaultMachineId={defaultMachineId}
-            usbs={usbs}
-            jigs={jigs}
-            globalJigId={globalJigId}
-            globalUsbId={globalUsbId}
-            heightMode={heightMode}
-            isProjectionMode={isProjectionMode}
-            showAdvancedStepOverrides={showAdvancedStepOverrides}
-            onUpdateStep={onUpdateStep}
-            onUpdateWheel={onUpdateWheel}
-            onDeleteStep={onDeleteStep}
-            onMoveStep={onMoveStep}
             setSheetConfig={setSheetConfig}
           />
         );

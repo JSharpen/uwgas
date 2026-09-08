@@ -23,4 +23,37 @@ export default defineConfig([
       'linebreak-style': ['error', 'unix'],
     },
   },
+  {
+    files: ['src/math/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: 'react', message: 'SACRED MATH ISOLATION: src/math must never import React.' },
+            { name: 'react-dom', message: 'SACRED MATH ISOLATION: src/math must never import React DOM.' },
+            { name: 'zustand', message: 'SACRED MATH ISOLATION: src/math must never import Zustand.' },
+            { name: 'zustand/shallow', message: 'SACRED MATH ISOLATION: src/math must never import Zustand.' },
+            { name: 'zustand/react/shallow', message: 'SACRED MATH ISOLATION: src/math must never import Zustand.' },
+            { name: '../types/core', message: 'SACRED MATH ISOLATION: src/math must define its own pure geometric types in src/math/types.ts.' },
+            { name: '../../types/core', message: 'SACRED MATH ISOLATION: src/math must define its own pure geometric types in src/math/types.ts.' },
+          ],
+          patterns: [
+            {
+              group: [
+                '**/components/**',
+                '**/hooks/**',
+                '**/state/**',
+                '**/ui/**',
+                '**/views/**',
+                '**/calculators/**',
+                '**/services/**',
+              ],
+              message: 'SACRED MATH ISOLATION: src/math must never import from UI, hooks, state, views, calculators, or services.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ])

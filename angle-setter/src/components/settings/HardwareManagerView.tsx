@@ -1,29 +1,26 @@
 import React, { useState } from 'react';
 import type { JigConfig, UsbConfig } from '../../types/core';
 
-type HardwareManagerViewProps = {
-  jigs: JigConfig[];
-  usbs: UsbConfig[];
-  onUpdateJig: (id: string, patch: Partial<JigConfig>) => void;
-  onAddJig: (jig: JigConfig) => void;
-  onDeleteJig: (id: string) => void;
-  onUpdateUsb: (id: string, patch: Partial<UsbConfig>) => void;
-  onAddUsb: (usb: UsbConfig) => void;
-  onDeleteUsb: (id: string) => void;
-  onClose: () => void;
-};
+import { useHardwareState } from '../../state/store';
+import { useUIStore } from '../../state/uiStore';
 
-export default function HardwareManagerView({
-  jigs,
-  usbs,
-  onUpdateJig,
-  onAddJig,
-  onDeleteJig,
-  onUpdateUsb,
-  onAddUsb,
-  onDeleteUsb,
-  onClose,
-}: HardwareManagerViewProps) {
+export type HardwareManagerViewProps = Record<string, never>;
+
+export default function HardwareManagerView() {
+  const hardware = useHardwareState();
+  const setSettingsView = useUIStore((s) => s.setSettingsView);
+
+  const {
+    jigs,
+    usbs,
+    updateJig: onUpdateJig,
+    addJig: onAddJig,
+    deleteJig: onDeleteJig,
+    updateUsb: onUpdateUsb,
+    addUsb: onAddUsb,
+    deleteUsb: onDeleteUsb,
+  } = hardware;
+  const onClose = () => setSettingsView('root');
   const [activeTab, setActiveTab] = useState<'jigs' | 'usbs'>('jigs');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 

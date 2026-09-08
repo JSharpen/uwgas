@@ -34,8 +34,10 @@ Whenever you or the user discuss a feature, bug fix, improvement, or idea:
 
 ## ⚡ Core Development Rules
 
-- **Math Purity**: All trigonometric calculations belong in `src/math/tormek.ts`. Never alter formulas without verifying against [`docs/MATH_REFERENCE.md`](docs/MATH_REFERENCE.md).
-- **State Safety**: Never introduce breaking changes to `AppPersistedState` without incrementing `PERSIST_VERSION` in `src/state/storage.ts` and providing default migrations.
+- **Strict Math Engine Isolation (The Vault)**: All math belongs in `src/math/`. This is a pure algorithm layer. **NEVER** import React, UI types, or Zustand stores into the `math/` directory. The boundary is enforced by ESLint.
+- **Data Safety & Schema Migrations (CRITICAL)**: User data (wheels, jigs, presets) is sacred. If you add a new feature that requires new saved data, you **MUST** update `src/state/schema.ts` using Zod's `.optional()` or `.catch()` fallbacks. This guarantees that old user data seamlessly migrates to the new version without crashing.
+- **State Management (Zustand & Zod)**: The app uses a slice-based Zustand store (`src/state/store.ts`) with Zod validation. **NEVER** use React Context or `useState` in `App.tsx` for global domain data. All persistent state modifications must map to `src/state/schema.ts`.
+- **Zero Prop-Drilling**: UI Components must pull their required state directly from the Zustand stores using fine-grained selectors and `useShallow`. Do not drill global state down as props.
 - **Workshop Touch Ergonomics**: Minimum $44\text{px} \times 44\text{px}$ touch targets, large font sizes for numbers. **Viewport Targets**: Strict minimum of `360px` (crowding allowed, zero overlap/wrapping) and a comfortable baseline of `390px`. Full keyboard modal dismissal.
 - **Verification Gate**: Before ending any turn with code modifications, ensure that `npm run typecheck`, `npm run lint`, and `npm run build` all pass with **0 errors**.
 - **Comprehensive Reversions**: When removing or reverting a feature, you must completely remove all associated side-effects (orphaned classes like `touch-none`, event listeners, structural layout wrappers, etc.) that were introduced specifically for that feature. Never leave behind residual code that alters intended behavior. If unsure about the extent of the side-effects, explicitly ask the user before proceeding.

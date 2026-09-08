@@ -812,6 +812,90 @@ git_recent_commits() {
 }
 
 # ------------------------------------------------------------------------------
+# 6.5 Sandbox & Experimental Workflow
+# ------------------------------------------------------------------------------
+git_enter_sandbox() {
+    update_live_status
+    if [[ "$STATE_GIT_DIRTY" -eq 1 ]]; then
+        echo -e "${TAG_FAIL} You have uncommitted changes. Please commit or stash them before entering the sandbox."
+        return 1
+    fi
+    echo -e "${TAG_INFO} Checking out 'sandbox' branch..."
+    cd "$GIT_ROOT" || exit 1
+    if ! git checkout sandbox 2>/dev/null; then
+        echo -e "${TAG_INFO} 'sandbox' branch does not exist locally. Creating it from 'dev'..."
+        git checkout -b sandbox dev
+    fi
+    echo -e "${TAG_OK} You are now in the sandbox. Safe to experiment!"
+    cd "$PROJECT_DIR" || true
+}
+
+git_nuke_and_reset_sandbox() {
+    update_live_status
+    echo -e "${C_RED}${C_BOLD}WARNING: This will permanently erase ALL work on the current branch and reset it to exactly match 'dev'.${C_RESET}"
+    echo -en "${C_YELLOW}Are you sure you want to NUKE the sandbox? (y/N):${C_RESET} "
+    read -r confirm
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo -e "${TAG_INFO} Reset cancelled."
+        return 0
+    fi
+
+    cd "$GIT_ROOT" || exit 1
+    echo -e "${TAG_INFO} Switching to 'dev' to pull latest changes..."
+    git checkout dev
+    git pull origin dev 2>/dev/null || true
+
+    echo -e "${TAG_INFO} Recreating 'sandbox' branch from 'dev'..."
+    git branch -D sandbox 2>/dev/null || true
+    git checkout -b sandbox dev
+    echo -e "${TAG_OK} Sandbox has been nuked and perfectly reset to 'dev'."
+    cd "$PROJECT_DIR" || true
+}
+
+git_promote_sandbox() {
+    update_live_status
+    if [[ "$STATE_GIT_BRANCH" != "sandbox" ]]; then
+        echo -e "${TAG_FAIL} You must be on the 'sandbox' branch to promote it."
+        return 1
+    fi
+    if [[ "$STATE_GIT_DIRTY" -eq 1 ]]; then
+        echo -e "${TAG_FAIL} You have uncommitted changes in your sandbox. Commit them first."
+        return 1
+    fi
+
+    echo -e "${C_YELLOW}${C_BOLD}Promote 'sandbox' -> 'dev' Protocol${C_RESET}"
+    echo -en "${C_YELLOW}Are you sure your experiment was successful and you want to merge it into 'dev'? (y/N):${C_RESET} "
+    read -r confirm
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo -e "${TAG_INFO} Promotion cancelled."
+        return 0
+    fi
+
+    cd "$PROJECT_DIR" || exit 1
+    echo -e "${TAG_INFO} Step 1/4: Running Quality Prechecks (Typecheck & Lint)..."
+    if ! npm run typecheck || ! npm run lint; then
+        echo -e "${TAG_FAIL} Quality checks failed! Fix the errors in the sandbox before promoting."
+        return 1
+    fi
+
+    cd "$GIT_ROOT" || exit 1
+    echo -e "${TAG_INFO} Step 2/4: Switching to 'dev'..."
+    git checkout dev
+
+    echo -e "${TAG_INFO} Step 3/4: Merging 'sandbox' into 'dev'..."
+    if ! git merge sandbox -m "Merge successful sandbox experiment into dev"; then
+        echo -e "${TAG_FAIL} Merge conflict! Please resolve manually."
+        cd "$PROJECT_DIR" || true
+        return 1
+    fi
+
+    echo -e "${TAG_INFO} Step 4/4: Pushing 'dev' to GitHub..."
+    git push origin dev
+    echo -e "${TAG_OK} Sandbox successfully promoted to 'dev'!"
+    cd "$PROJECT_DIR" || true
+}
+
+# ------------------------------------------------------------------------------
 # 7. Diffs & Stash Helpers
 # ------------------------------------------------------------------------------
 save_diff_export() {
@@ -1194,6 +1278,35 @@ menu_diffs() {
     done
 }
 
+# Submenu 5: Sandbox Workflow
+menu_sandbox() {
+    while true; do
+        render_persistent_header "SANDBOX & EXPERIMENTAL"
+        echo -e "${C_BOLD}Available Sandbox Actions:${C_RESET}"
+        echo -e "  ${C_CYAN}[1]${C_RESET} Enter Sandbox Mode (Create/Switch to 'sandbox' branch)"
+        echo -e "  ${C_RED}[2]${C_RESET} Nuke & Reset Sandbox (Erase sandbox and clone latest 'dev')"
+        echo -e "  ${C_GREEN}[3]${C_RESET} Promote Sandbox to Dev (Run checks, merge to 'dev', and push)"
+        echo ""
+        echo -e "  ${C_YELLOW}[r]${C_RESET} Refresh Status"
+        echo -e "  ${C_YELLOW}[0]${C_RESET} Back to Main Menu"
+        echo ""
+        echo -en "${C_WHITE}${C_BOLD}Select option (0-3, r):${C_RESET} "
+        read -t 3 -n 1 -r choice || { sleep 0.1; choice=""; }
+
+        [[ -n "$choice" ]] && echo ""
+
+        case "$choice" in
+            "") continue ;; # Auto-refresh timeout
+            1) git_enter_sandbox; pause ;;
+            2) git_nuke_and_reset_sandbox; pause ;;
+            3) git_promote_sandbox; pause ;;
+            r|R) continue ;;
+            0) break ;;
+            *) echo -e "${TAG_WARN} Invalid choice."; sleep 1 ;;
+        esac
+    done
+}
+
 # ------------------------------------------------------------------------------
 # 10. Main Menu Interactive Loop
 # ------------------------------------------------------------------------------
@@ -1205,11 +1318,12 @@ menu_main() {
         echo -e "  ${C_CYAN}[2]${C_RESET} Git & Branch Workflow   ${C_DIM}→ Status, Commit/Push, Merge dev->main, Commits${C_RESET}"
         echo -e "  ${C_CYAN}[3]${C_RESET} Quality & Deployment    ${C_DIM}→ Lint, Typecheck, Build, Deploy to gh-pages${C_RESET}"
         echo -e "  ${C_CYAN}[4]${C_RESET} Diffs & Stash Helpers   ${C_DIM}→ Save Diffs to diffs/, Stash WIP, Pop Stash${C_RESET}"
+        echo -e "  ${C_MAGENTA}[5]${C_RESET} ${C_BOLD}Sandbox Mode${C_RESET}          ${C_DIM}→ Enter Sandbox, Nuke/Reset, Promote to dev${C_RESET}"
         echo ""
         echo -e "  ${C_YELLOW}[r]${C_RESET} Refresh Live Status"
         echo -e "  ${C_RED}[0]${C_RESET} Exit Console"
         echo ""
-        echo -en "${C_WHITE}${C_BOLD}Select Category (1-4, r, 0):${C_RESET} "
+        echo -en "${C_WHITE}${C_BOLD}Select Category (1-5, r, 0):${C_RESET} "
         read -t 3 -n 1 -r main_choice || { sleep 0.1; main_choice=""; }
 
         [[ -n "$main_choice" ]] && echo ""
@@ -1222,6 +1336,7 @@ menu_main() {
             2) menu_git ;;
             3) menu_quality ;;
             4) menu_diffs ;;
+            5) menu_sandbox ;;
             r|R) continue ;;
             0)
                 clear
@@ -1229,7 +1344,7 @@ menu_main() {
                 exit 0
                 ;;
             *)
-                echo -e "${TAG_WARN} Invalid selection. Please enter 1-4, r, or 0."
+                echo -e "${TAG_WARN} Invalid selection. Please enter 1-5, r, or 0."
                 sleep 1
                 ;;
         esac

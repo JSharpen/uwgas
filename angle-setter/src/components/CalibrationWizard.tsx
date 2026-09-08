@@ -1,25 +1,20 @@
 import * as React from 'react';
 import { generateId } from "../utils/id";
 import type {
-  GlobalState,
-  Wheel,
   MachineConfig,
   CalibrationMeasurement,
   CalibrationProfile,
   CalibrationDiagnostics,
-  JigConfig,
-  UsbConfig,
 } from '../types/core';
 import { IconClose } from '../icons';
 import MiniSelect from './MiniSelect';
-import { calibrateBase, estimateMaxAngleErrorDeg } from '../math/tormek';
+import { useShallow } from 'zustand/react/shallow';
+import { useStore } from '../state/store';
+import { calibrateBase } from '../math/tormek';
+import { estimateMaxAngleErrorDeg } from '../services/calculationService';
 
 type CalibrationWizardProps = {
-  jigs: JigConfig[];
-  usbs: UsbConfig[];
-  global: GlobalState;
   activeMachine: MachineConfig;
-  wheels: Wheel[];
   onSaveProfile: (profile: CalibrationProfile) => void;
   onCancel: () => void;
 };
@@ -28,14 +23,14 @@ type WizardStep = 'intro' | 'measuring' | 'results';
 type Scope = 'both' | 'rear' | 'front';
 
 export default function CalibrationWizard({
-  global,
   activeMachine,
-  wheels,
   onSaveProfile,
   onCancel,
-  jigs,
-  usbs,
 }: CalibrationWizardProps) {
+  const global = useStore((s) => s.global);
+  const wheels = useStore(useShallow((s) => s.wheels));
+  const usbs = useStore(useShallow((s) => s.usbs));
+  const jigs = useStore(useShallow((s) => s.jigs));
   const [step, setStep] = React.useState<WizardStep>('intro');
   const [scope, setScope] = React.useState<Scope>('both');
   const [calibName, setCalibName] = React.useState('');

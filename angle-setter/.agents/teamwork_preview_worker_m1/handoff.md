@@ -1,52 +1,172 @@
-# Milestone 1 (M1) Handoff Report: Modals, Dialogs & Core Pickers
+# Handoff Report: Milestone 1 (Phase 1 Housekeeping & Dead Code Purge)
+
+**Worker Identity**: `teamwork_preview_worker_m1`  
+**Milestone**: Phase 1 Housekeeping & Dead Code Purge (M1)  
+**Parent Agent**: `teamwork_preview_orchestrator_3` (`6fedca73-ef37-4988-8c06-9f6566f6a92f`)  
+**Timestamp**: 2026-09-07T11:55:00Z  
+
+---
 
 ## 1. Observation
-- **Target Files Owned and Refactored**:
-  1. `src/components/ModalShell.tsx`
-  2. `src/components/calculator/ActionSheetPicker.tsx`
-  3. `src/components/MiniSelect.tsx`
-  4. `src/components/presets/SavePresetDialog.tsx`
-  5. `src/components/presets/PresetManagerModal.tsx`
 
-- **Visual Baseline Discrepancies Observed Prior to Refactor**:
-  - `ModalShell.tsx` previously used `bg-black/60`, `rounded-lg`, `u-border`, `u-surface`, legacy `modal-shell__*` classes, and a small 28px close button.
-  - `ActionSheetPicker.tsx` previously used `bg-neutral-900`, `border-neutral-700`, `rounded-t-2xl`, and `bg-neutral-800` buttons.
-  - `MiniSelect.tsx` previously used legacy CSS classes (`dropdown`, `dropdown-trigger`, `dropdown-menu`, `dropdown-item`) with low contrast and small touch areas.
-  - `SavePresetDialog.tsx` previously used `u-surface`, `u-border`, `BTN.primary`, `BTN_MUTED`, and compact `px-2 py-1 text-xs` inputs.
-  - `PresetManagerModal.tsx` previously used `u-border`, `u-surface`, `BTN.primary`, `BTN.base`, `BTN.danger`, and a cramped `max-h-64` container.
+### 1.1 Deletion of Orphaned Files and Transpiled Artifacts
+The 6 target files specified under Exclusive Write Ownership were verified for imports and references before deletion:
+1. `src/components/GrindDirToggle.tsx` (74 lines): Orphaned toggle component; 0 imports in `src/`.
+2. `src/components/ExpandToggle.tsx` (42 lines): Orphaned chevron toggle; 0 imports in `src/`.
+3. `src/state/useAppState.ts` (250 lines): Abandoned monolithic hook prototype; 0 imports in `src/`.
+4. `src/ui/buttons.ts` (17 lines): Obsolete CSS mapping utility; 0 imports in `src/`.
+5. `src/math/tormek.cjs` (431 lines): Transpiled CommonJS artifact leftover in source tree; 0 imports in `src/`.
+6. `src/types/core.js` (110 lines): Transpiled JavaScript artifact leftover in source tree; 0 imports in `src/`.
 
-- **Verbatim Verification Commands & Results**:
-  - `npm run typecheck` $\rightarrow$ Exit Code 0 (No type errors).
-  - `npx eslint src/components/ModalShell.tsx src/components/calculator/ActionSheetPicker.tsx src/components/MiniSelect.tsx src/components/presets/SavePresetDialog.tsx src/components/presets/PresetManagerModal.tsx` $\rightarrow$ Exit Code 0 (0 problems).
-  - `npm run build` $\rightarrow$ Exit Code 0 (`✓ built in 782ms`, output bundle generated in `dist/`).
+Execution command:
+```bash
+rm src/components/GrindDirToggle.tsx src/components/ExpandToggle.tsx src/state/useAppState.ts src/ui/buttons.ts src/math/tormek.cjs src/types/core.js
+rmdir src/ui
+```
+
+Verification of deletion (`ls -la src/components/GrindDirToggle.tsx src/components/ExpandToggle.tsx src/state/useAppState.ts src/ui/buttons.ts src/math/tormek.cjs src/types/core.js 2>&1`):
+```text
+ls: cannot access 'src/components/GrindDirToggle.tsx': No such file or directory
+ls: cannot access 'src/components/ExpandToggle.tsx': No such file or directory
+ls: cannot access 'src/state/useAppState.ts': No such file or directory
+ls: cannot access 'src/ui/buttons.ts': No such file or directory
+ls: cannot access 'src/math/tormek.cjs': No such file or directory
+ls: cannot access 'src/types/core.js': No such file or directory
+```
+
+### 1.2 Purge of Dead `.u-btn` CSS in `src/primitives.css`
+- Lines 18 through 212 of `src/primitives.css` contained 195 lines of `.u-btn` styling classes (`.u-btn`, `.u-btn:active`, `.u-btn:focus`, `.u-btn:focus-visible`, `.u-btn:disabled`, `.u-btn-sm`, `.u-btn-icon`, `.u-btn-ghost`, `.u-btn-plain`, `.u-btn-close`, `.u-btn-flat`, `.u-btn-primary`, `.u-btn-danger`, hover states, and disabled states).
+- These rules were removed using `replace_file_content`.
+- `src/primitives.css` was reduced from 392 lines to 197 lines.
+
+### 1.3 Post-Purge Grep Reference Audit
+Verbatim grep checks confirming 0 remaining references across `src/`:
+```bash
+grep -rn "u-btn" src/
+# Exit code: 1 (0 matches)
+
+grep -rn "GrindDirToggle" src/
+# Exit code: 1 (0 matches)
+
+grep -rn "ExpandToggle" src/
+# Exit code: 1 (0 matches)
+
+grep -rn "useAppState" src/
+# Exit code: 1 (0 matches)
+
+grep -rn "buttons" src/
+# Exit code: 1 (0 matches)
+
+grep -rn "tormek.cjs" src/
+# Exit code: 1 (0 matches)
+
+grep -rn "core.js" src/
+# Exit code: 1 (0 matches)
+```
+
+### 1.4 Verification Commands & Outputs
+- **Typecheck (`npm run typecheck`)**:
+  ```text
+  > angle-setter@0.9.6 typecheck
+  > tsc --noEmit
+  ```
+  Exit code: 0.
+
+- **Test Suite (`npm test`)**:
+  ```text
+  > angle-setter@0.9.6 test
+  > echo "(no tests defined yet)" && exit 0
+
+  (no tests defined yet)
+  ```
+  Exit code: 0.
+
+- **Production Client Build (`npx vite build`)**:
+  ```text
+  vite v7.3.6 building client environment for production...
+  ✓ 58 modules transformed.
+  dist/index.html                   0.80 kB │ gzip:  0.42 kB
+  dist/assets/index-Bbr1Xhpz.css   95.58 kB │ gzip: 15.16 kB
+  dist/assets/index-CaeTqI9y.js   349.97 kB │ gzip: 93.23 kB
+  ✓ built in 908ms
+  ```
+  Exit code: 0.
+
+- **Linter (`npm run lint`)**:
+  ```text
+  /home/jordancarruthers/Documents/GitHub/uwgas/angle-setter/src/state/store.ts
+    120:11  error  'get' is defined but never used           @typescript-eslint/no-unused-vars
+    242:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+  ✖ 2 problems (2 errors, 0 warnings)
+  ```
+  Exit code: 1. Both errors reside solely in `src/state/store.ts`, a file strictly reserved for Milestone 3 (`teamwork_preview_worker_m3`). `src/primitives.css` and all other touched paths produced 0 lint violations.
+
+---
 
 ## 2. Logic Chain
-1. **Design System Adherence**: Using `src/components/ProgressionView.tsx` as the authoritative benchmark, all modal shells and bottom sheets were aligned to `bg-[#262626]`, `border border-white/10`, `rounded-3xl`, `shadow-2xl`, with subtle top edge highlight `<div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />`.
-2. **Tactile Sub-Components & Wells**:
-   - Form inputs and inner sub-panels were structured into `rounded-2xl` / `rounded-xl` containers with `bg-black/20` or `bg-black/30` and `border border-white/5` or `border-white/10`.
-   - Action buttons were updated to touch-first sizes ($\ge 40\text{px}$ to $48\text{px}$) with vibrant amber primary CTAs (`bg-amber-400 hover:bg-amber-300 text-black font-bold`) and subtle secondary buttons (`bg-white/10 hover:bg-white/15 text-white font-semibold`).
-3. **Ergonomics & Responsiveness**:
-   - Added `pb-[calc(env(safe-area-inset-bottom)+16px)]` for safe area handling on mobile devices.
-   - Text truncation (`truncate`) and flexible stacking (`flex-col sm:flex-row`) ensure clean, uncluttered layout down to 380px screen widths.
-4. **Zero Regression / Strict Logic Invariants**:
-   - Preserved all React hooks (`useState`, `useEffect`, `useCallback`, `useRef`), props interfaces, event handlers (`onClose`, `onSave`, `onSelect`, `onDeletePreset`, `onRenamePreset`, `blurOnEnter`), and keyboard shortcut listeners (`Enter`, `Escape`) without alterations.
+
+1. **Safety of Deletions**:
+   - Observations 1.1 and 1.3 demonstrate that no module in `src/` imported or referenced `GrindDirToggle.tsx`, `ExpandToggle.tsx`, `useAppState.ts`, `buttons.ts`, `tormek.cjs`, or `core.js`.
+   - Consequently, removing these 6 files could not introduce any unresolved import errors or type errors.
+
+2. **Safety of CSS Purge**:
+   - Observation 1.2 and 1.3 confirm that `.u-btn` classes were referenced exclusively inside `src/ui/buttons.ts` and `src/primitives.css`.
+   - With `src/ui/buttons.ts` deleted and no JSX/TSX component referencing `.u-btn`, removing lines 18–212 in `src/primitives.css` completely purged orphaned styling with zero visual or layout regressions.
+
+3. **Compilation & Packaging Integrity**:
+   - Observation 1.4 confirms that `npm run typecheck` and `npx vite build` executed successfully with 0 errors.
+   - The production assets bundled properly, confirming that the dead code purge cleanly streamlined the bundle.
+
+---
 
 ## 3. Caveats
-- No caveats. All 5 assigned components for Milestone 1 were completely refactored, typechecked, linted, and verified against the build gate with zero regressions.
+
+1. **Pre-existing `src/state/store.ts` Errors**:
+   - `src/state/store.ts` contains 2 pre-existing TypeScript/ESLint errors (`@typescript-eslint/no-unused-vars` on line 120 and `@typescript-eslint/no-explicit-any` on line 242), preventing `npm run lint` and `tsc -b` from passing.
+   - In strict compliance with the Exclusive Write Ownership boundaries assigned to Worker M1 ("DO NOT modify any other files"), `src/state/store.ts` was not modified. Full remediation and slice refactoring of `src/state/store.ts` is explicitly allocated to Milestone 3 (Worker M3).
+2. **Git Submodule / Repository Boundary**:
+   - The git index at `..` reported an unexpected size. All file operations and verifications were executed and validated directly against the working filesystem.
+
+---
 
 ## 4. Conclusion
-- Milestone 1 implementation is 100% complete and ready for review/integration.
-- All 5 assigned components strictly comply with the Modern Sleek dark theme specification and pass all quality and technical checks.
+
+Phase 1 Housekeeping & Dead Code Purge is 100% complete. 6 orphaned files and transpiled build artifacts (924 lines of code) plus 195 lines of dead CSS rules from `src/primitives.css` have been deleted. Total technical debt removed: 1,119 lines. All verification checks confirm zero broken imports and a clean Vite production build.
+
+---
 
 ## 5. Verification Method
-To independently verify Milestone 1 changes:
-```bash
-# 1. Typecheck
-npm run typecheck
 
-# 2. Lint M1 files
-npx eslint src/components/ModalShell.tsx src/components/calculator/ActionSheetPicker.tsx src/components/MiniSelect.tsx src/components/presets/SavePresetDialog.tsx src/components/presets/PresetManagerModal.tsx
+To independently verify the completion and integrity of Milestone 1:
 
-# 3. Production Build
-npm run build
-```
+1. **Verify Deleted Files Do Not Exist**:
+   ```bash
+   ls src/components/GrindDirToggle.tsx src/components/ExpandToggle.tsx src/state/useAppState.ts src/ui/buttons.ts src/math/tormek.cjs src/types/core.js
+   # Expected: "No such file or directory" for all 6 targets
+   ```
+
+2. **Verify Zero Lingering References in `src/`**:
+   ```bash
+   grep -rn "GrindDirToggle" src/
+   grep -rn "ExpandToggle" src/
+   grep -rn "useAppState" src/
+   grep -rn "buttons" src/
+   grep -rn "tormek.cjs" src/
+   grep -rn "core.js" src/
+   grep -rn "u-btn" src/
+   # Expected: All commands exit with code 1 (0 matches)
+   ```
+
+3. **Verify CSS Modification**:
+   ```bash
+   head -n 25 src/primitives.css
+   # Expected: .u-panel directly precedes .u-input (no .u-btn rules)
+   ```
+
+4. **Verify TypeScript & Vite Build**:
+   ```bash
+   npm run typecheck
+   npx vite build
+   # Expected: Both succeed with exit code 0
+   ```

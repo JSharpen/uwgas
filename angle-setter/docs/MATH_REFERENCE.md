@@ -83,27 +83,28 @@ These verified reference calculations can be used to validate the math engine du
   - $CG = 133.540\text{ mm}$
   - $\phi = 0.08998\text{ rad} \approx 5.155^\circ$
   - $\beta - \phi = 9.845^\circ$
-  - $CA = 227.142\text{ mm}$
+  - $CA = 197.904\text{ mm}$
 - **Outputs**:
-  - **$h_r = 108.14\text{ mm}$**
-  - **$y = 221.570\text{ mm}$**
-  - **$h_n = 198.57\text{ mm}$**
+  - **$h_r = 78.904\text{ mm}$**
+  - **$y = 191.484\text{ mm}$**
+  - **$h_n = 168.4836\text{ mm}$**
 
 ### Reference Case 2: Worn Wheel at 220mm (Rear Base / Edge Leading)
 - **Inputs**: $D = 220.00\text{ mm}$, $A = 139.00\text{ mm}$, $\beta = 15.00^\circ$, Base = Rear
 - **Outputs**:
-  - **$h_r = 106.66\text{ mm}$**
-  - **$CA = 210.662\text{ mm}$**
-  - **$h_n = 181.65\text{ mm}$**
+  - **$CA = 186.965\text{ mm}$**
+  - **$h_r = 82.965\text{ mm}$**
+  - **$y = 180.155\text{ mm}$**
+  - **$h_n = 157.1555\text{ mm}$**
 
 ### Reference Case 3: Leather Honing Wheel (Front Base / Edge Trailing with +0.2° Micro-Bump)
 - **Inputs**: $D = 215.00\text{ mm}$, $A = 139.00\text{ mm}$, $\beta = 15.00^\circ$, $\Delta\beta = +0.20^\circ$, Base = Front
 - **Outputs**:
   - Effective Angle: $\beta_{\text{total}} = 15.20^\circ$
-  - **$h_r = 104.91\text{ mm}$**
-  - **$CA = 206.411\text{ mm}$**
-  - **$y = 158.850\text{ mm}$**
-  - **$h_n = 113.55\text{ mm}$**
+  - **$CA = 185.464\text{ mm}$**
+  - **$h_r = 83.964\text{ mm}$**
+  - **$y = 130.583\text{ mm}$**
+  - **$h_n = 85.2830\text{ mm}$**
 
 ---
 
