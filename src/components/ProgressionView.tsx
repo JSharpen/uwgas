@@ -119,15 +119,15 @@ const StepCard = React.memo(function StepCard({
       ref={cardRef}
       className="relative flex flex-col motion-list-item transition-all duration-300 group scroll-m-[120px] sm:scroll-m-[160px]"
       style={{ '--motion-order': index } as React.CSSProperties}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
     >
       {/* ===== View State (Clickable to Expand) ===== */}
       <div 
-        className={`flex justify-between items-center p-6 relative z-20 cursor-pointer ${isExpanded ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} transition-all duration-300 rounded-3xl border border-black/40 shadow-lg select-none`}
+        className={`flex justify-between items-center px-4 py-5 sm:p-6 relative z-20 cursor-pointer ${isExpanded ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} transition-all duration-300 rounded-3xl border border-black/40 shadow-lg select-none`}
         onClick={onToggleExpand}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-        <div className="flex flex-col gap-1 min-w-0 flex-1 pr-4 relative z-10">
+        <div className="flex flex-col gap-1 min-w-0 flex-1 pr-3 sm:pr-4 relative z-10">
           <div className="flex items-center gap-2 w-full">
             <span className="text-base font-medium text-white tracking-wide truncate">
               {r.wheel.name}
@@ -136,7 +136,7 @@ const StepCard = React.memo(function StepCard({
           
           <div className="flex items-center gap-2 flex-wrap mt-0.5">
             {r.step && (
-              <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center text-[10px] font-bold font-mono text-white border border-black/60 shadow-inner shrink-0">
+              <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center text-[10px] font-bold tabular-nums text-white border border-black/60 shadow-inner shrink-0">
                 {index + 1}
               </div>
             )}
@@ -158,7 +158,7 @@ const StepCard = React.memo(function StepCard({
 
         {/* Massive USB/Projection Output */}
         <div className="flex flex-col items-end shrink-0 relative z-10">
-          <span className="text-2xl sm:text-3xl font-bold text-amber-400 tracking-tight amber-glow font-mono">
+          <span className="text-2xl sm:text-3xl font-bold text-amber-400 tracking-tight amber-glow tabular-nums">
             {isProjectionMode ? (
               r.isReachable !== false && r.requiredProjectionA != null ? (
                 <>{r.requiredProjectionA.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
@@ -204,7 +204,7 @@ const StepCard = React.memo(function StepCard({
           className={`relative z-10 neu-concave overflow-hidden transition-all duration-300 ease-in-out border border-black/40 border-t-0 rounded-b-3xl -mt-6 pt-6 ${isExpanded ? 'max-h-[500px] opacity-100 pointer-events-auto shadow-inner' : 'max-h-0 opacity-0 border-transparent pointer-events-none'}`}
           
         >
-          <div className="px-5 pb-5 pt-3 flex flex-col gap-4">
+          <div className="px-4 sm:px-5 pb-5 pt-3 flex flex-col gap-4">
             
             {/* Steppers */}
             <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -218,7 +218,7 @@ const StepCard = React.memo(function StepCard({
                     className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
                     onClick={() => onUpdateWheel?.(r.wheel.id, { D: Math.max(100, (r.wheel.D || 250) - 1) })}
                   >-</button>
-                  <span className="text-sm font-mono font-bold text-white tracking-wider">{r.wheel.D?.toFixed(1) || 250} mm</span>
+                  <span className="text-sm tabular-nums font-bold text-white tracking-wider">{r.wheel.D?.toFixed(1) || 250} mm</span>
                   <button 
                     className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
                     onClick={() => onUpdateWheel?.(r.wheel.id, { D: Math.min(300, (r.wheel.D || 250) + 1) })}
@@ -236,7 +236,7 @@ const StepCard = React.memo(function StepCard({
                     className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
                     onClick={() => onUpdateStep(stepId, { angleOffset: Math.max(-5, (r.step!.angleOffset || 0) - 0.5) })}
                   >-</button>
-                  <span className="text-sm font-mono font-bold text-white tracking-wider">{(r.step!.angleOffset || 0) > 0 ? '+' : ''}{(r.step!.angleOffset || 0).toFixed(1)}°</span>
+                  <span className="text-sm tabular-nums font-bold text-white tracking-wider">{(r.step!.angleOffset || 0) > 0 ? '+' : ''}{(r.step!.angleOffset || 0).toFixed(1)}°</span>
                   <button 
                     className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
                     onClick={() => onUpdateStep(stepId, { angleOffset: Math.min(5, (r.step!.angleOffset || 0) + 0.5) })}

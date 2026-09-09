@@ -44,3 +44,16 @@ Whenever you or the user discuss a feature, bug fix, improvement, or idea:
 
 - **Scrollable Padding (Safari Fix)**: Never rely on `padding-bottom` (e.g., `pb-6`) on `overflow-y-auto` containers to provide bottom clearance for content, as mobile Safari ignores it. Instead, always append an invisible spacer block as the final child *inside* the scroll container.
 - **Flex Gap Math for Spacers**: When placing a spacer inside a `flex` container that uses `gap`, remember the spacer receives the gap spacing from the preceding element. To make the bottom scroll padding exactly match the container's gap, use a 1px spacer (e.g., `<div className="h-px shrink-0 w-full" />`).
+- **Parallel Refactoring (Expand & Contract)**: For major architectural changes, state migrations, or replacing complex components, do not overwrite the existing code immediately. Instead, build the new implementation in parallel (e.g., `[Component]V2`), verify it alongside the old one, and only rip out the legacy code once the new implementation is fully proven. *(Note: Skip this overhead for simple, isolated bug fixes or minor UI tweaks).*
+
+---
+
+## 🛠️ Proactive Tool & Workflow Suggestions
+
+To maximize efficiency and collaboration, the AI assistant must proactively suggest optimal tools and slash commands based on the user's request context:
+
+- **Major Architecture & Design:** If the user proposes complex systemic changes (e.g., to the math engine or state schema), suggest using the `/grill-me` command to clarify edge cases and design decisions before writing code.
+- **Long-Running/Tedious Tasks:** If the request involves repetitive refactoring, large-scale file modifications, or extensive testing, remind the user about the `/goal` command for autonomous background execution.
+- **Deep Research/Planning:** If a task is highly ambiguous or requires multi-agent strategy, suggest the `/boost` command.
+- **Browser/UI Debugging:** When dealing with tricky CSS, layout bugs, or web APIs, remind the user that the AI can use Chrome DevTools to inspect the live DOM if the dev server is running.
+- **Terminal/System Tasks:** Before making assumptions about environment setup (e.g., installing new packages), offer to run the necessary terminal commands (e.g., `npm install`) directly on the user's behalf.

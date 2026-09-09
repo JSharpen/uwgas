@@ -36,7 +36,7 @@ export default function SettingsRootView() {
           <button
             key={sec.id}
             type="button"
-            className={`group relative z-10 flex items-center justify-between p-5 text-left hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer ${
+            className={`group relative z-10 flex items-center justify-between p-4 sm:p-5 text-left hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer ${
               i < sections.length - 1 ? 'border-b border-white/5' : ''
             }`}
             onClick={() => onSelectSection(sec.id)}

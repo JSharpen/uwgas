@@ -154,7 +154,7 @@ export function GlobalSetupCard() {
 
             {/* INPUTS AREA */}
             <div 
-              className={`px-5 pb-0 pt-2 flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overscroll-contain transition-opacity duration-300 relative z-10 ${isSetupPanelOpen ? 'opacity-100 delay-150' : 'opacity-0'}`}
+              className={`px-4 sm:px-5 pb-0 pt-2 flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overscroll-contain transition-opacity duration-300 relative z-10 ${isSetupPanelOpen ? 'opacity-100 delay-150' : 'opacity-0'}`}
               style={{ maskImage: 'linear-gradient(to bottom, transparent, black 12px, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 12px, black 100%)' }}
             >
                 {/* PRESET TRIGGER */}
@@ -202,7 +202,7 @@ export function GlobalSetupCard() {
                     type="number"
                     inputMode="decimal"
                     step="any"
-                    className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-amber-400 amber-glow focus:outline-none focus:text-amber-300 transition-colors"
+                    className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center text-amber-400 amber-glow focus:outline-none focus:text-amber-300 transition-colors"
                     value={global.targetAngle}
                     onFocus={handleInputFocus}
                     onKeyDown={blurOnEnter}
@@ -211,10 +211,10 @@ export function GlobalSetupCard() {
                     }
                   />
                   <div className="flex gap-2 w-full mt-1">
-                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(-1)}>-1°</button>
-                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(-0.5)}>-.5°</button>
-                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(0.5)}>+.5°</button>
-                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(1)}>+1°</button>
+                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(-1)}>-1°</button>
+                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(-0.5)}>-.5°</button>
+                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(0.5)}>+.5°</button>
+                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(1)}>+1°</button>
                   </div>
                 </div>
 
@@ -250,7 +250,7 @@ export function GlobalSetupCard() {
                             type="number"
                             inputMode="decimal"
                             step="any"
-                            className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-white focus:outline-none focus:text-amber-400 transition-colors"
+                            className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center text-white focus:outline-none focus:text-amber-400 transition-colors"
                             value={global.fixedUsbRear ?? global.fixedUsbHeight ?? 150}
                             onFocus={handleInputFocus}
                             onKeyDown={blurOnEnter}
@@ -264,10 +264,10 @@ export function GlobalSetupCard() {
                           />
                         </div>
                         <div className="flex gap-2 w-full mt-1">
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(-5)}>-5</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(-1)}>-1</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(1)}>+1</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(5)}>+5</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(-5)}>-5</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(-1)}>-1</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(1)}>+1</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(5)}>+5</button>
                         </div>
                       </>
                     ) : (
@@ -277,7 +277,7 @@ export function GlobalSetupCard() {
                             type="number"
                             inputMode="decimal"
                             step="any"
-                            className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center focus:outline-none transition-colors disabled:opacity-50 disabled:text-white/30 disabled:bg-transparent text-white focus:text-amber-400"
+                            className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center focus:outline-none transition-colors disabled:opacity-50 disabled:text-white/30 disabled:bg-transparent text-white focus:text-amber-400"
                             value={global.useCustomFrontUsb ? (global.fixedUsbFront ?? Math.round(suggestedFrontUsb * 100) / 100) : suggestedFrontUsb.toFixed(2)}
                             onFocus={handleInputFocus}
                             onKeyDown={blurOnEnter}
@@ -297,10 +297,10 @@ export function GlobalSetupCard() {
                           </div>
                         </div>
                         <div className={`flex gap-2 w-full mt-1 transition-opacity duration-300 ${global.useCustomFrontUsb ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-5)}>-5</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-1)}>-1</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(1)}>+1</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold font-mono text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(5)}>+5</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-5)}>-5</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-1)}>-1</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(1)}>+1</button>
+                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(5)}>+5</button>
                         </div>
                       </>
                     )}
@@ -316,7 +316,7 @@ export function GlobalSetupCard() {
                       type="number"
                       inputMode="decimal"
                       step="any"
-                      className={`touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center focus:outline-none transition-colors ${global.useProtrusionMode ? 'text-amber-400' : 'text-white focus:text-amber-400'}`}
+                      className={`touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center focus:outline-none transition-colors ${global.useProtrusionMode ? 'text-amber-400' : 'text-white focus:text-amber-400'}`}
                       value={global.useProtrusionMode ? global.protrusion : global.projection}
                       onFocus={handleInputFocus}
                       onKeyDown={blurOnEnter}
@@ -327,10 +327,10 @@ export function GlobalSetupCard() {
                       }}
                     />
                     <div className="flex gap-2 w-full mt-1">
-                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(-5)}>-5</button>
-                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(-1)}>-1</button>
-                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(1)}>+1</button>
-                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(5)}>+5</button>
+                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(-5)}>-5</button>
+                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(-1)}>-1</button>
+                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(1)}>+1</button>
+                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(5)}>+5</button>
                     </div>
                   </div>
                 )}
@@ -347,17 +347,17 @@ export function GlobalSetupCard() {
                         type="number"
                         inputMode="decimal"
                         step="any"
-                        className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold font-mono text-center text-amber-400 focus:outline-none transition-colors"
+                        className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center text-amber-400 focus:outline-none transition-colors"
                         value={global.protrusion}
                         onFocus={handleInputFocus}
                         onKeyDown={blurOnEnter}
                         onChange={e => setGlobal(g => ({ ...g, protrusion: _nz(e.target.value, g.protrusion) }))}
                       />
                       <div className="flex gap-2 w-full mt-1">
-                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(-5)}>-5</button>
-                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(-1)}>-1</button>
-                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(1)}>+1</button>
-                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold font-mono flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(5)}>+5</button>
+                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(-5)}>-5</button>
+                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(-1)}>-1</button>
+                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(1)}>+1</button>
+                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(5)}>+5</button>
                       </div>
                     </div>
                   </>
@@ -372,7 +372,7 @@ export function GlobalSetupCard() {
                     onClick={() => setActiveSheet('jig')}
                   >
                     <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Jig</span>
-                    <span className="text-xs font-bold text-white/90 truncate w-full text-center font-mono">{activeJig?.name}</span>
+                    <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{activeJig?.name}</span>
                   </button>
                   <button 
                     type="button" 
@@ -380,7 +380,7 @@ export function GlobalSetupCard() {
                     onClick={() => setActiveSheet('usb')}
                   >
                     <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">USB</span>
-                    <span className="text-xs font-bold text-white/90 truncate w-full text-center font-mono">{activeUsb?.name}</span>
+                    <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{activeUsb?.name}</span>
                   </button>
                   <button 
                     type="button" 
@@ -388,7 +388,7 @@ export function GlobalSetupCard() {
                     onClick={() => setActiveSheet('machine')}
                   >
                     <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Machine</span>
-                    <span className="text-xs font-bold text-white/90 truncate w-full text-center font-mono">{machines.find(m => m.id === defaultMachineId)?.name || 'Default'}</span>
+                    <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{machines.find(m => m.id === defaultMachineId)?.name || 'Default'}</span>
                   </button>
                 </div>
                 {/* Invisible spacer to ensure scrollable bottom padding (Safari fix) */}
@@ -426,28 +426,28 @@ export function GlobalSetupCard() {
             </div>
             
             {/* Main Readouts Row: Massive Monospace Angle & Projection */}
-            <div className="relative z-10 flex items-center justify-between w-full pt-2 border-t border-white/5">
+            <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center justify-between w-full pt-2 border-t border-white/5 gap-2">
               {/* Target Angle */}
               <div className="flex items-baseline gap-1.5">
                 <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Angle</span>
-                <span className="text-2xl sm:text-3xl font-extrabold text-amber-400 font-mono tracking-tight amber-glow">
+                <span className="text-2xl sm:text-3xl font-extrabold text-amber-400 tabular-nums tracking-tight amber-glow">
                   {_nz(global.targetAngle, 15).toFixed(1)}°
                 </span>
               </div>
 
               {/* Separator / Drag Cue */}
-              <div className="flex items-center gap-1 text-white/20">
+              <div className="hidden sm:flex items-center gap-1 text-white/20">
                 <div className="w-1.5 h-1.5 rounded-full bg-white/20 neu-concave" />
               </div>
 
               {/* Projection or USB Height */}
-              <div className="flex items-baseline gap-1.5 text-right">
+              <div className="flex items-baseline gap-1.5 text-right ml-auto sm:ml-0">
                 {isProjectionMode ? (
                   <>
                     <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">USB R/F</span>
-                    <span className="text-xl sm:text-2xl font-extrabold text-white font-mono tracking-tight">
+                    <span className="text-xl sm:text-2xl font-extrabold text-white tabular-nums tracking-tight">
                       {(global.fixedUsbRear ?? global.fixedUsbHeight ?? 150).toFixed(1)}
-                      <span className="text-white/40 text-sm font-normal"> / </span>
+                      <span className="text-white/40 text-sm font-normal mx-0.5">/</span>
                       {activeFrontUsb.toFixed(1)}
                       <span className="text-xs text-white/40 font-normal ml-0.5">mm</span>
                     </span>
@@ -457,7 +457,7 @@ export function GlobalSetupCard() {
                     <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">
                       {global.useProtrusionMode ? 'Pb' : 'Proj A'}
                     </span>
-                    <span className="text-2xl sm:text-3xl font-extrabold text-white font-mono tracking-tight">
+                    <span className="text-2xl sm:text-3xl font-extrabold text-white tabular-nums tracking-tight">
                       {_nz(global.useProtrusionMode ? global.protrusion : global.projection, 120).toFixed(1)}
                       <span className="text-xs text-white/40 font-normal ml-0.5">mm</span>
                     </span>

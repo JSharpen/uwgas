@@ -17,7 +17,7 @@ export default function App() {
   }, [view]);
 
   return (
-    <div className="min-h-dvh bg-[#09090b] text-white p-3 sm:p-4 pb-[140px] flex flex-col gap-4 max-w-4xl mx-auto selection:bg-amber-400/30 selection:text-white">
+    <div className="min-h-dvh bg-[#09090b] text-white px-2 py-3 sm:p-4 pb-[140px] flex flex-col gap-4 max-w-4xl mx-auto selection:bg-amber-400/30 selection:text-white">
       {view === 'settings' && (
         <div
           className="fixed top-3 right-4 text-xs text-white/30 font-mono tracking-wider pointer-events-none z-30"

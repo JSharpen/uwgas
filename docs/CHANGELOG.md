@@ -4,6 +4,11 @@
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.9.12] — 2026-09-09 (Session: Progression View Swipe Fix)
+
+### 🐛 Bug Fixes & UX Polish
+- **Swipe-to-Collapse Ergonomics (`src/components/ProgressionView.tsx`)**: Fixed a frustrating mobile bug where attempting to scroll or interact within an expanded step's edit drawer would accidentally trigger the `swipe-to-close` gesture and immediately collapse the card. The touch gesture handlers (`onTouchStart`, `onTouchEnd`) have been relocated directly to the card's header, ensuring safe and uninterrupted interaction within the edit drawer while preserving the expected swipe-to-close behavior on the header itself.
+
 ## [0.9.11] — 2026-09-08 (Session: State Refactor Quality Gate Remediation)
 
 ### 🐛 Bug Fixes & Architecture Remediation (Gate Review)
