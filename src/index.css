@@ -26,7 +26,7 @@ html, body {
 
 /* Your global tweaks */
 :root {
-  
+  font-size: calc(16px * var(--ui-scale, 1));
   line-height: 1.4;
   font-weight: 400;
   text-rendering: optimizeLegibility;
@@ -755,4 +755,88 @@ select:focus {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+/* ==========================================================================
+   GLOBAL UI RADIUS OVERRIDES (Driven by Dev Store)
+   ========================================================================== */
+.rounded-3xl {
+  border-radius: var(--ui-radius, 1.5rem) !important;
+}
+.rounded-t-3xl {
+  border-top-left-radius: var(--ui-radius, 1.5rem) !important;
+  border-top-right-radius: var(--ui-radius, 1.5rem) !important;
+}
+.rounded-b-3xl {
+  border-bottom-left-radius: var(--ui-radius, 1.5rem) !important;
+  border-bottom-right-radius: var(--ui-radius, 1.5rem) !important;
+}
+.rounded-2xl {
+  border-radius: calc(var(--ui-radius, 1.5rem) * 0.66) !important;
+}
+
+/* ==========================================================================
+/* ==========================================================================
+   DEBUG LAYOUTS (Dev Mode Only)
+   ========================================================================== */
+
+/* 1. Semantic Mode */
+.debug-layouts-semantic main {
+  outline: 2px dashed rgba(0, 255, 255, 0.6) !important;
+}
+.debug-layouts-semantic nav {
+  outline: 2px dashed rgba(255, 0, 255, 0.6) !important;
+}
+.debug-layouts-semantic .panel-card {
+  outline: 2px dashed rgba(255, 255, 0, 0.6) !important;
+}
+.debug-layouts-semantic .neu-convex,
+.debug-layouts-semantic .neu-concave {
+  outline: 2px dashed rgba(0, 255, 0, 0.6) !important;
+}
+.debug-layouts-semantic .card-elevated {
+  outline: 2px dashed rgba(255, 165, 0, 0.6) !important;
+}
+
+/* 2. Universal Mode */
+.debug-layouts-universal * {
+  outline: 1px solid rgba(255, 0, 0, 0.2) !important;
+}
+
+/* 3. Touch Ergonomics Mode */
+.debug-layouts-touch button,
+.debug-layouts-touch input,
+.debug-layouts-touch select,
+.debug-layouts-touch [role="button"],
+.debug-layouts-touch [role="dialog"],
+.debug-layouts-touch a {
+  outline: 2px solid rgba(255, 0, 255, 0.8) !important;
+  background-color: rgba(255, 0, 255, 0.1) !important;
+  position: relative;
+}
+/* Show a 44x44 red box over touch targets that are too small */
+.debug-layouts-touch button::before,
+.debug-layouts-touch a::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border: 1px dashed rgba(255, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* 4. Wireframe Mode */
+.debug-layouts-wireframe * {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+.debug-layouts-wireframe .neu-convex,
+.debug-layouts-wireframe .neu-concave,
+.debug-layouts-wireframe .panel-card {
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
 }

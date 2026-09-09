@@ -15,7 +15,7 @@ export type ImportModes = {
 
 export interface UIState {
   view: 'calculator' | 'wheels' | 'settings';
-  settingsView: 'root' | 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary';
+  settingsView: 'root' | 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state';
   isSetupPanelOpen: boolean;
   selectedPresetId: string;
   isPresetDialogOpen: boolean;
@@ -32,7 +32,7 @@ export interface UIState {
   // Actions
   setView: (view: 'calculator' | 'wheels' | 'settings') => void;
   setSettingsView: (
-    view: 'root' | 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary'
+    view: 'root' | 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state'
   ) => void;
   setSetupPanelOpen: (isOpen: boolean) => void;
   toggleSetupPanel: () => void;

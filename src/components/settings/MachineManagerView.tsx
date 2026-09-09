@@ -121,7 +121,7 @@ export default function MachineManagerView() {
         {machines.map((m, idx) => (
           <div
             key={m.id}
-            className="bg-[#262626] rounded-3xl border border-white/10 shadow-lg p-6 flex flex-col gap-4 relative overflow-hidden group transition-all"
+            className="neu-convex rounded-3xl border border-black/40 shadow-lg p-6 flex flex-col gap-4 relative overflow-hidden group transition-all"
             style={{ '--motion-order': idx } as React.CSSProperties}
           >
             {/* Subtle Top Edge Highlight */}
@@ -241,7 +241,7 @@ export default function MachineManagerView() {
                 <span className="text-sm font-semibold text-white">Machine Name</span>
                 <input
                   type="text"
-                  className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:border-[var(--color-accent)] outline-none transition w-full"
+                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:border-[var(--color-accent)] outline-none transition w-full"
                   placeholder="e.g. Tormek T-8"
                   value={draftName}
                   onChange={e => setDraftName(e.target.value)}
@@ -257,7 +257,7 @@ export default function MachineManagerView() {
                 <input
                   type="number"
                   step="0.1"
-                  className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold font-mono text-white focus:border-[var(--color-accent)] outline-none transition w-full"
+                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-bold font-mono text-white focus:border-[var(--color-accent)] outline-none transition w-full"
                   value={draftAxleDiameter}
                   onChange={e => setDraftAxleDiameter(Number(e.target.value))}
                 />
@@ -308,7 +308,7 @@ export default function MachineManagerView() {
                 <span className="text-sm font-semibold text-white">Machine Name</span>
                 <input
                   type="text"
-                  className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:border-[var(--color-accent)] outline-none transition w-full"
+                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:border-[var(--color-accent)] outline-none transition w-full"
                   value={draftName}
                   onChange={e => setDraftName(e.target.value)}
                 />
@@ -322,7 +322,7 @@ export default function MachineManagerView() {
                 <input
                   type="number"
                   step="0.1"
-                  className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold font-mono text-white focus:border-[var(--color-accent)] outline-none transition w-full"
+                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-bold font-mono text-white focus:border-[var(--color-accent)] outline-none transition w-full"
                   value={draftAxleDiameter}
                   onChange={e => setDraftAxleDiameter(Number(e.target.value))}
                 />

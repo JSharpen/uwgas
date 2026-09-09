@@ -135,7 +135,8 @@ export function GlobalSetupCard() {
   return (
     <>
       <div 
-        className="fixed bottom-[72px] left-3 right-3 sm:left-auto sm:right-auto sm:w-[576px] z-30 mx-auto pointer-events-none flex flex-col justify-end"
+        className="fixed left-3 right-3 sm:left-auto sm:right-auto sm:w-[576px] z-30 mx-auto pointer-events-none flex flex-col justify-end"
+        style={{ bottom: 'var(--pill-bottom, 72px)' }}
       >
         <div id="global-setup-card" className="relative w-full flex flex-col justify-end pointer-events-none max-h-[calc(100dvh-var(--progression-header-bottom,66px)-92px)] min-h-0">
                               {/* === DRAWER BODY (Expands upwards from behind the pill) === */}

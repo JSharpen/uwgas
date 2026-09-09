@@ -122,7 +122,8 @@ const StepCard = React.memo(function StepCard({
     >
       {/* ===== View State (Clickable to Expand) ===== */}
       <div 
-        className={`flex justify-between items-center px-4 py-5 sm:p-6 relative z-20 cursor-pointer ${isExpanded ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} transition-all duration-300 rounded-3xl border border-black/40 shadow-lg select-none`}
+        className={`flex justify-between items-center px-4 sm:px-6 relative z-20 cursor-pointer ${isExpanded ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} transition-all duration-300 rounded-3xl border border-black/40 shadow-lg select-none`}
+        style={{ minHeight: 'var(--step-card-height, 5.5rem)' }}
         onClick={onToggleExpand}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -328,9 +329,9 @@ export function ProgressionView() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-5 text-xs pb-10 w-full">
+    <div className="flex flex-col text-xs pb-10 w-full" style={{ gap: 'var(--card-stack-gap, 1.25rem)' }}>
       {wheelResults.length === 0 && (
-        <div className="text-xs text-white/60 border border-dashed border-white/10 rounded-3xl p-6 flex flex-col gap-3 items-center text-center neu-concave shadow-inner">
+        <div className="text-xs text-white/60 border border-dashed border-white/5 rounded-3xl p-6 flex flex-col gap-3 items-center text-center neu-concave shadow-inner">
           <p>No sharpening steps defined yet.</p>
         </div>
       )}

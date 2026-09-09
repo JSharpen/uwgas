@@ -34,7 +34,7 @@ export function ModalShell({
     >
       <div
         className={
-          'relative w-full max-w-lg bg-[#262626] rounded-3xl border border-white/10 shadow-2xl p-6 flex flex-col max-h-[90vh] overflow-y-auto motion-dialog ' +
+          'relative w-full max-w-lg neu-convex rounded-3xl border border-black/40 shadow-2xl p-6 flex flex-col max-h-[90vh] overflow-y-auto motion-dialog ' +
           (closing ? 'motion-dialog--closing' : '')
         }
         style={dialogStyle}
@@ -43,7 +43,7 @@ export function ModalShell({
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
 
         {/* Header */}
-        <div className="relative z-10 flex items-start justify-between gap-4 pb-4 border-b border-white/10 mb-4">
+        <div className="relative z-10 flex items-start justify-between gap-4 pb-4 border-b border-white/5 mb-4">
           <div className="flex flex-col gap-1 min-w-0 flex-1">
             <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">{title}</h3>
             {hasSubtitle ? <p className="text-xs sm:text-sm text-white/50 leading-relaxed font-normal">{subtitle}</p> : null}
@@ -65,7 +65,7 @@ export function ModalShell({
 
         {/* Footer */}
         {footer ? (
-          <div className="relative z-10 mt-6 pt-4 border-t border-white/10 flex justify-end gap-3">
+          <div className="relative z-10 mt-6 pt-4 border-t border-white/5 flex justify-end gap-3">
             {footer}
           </div>
         ) : null}

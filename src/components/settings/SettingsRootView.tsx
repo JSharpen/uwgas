@@ -11,13 +11,21 @@ export type SettingsRootViewProps = Record<string, never>;
 export default function SettingsRootView() {
   const setSettingsView = useUIStore((s) => s.setSettingsView);
   const onSelectSection = setSettingsView;
-  const sections: { id: SettingsSection; label: string; desc: string }[] = [
+  const sections: { id: SettingsSection | 'dev'; label: string; desc: string }[] = [
     { id: 'machine', label: 'Machines', desc: 'Profiles, constants, and calibration' },
     { id: 'hardware', label: 'Hardware', desc: 'Jigs and Universal Support Bars' },
     { id: 'measurement', label: 'Measurement', desc: 'Calculation & measurement modes' },
     { id: 'import', label: 'Import / Export', desc: 'Backup and restore data' },
     { id: 'glossary', label: 'Glossary', desc: 'Terminology and formulas' },
   ];
+
+  if (import.meta.env.DEV) {
+    sections.push({
+      id: 'dev',
+      label: 'Developer Mode',
+      desc: 'Live UI configuration lab',
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-20 w-full">
@@ -28,7 +36,7 @@ export default function SettingsRootView() {
         </div>
       </div>
 
-      <div className="bg-[#262626] rounded-3xl border border-white/10 shadow-lg relative flex flex-col overflow-hidden">
+      <div className="neu-convex rounded-3xl border border-black/40 shadow-lg relative flex flex-col overflow-hidden">
         {/* Subtle Top Edge Highlight */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
 

@@ -69,13 +69,16 @@ export default function CalculatorView() {
 
       {/* Progression Section */}
       <section ref={headerRef} className="flex flex-col gap-0 w-full max-w-[576px] mx-auto">
-        <div className="sticky top-2 z-20 flex items-center justify-between mb-4 px-2 py-2 bg-[#262626]/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl transition-all duration-300">
+        <div 
+          className="sticky top-2 z-20 flex items-center justify-between mb-4 px-2 py-2 bg-[#262626]/90 backdrop-blur-xl border border-white/5 rounded-3xl shadow-2xl transition-all duration-300"
+          style={{ minHeight: 'var(--top-bar-thickness, 60px)' }}
+        >
           {isConfirmingClear ? (
             <>
               <div className="flex-1 flex justify-start">
                 <button
                   type="button"
-                  className="h-11 px-3 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 text-white/60 hover:bg-white/10 active:bg-white/15 border border-white/10 transition flex items-center justify-center active:scale-95 cursor-pointer"
+                  className="h-11 px-3 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 text-white/60 hover:bg-white/10 active:bg-white/15 border border-white/10 transition flex items-center justify-center active:scale-95 cursor-pointer"
                   onClick={() => setIsConfirmingClear(false)}
                 >
                   No
@@ -89,7 +92,7 @@ export default function CalculatorView() {
               <div className="flex-1 flex justify-end">
                 <button
                   type="button"
-                  className="h-11 px-3 sm:px-4 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500 text-white hover:bg-red-400 active:bg-red-600 transition shadow-[0_0_15px_rgba(239,68,68,0.2)] flex items-center justify-center active:scale-95 cursor-pointer"
+                  className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500 text-white hover:bg-red-400 active:bg-red-600 transition shadow-[0_0_15px_rgba(239,68,68,0.2)] flex items-center justify-center active:scale-95 cursor-pointer"
                   onClick={() => {
                     clearSessionSteps();
                     setIsConfirmingClear(false);
@@ -104,7 +107,7 @@ export default function CalculatorView() {
               <div className="flex-1 flex justify-start">
                 <button
                   type="button"
-                  className="h-11 px-3 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500/10 text-red-500 hover:bg-red-500/20 active:bg-red-500/25 border border-red-500/20 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center active:scale-95 cursor-pointer"
+                  className="h-11 px-3 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500/10 text-red-500 hover:bg-red-500/20 active:bg-red-500/25 border border-red-500/20 transition disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center active:scale-95 cursor-pointer"
                   onClick={() => setIsConfirmingClear(true)}
                   disabled={sessionSteps.length === 0}
                 >
@@ -120,7 +123,7 @@ export default function CalculatorView() {
                 <button
                   type="button"
                   onClick={() => addStep()}
-                  className="h-11 px-3 sm:px-4 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.2)] flex items-center justify-center active:scale-95 cursor-pointer"
+                  className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.2)] flex items-center justify-center active:scale-95 cursor-pointer"
                 >
                   + Add Step
                 </button>
@@ -132,7 +135,7 @@ export default function CalculatorView() {
         <div className="flex flex-col gap-3 w-full">
           <div className="mt-1">
             {sessionSteps.length === 0 ? (
-              <div className="text-sm text-white/40 bg-[#262626] border border-white/10 rounded-3xl p-8 flex flex-col gap-4 items-center text-center shadow-lg relative overflow-hidden">
+              <div className="text-sm text-white/40 neu-convex border border-black/40 rounded-3xl p-8 flex flex-col gap-4 items-center text-center shadow-lg relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
                 <p className="text-white/60 relative z-10 font-medium">
                   No sharpening steps defined yet.
@@ -147,7 +150,7 @@ export default function CalculatorView() {
                   </button>
                   <button
                     type="button"
-                    className="w-full border border-white/10 hover:bg-white/5 active:bg-white/10 text-white/70 hover:text-white font-bold h-12 px-4 rounded-2xl transition flex items-center justify-center text-sm cursor-pointer"
+                    className="w-full border border-white/5 hover:bg-white/5 active:bg-white/10 text-white/70 hover:text-white font-bold h-12 px-4 rounded-2xl transition flex items-center justify-center text-sm cursor-pointer"
                     onClick={() => addStep()}
                   >
                     Add Blank Step

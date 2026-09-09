@@ -17,7 +17,7 @@ function GlossaryCard({ title = 'Glossary', items, className }: GlossaryCardProp
   return (
     <div
       className={
-        'bg-[#262626] rounded-3xl border border-white/10 shadow-lg p-6 relative overflow-hidden flex flex-col gap-4 ' +
+        'neu-convex rounded-3xl border border-black/40 shadow-lg p-6 relative overflow-hidden flex flex-col gap-4 ' +
         (className || '')
       }
     >
@@ -54,7 +54,7 @@ function GlossaryCard({ title = 'Glossary', items, className }: GlossaryCardProp
             </p>
 
             {item.formula && (
-              <div className="bg-black/40 border border-white/10 rounded-xl px-3.5 py-2 font-mono text-amber-300 text-xs tracking-wide self-start mt-1">
+              <div className="bg-black/40 border border-white/5 rounded-xl px-3.5 py-2 font-mono text-amber-300 text-xs tracking-wide self-start mt-1">
                 {item.formula}
               </div>
             )}

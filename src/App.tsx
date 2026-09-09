@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useUIStore } from './state/uiStore';
+import { useDevStore } from './state/devStore';
 import { IconCalculator, IconDisc, IconSettings } from './icons';
 import { APP_VERSION, APP_VERSION_DISPLAY } from './version';
 import CalculatorView from './views/CalculatorView';
@@ -11,10 +12,42 @@ import { SavePresetDialog } from './components/presets/SavePresetDialog';
 export default function App() {
   const view = useUIStore((s) => s.view);
   const setView = useUIStore((s) => s.setView);
+  const devState = useDevStore();
 
   React.useEffect(() => {
     window.dispatchEvent(new CustomEvent('collapseAll'));
   }, [view]);
+
+  React.useEffect(() => {
+    if (import.meta.env.DEV) {
+      document.documentElement.style.setProperty('--ui-scale', devState.uiScale.toString());
+      document.documentElement.style.setProperty('--step-card-height', `${devState.stepCardHeight}px`);
+      document.documentElement.style.setProperty('--card-stack-gap', `${devState.cardStackGap}px`);
+      document.documentElement.style.setProperty('--pill-bottom', `${devState.pillBottom}px`);
+      document.documentElement.style.setProperty('--top-bar-thickness', `${devState.topBarThickness}px`);
+      document.documentElement.style.setProperty('--ui-radius', `${devState.uiRadius}px`);
+      
+      // Cleanup all old classes first
+      document.body.classList.remove(
+        'debug-layouts-semantic', 
+        'debug-layouts-universal',
+        'debug-layouts-touch',
+        'debug-layouts-wireframe'
+      );
+
+      if (devState.debugLayoutMode !== 'none') {
+        document.body.classList.add(`debug-layouts-${devState.debugLayoutMode}`);
+      }
+    }
+  }, [
+    devState.uiScale, 
+    devState.stepCardHeight, 
+    devState.cardStackGap, 
+    devState.pillBottom, 
+    devState.topBarThickness, 
+    devState.uiRadius, 
+    devState.debugLayoutMode
+  ]);
 
   return (
     <div className="min-h-dvh bg-[#09090b] text-white px-2 py-3 sm:p-4 pb-[140px] flex flex-col gap-4 max-w-4xl mx-auto selection:bg-amber-400/30 selection:text-white">
@@ -44,7 +77,7 @@ export default function App() {
       <SavePresetDialog />
 
       {/* Workshop Bottom Tab Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#18181b]/95 backdrop-blur-lg border-t border-white/10 flex items-center justify-around z-40 pb-safe shadow-2xl">
+      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#18181b]/95 backdrop-blur-lg border-t border-white/5 flex items-center justify-around z-40 pb-safe shadow-2xl">
         <button
           type="button"
           onClick={() => setView('calculator')}

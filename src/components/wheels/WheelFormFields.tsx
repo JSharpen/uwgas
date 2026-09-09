@@ -22,7 +22,7 @@ export function WheelFormFields({
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-semibold text-white">Wheel Name</span>
           <input
-            className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:border-[var(--color-accent)] outline-none transition w-full"
+            className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:border-[var(--color-accent)] outline-none transition w-full"
             value={value.name}
             autoFocus={autoFocusName}
             onChange={e => onChange({ name: e.target.value })}
@@ -42,7 +42,7 @@ export function WheelFormFields({
             <input
               type="text"
               inputMode="decimal"
-              className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-base font-mono font-bold text-white focus:border-[var(--color-accent)] outline-none transition w-full appearance-none"
+              className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-base font-mono font-bold text-white focus:border-[var(--color-accent)] outline-none transition w-full appearance-none"
               value={
                 value.DText !== undefined
                   ? value.DText
@@ -77,7 +77,7 @@ export function WheelFormFields({
             <input
               type="number"
               step="0.1"
-              className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-base font-mono font-bold text-white focus:border-[var(--color-accent)] outline-none transition w-full appearance-none"
+              className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-base font-mono font-bold text-white focus:border-[var(--color-accent)] outline-none transition w-full appearance-none"
               value={value.angleOffset ?? 0}
               onKeyDown={blurOnEnter}
               onFocus={e => e.target.select()}
@@ -94,7 +94,7 @@ export function WheelFormFields({
         <label className="flex items-center gap-3 p-3 bg-black/20 hover:bg-black/40 border border-white/5 rounded-xl transition-colors cursor-pointer select-none">
           <input
             type="checkbox"
-            className="w-4 h-4 rounded border-white/10 bg-black/40 accent-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+            className="w-4 h-4 rounded border-white/5 bg-black/40 accent-[var(--color-accent)] focus:ring-[var(--color-accent)]"
             checked={value.isHoning}
             onChange={e =>
               onChange({

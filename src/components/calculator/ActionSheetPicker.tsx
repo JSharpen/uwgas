@@ -48,7 +48,7 @@ export default function ActionSheetPicker({ isOpen, onClose, title, options, val
       
       {/* Sheet */}
       <div 
-        className={`relative w-full max-w-lg mx-auto bg-[#262626] border-t sm:border-x border-white/10 rounded-t-3xl shadow-2xl flex flex-col max-h-[85vh] transition-transform duration-250 ease-out pb-[calc(env(safe-area-inset-bottom)+16px)] ${isClosing ? 'translate-y-full' : 'animate-in slide-in-from-bottom-full'}`}
+        className={`relative w-full max-w-lg mx-auto neu-convex border-t sm:border-x border-black/40 rounded-t-3xl shadow-2xl flex flex-col max-h-[85vh] transition-transform duration-250 ease-out pb-[calc(env(safe-area-inset-bottom)+16px)] ${isClosing ? 'translate-y-full' : 'animate-in slide-in-from-bottom-full'}`}
       >
         {/* Subtle Edge Highlight */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-t-3xl z-0" />

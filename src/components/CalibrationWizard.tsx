@@ -217,12 +217,12 @@ export default function CalibrationWizard({
   };
 
   return (
-    <section className="bg-[#262626] rounded-3xl border border-white/10 shadow-2xl p-6 sm:p-8 flex flex-col gap-6 max-w-2xl mx-auto w-full relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <section className="neu-convex rounded-3xl border border-black/40 shadow-2xl p-6 sm:p-8 flex flex-col gap-6 max-w-2xl mx-auto w-full relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
       {/* Top Edge Highlight */}
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
 
       {/* Header */}
-      <div className="relative z-10 flex items-center justify-between border-b border-white/10 pb-4">
+      <div className="relative z-10 flex items-center justify-between border-b border-white/5 pb-4">
         <div className="flex flex-col gap-0.5">
           <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
             Calibrate {activeMachine.name}
@@ -314,7 +314,7 @@ export default function CalibrationWizard({
             </label>
             <input
               type="text"
-              className="h-12 bg-black/30 border border-white/10 focus:border-amber-400/60 rounded-2xl px-4 text-base font-semibold text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition w-full"
+              className="h-12 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-2xl px-4 text-base font-semibold text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition w-full"
               value={calibName}
               onChange={e => {
                 setCalibName(e.target.value);
@@ -371,7 +371,7 @@ export default function CalibrationWizard({
                   <input
                     type="number"
                     step="0.1"
-                    className="h-11 bg-black/30 border border-white/10 focus:border-amber-400/60 rounded-xl px-3 text-sm font-mono text-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                    className="h-11 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-xl px-3 text-sm font-mono text-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                     value={calibDa}
                     onChange={e => setCalibDa(Number(e.target.value) || calibDa)}
                   />
@@ -383,7 +383,7 @@ export default function CalibrationWizard({
                   <input
                     type="number"
                     step="0.1"
-                    className="h-11 bg-black/30 border border-white/10 focus:border-amber-400/60 rounded-xl px-3 text-sm font-mono text-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                    className="h-11 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-xl px-3 text-sm font-mono text-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                     value={calibDs}
                     onChange={e => setCalibDs(Number(e.target.value) || calibDs)}
                   />
@@ -454,7 +454,7 @@ export default function CalibrationWizard({
                     <input
                       type="number"
                       step="0.01"
-                      className="h-12 bg-black/30 border border-white/10 focus:border-blue-400/60 rounded-xl px-4 text-base font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400/20 transition w-full"
+                      className="h-12 bg-black/30 border border-white/5 focus:border-blue-400/60 rounded-xl px-4 text-base font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400/20 transition w-full"
                       placeholder="mm"
                       value={rearRows[measIndex]?.hn}
                       onChange={e => updateRear('hn', e.target.value)}
@@ -472,7 +472,7 @@ export default function CalibrationWizard({
                     <input
                       type="number"
                       step="0.01"
-                      className="h-12 bg-black/30 border border-white/10 focus:border-blue-400/60 rounded-xl px-4 text-base font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400/20 transition w-full"
+                      className="h-12 bg-black/30 border border-white/5 focus:border-blue-400/60 rounded-xl px-4 text-base font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400/20 transition w-full"
                       placeholder="mm"
                       value={rearRows[measIndex]?.CAo}
                       onChange={e => updateRear('CAo', e.target.value)}
@@ -509,7 +509,7 @@ export default function CalibrationWizard({
                     <input
                       type="number"
                       step="0.01"
-                      className="h-12 bg-black/30 border border-white/10 focus:border-emerald-400/60 rounded-xl px-4 text-base font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition w-full"
+                      className="h-12 bg-black/30 border border-white/5 focus:border-emerald-400/60 rounded-xl px-4 text-base font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition w-full"
                       placeholder="mm"
                       value={frontRows[measIndex]?.hn}
                       onChange={e => updateFront('hn', e.target.value)}
@@ -527,7 +527,7 @@ export default function CalibrationWizard({
                     <input
                       type="number"
                       step="0.01"
-                      className="h-12 bg-black/30 border border-white/10 focus:border-emerald-400/60 rounded-xl px-4 text-base font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition w-full"
+                      className="h-12 bg-black/30 border border-white/5 focus:border-emerald-400/60 rounded-xl px-4 text-base font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 transition w-full"
                       placeholder="mm"
                       value={frontRows[measIndex]?.CAo}
                       onChange={e => updateFront('CAo', e.target.value)}

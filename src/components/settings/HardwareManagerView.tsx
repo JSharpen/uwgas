@@ -47,7 +47,7 @@ export default function HardwareManagerView() {
   const activeItems = activeTab === 'jigs' ? jigs : usbs;
 
   return (
-    <div className="flex flex-col h-full bg-[#262626] rounded-3xl border border-white/10 shadow-2xl max-w-3xl mx-auto overflow-hidden relative">
+    <div className="flex flex-col h-full neu-convex rounded-3xl border border-black/40 shadow-2xl max-w-3xl mx-auto overflow-hidden relative">
       {/* Subtle Top Edge Highlight */}
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
 
@@ -86,7 +86,7 @@ export default function HardwareManagerView() {
           return (
             <div
               key={item.id}
-              className="bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/10 rounded-2xl p-4 sm:p-5 transition-all flex flex-col gap-3"
+              className="bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/5 rounded-2xl p-4 sm:p-5 transition-all flex flex-col gap-3"
             >
               {isConfirming ? (
                 <div className="flex flex-col h-full items-center justify-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-center">
@@ -145,7 +145,7 @@ export default function HardwareManagerView() {
                       <input
                         type="text"
                         inputMode="decimal"
-                        className="w-20 rounded-lg border border-white/10 bg-black/40 px-2.5 py-1.5 text-right text-sm font-mono font-bold text-white focus:border-[var(--color-accent)] outline-none"
+                        className="w-20 rounded-lg border border-white/5 bg-black/40 px-2.5 py-1.5 text-right text-sm font-mono font-bold text-white focus:border-[var(--color-accent)] outline-none"
                         value={isJig ? (item as JigConfig).Dj : (item as UsbConfig).Ds}
                         onKeyDown={blurOnEnter}
                         onFocus={e => e.target.select()}
@@ -171,7 +171,7 @@ export default function HardwareManagerView() {
                              type="text"
                              inputMode="decimal"
                              placeholder="e.g. 100"
-                             className="w-20 rounded-lg border border-white/10 bg-black/40 px-2.5 py-1.5 text-right text-sm font-mono font-bold text-white placeholder-white/20 focus:border-[var(--color-accent)] outline-none"
+                             className="w-20 rounded-lg border border-white/5 bg-black/40 px-2.5 py-1.5 text-right text-sm font-mono font-bold text-white placeholder-white/20 focus:border-[var(--color-accent)] outline-none"
                              value={(item as import('../../types/core').JigConfig).length || ''}
                              onKeyDown={blurOnEnter}
                              onChange={e => {
@@ -186,7 +186,7 @@ export default function HardwareManagerView() {
                            <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Adjustable Collar?</span>
                            <input
                              type="checkbox"
-                             className="rounded border-white/10 bg-black/40 text-[var(--color-accent)] focus:ring-[var(--color-accent)] w-4 h-4 cursor-pointer accent-[var(--color-accent)]"
+                             className="rounded border-white/5 bg-black/40 text-[var(--color-accent)] focus:ring-[var(--color-accent)] w-4 h-4 cursor-pointer accent-[var(--color-accent)]"
                              checked={!!(item as import('../../types/core').JigConfig).isAdjustableLength}
                              onChange={e => {
                                onUpdateJig(item.id, { isAdjustableLength: e.target.checked });
@@ -200,7 +200,7 @@ export default function HardwareManagerView() {
                                type="text"
                                inputMode="decimal"
                                placeholder="e.g. 1.5"
-                               className="w-20 rounded-lg border border-white/10 bg-black/40 px-2.5 py-1.5 text-right text-sm font-mono font-bold text-white placeholder-white/20 focus:border-[var(--color-accent)] outline-none"
+                               className="w-20 rounded-lg border border-white/5 bg-black/40 px-2.5 py-1.5 text-right text-sm font-mono font-bold text-white placeholder-white/20 focus:border-[var(--color-accent)] outline-none"
                                value={(item as import('../../types/core').JigConfig).threadPitch || ''}
                                onKeyDown={blurOnEnter}
                                onChange={e => {
@@ -223,7 +223,7 @@ export default function HardwareManagerView() {
                              type="text"
                              inputMode="decimal"
                              placeholder="e.g. 1.5"
-                             className="w-16 rounded-lg border border-white/10 bg-black/40 px-2.5 py-1.5 text-right text-sm font-mono font-bold text-white placeholder-white/20 focus:border-[var(--color-accent)] outline-none"
+                             className="w-16 rounded-lg border border-white/5 bg-black/40 px-2.5 py-1.5 text-right text-sm font-mono font-bold text-white placeholder-white/20 focus:border-[var(--color-accent)] outline-none"
                              value={(item as import('../../types/core').UsbConfig).threadPitch || ''}
                              onKeyDown={blurOnEnter}
                              onChange={e => {
@@ -241,7 +241,7 @@ export default function HardwareManagerView() {
                              type="text"
                              inputMode="numeric"
                              placeholder="e.g. 6"
-                             className="w-16 rounded-lg border border-white/10 bg-black/40 px-2.5 py-1.5 text-right text-sm font-mono font-bold text-white placeholder-white/20 focus:border-[var(--color-accent)] outline-none"
+                             className="w-16 rounded-lg border border-white/5 bg-black/40 px-2.5 py-1.5 text-right text-sm font-mono font-bold text-white placeholder-white/20 focus:border-[var(--color-accent)] outline-none"
                              value={(item as import('../../types/core').UsbConfig).microAdjustMarks || ''}
                              onKeyDown={blurOnEnter}
                              onChange={e => {

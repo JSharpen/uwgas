@@ -128,12 +128,12 @@ function GlossaryPage(): React.ReactElement {
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full motion-panel">
       {/* Root Container */}
-      <section className="bg-[#262626] rounded-3xl border border-white/10 shadow-2xl p-6 sm:p-8 flex flex-col gap-6 relative overflow-hidden">
+      <section className="neu-convex rounded-3xl border border-black/40 shadow-2xl p-6 sm:p-8 flex flex-col gap-6 relative overflow-hidden">
         {/* Top Edge Highlight */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
 
         {/* Header */}
-        <div className="relative z-10 flex flex-col gap-1 border-b border-white/10 pb-5">
+        <div className="relative z-10 flex flex-col gap-1 border-b border-white/5 pb-5">
           <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Glossary &amp; Geometric Reference</h2>
           <p className="text-xs sm:text-sm text-white/50 leading-relaxed font-normal">
             Universal Wet Grinder Angle Setter mathematical parameters, machine constants, and geometric definitions.
@@ -146,7 +146,7 @@ function GlossaryPage(): React.ReactElement {
           <div className="relative">
             <input
               type="text"
-              className="w-full h-12 bg-black/30 border border-white/10 focus:border-amber-400/60 rounded-2xl px-4 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition"
+              className="w-full h-12 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-2xl px-4 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition"
               placeholder="Search symbols, constants, or formulas (e.g. hc, projection, beta)..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
@@ -189,7 +189,7 @@ function GlossaryPage(): React.ReactElement {
           {filteredTerms.length > 0 ? (
             <GlossaryCard items={filteredTerms} title={selectedCategory === 'All' ? 'All Terminology' : selectedCategory} />
           ) : (
-            <div className="bg-black/20 border border-dashed border-white/10 rounded-2xl p-8 text-center flex flex-col items-center gap-2">
+            <div className="bg-black/20 border border-dashed border-white/5 rounded-2xl p-8 text-center flex flex-col items-center gap-2">
               <span className="text-2xl">🔍</span>
               <p className="text-sm font-semibold text-white">No matching terms found</p>
               <p className="text-xs text-white/40">Try searching for a different symbol or clear your filter.</p>
@@ -208,7 +208,7 @@ function GlossaryPage(): React.ReactElement {
         </div>
 
         {/* Schematic Technical Diagram Callout */}
-        <div className="relative z-10 bg-black/30 rounded-3xl border border-white/10 p-6 flex flex-col gap-4">
+        <div className="relative z-10 bg-black/30 rounded-3xl border border-white/5 p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
               <span>📐 Machine Geometry Schematic</span>

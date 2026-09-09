@@ -121,7 +121,7 @@ export function WheelManagerView() {
 
       <div className="flex flex-col gap-4">
         {wheels.length === 0 ? (
-          <div className="bg-[#262626] rounded-3xl border border-dashed border-white/10 p-8 text-center text-xs text-white/50 flex flex-col gap-2">
+          <div className="neu-convex rounded-3xl border border-dashed border-black/40 p-8 text-center text-xs text-white/50 flex flex-col gap-2">
             No wheels saved yet. Click <span className="font-bold text-white">Add Wheel</span> to create your first wheel.
           </div>
         ) : (
@@ -138,7 +138,7 @@ export function WheelManagerView() {
               return (
                 <div
                   key={w.id}
-                  className="bg-[#262626] rounded-3xl border border-white/10 shadow-lg p-6 flex flex-col justify-between gap-4 relative overflow-hidden group transition-all"
+                  className="neu-convex rounded-3xl border border-black/40 shadow-lg p-6 flex flex-col justify-between gap-4 relative overflow-hidden group transition-all"
                   style={{ '--motion-order': idx } as React.CSSProperties}
                 >
                   {/* Subtle Top Edge Highlight */}

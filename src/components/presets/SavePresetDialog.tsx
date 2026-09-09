@@ -57,7 +57,7 @@ export function SavePresetDialog() {
           </label>
           <input
             type="text"
-            className="w-full h-12 bg-black/30 border border-white/10 focus:border-amber-400/60 rounded-xl px-4 text-base text-white placeholder-white/30 font-medium focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition"
+            className="w-full h-12 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-xl px-4 text-base text-white placeholder-white/30 font-medium focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition"
             placeholder="Preset name…"
             value={presetNameDraft}
             onKeyDown={e => {

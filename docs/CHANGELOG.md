@@ -4,6 +4,20 @@
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased] (Session: Developer Mode & UI Scaling)
+
+### 🚀 Added
+- **Developer Suite Architecture**: Expanded Developer Mode into a full drill-down developer suite with categories for "UI & Theme Lab" and "State & Storage Tools".
+- **UI & Theme Scalability Adjustments**: Added dynamic CSS custom properties for `--pill-bottom` (controls setup drawer resting location), `--top-bar-thickness` (sticky header profile), and `--ui-radius` (global border-radius overrides for `.rounded-[size]`). Connected these to real-time adjustable sliders in the Developer UI Theme Lab.
+
+- **Semantic Debug Outlines**: Added a toggle to inject `.debug-layouts` which outlines major semantic DOM elements to assist in touch target and responsive testing.
+
+- **State Data Lab**: Added one-click utilities to inject dummy progression steps, dump the live Zustand tree to browser console, and irreversibly nuke `localStorage`.
+
+- **Developer Mode Configuration Lab**: Added a `Developer Mode` section to `SettingsRootView` exclusively available in dev environments (`import.meta.env.DEV`). Allows real-time live manipulation of root CSS custom properties including `--ui-scale`, `--step-card-height`, and `--card-stack-gap`.
+- **Global UI Scaling (`--ui-scale`)**: Refactored `index.css` to base its `:root` `font-size` off of `calc(16px * var(--ui-scale, 1))`. This cascades proportionally through `rem`-based typography and structural layouts.
+- **Persisted Dev Store**: Implemented `src/state/devStore.ts` using `zustand/middleware` `persist` to ensure UI experimentation values stick across hot reloads and page refreshes.
+
 ## [0.9.12] — 2026-09-09 (Session: Progression View Swipe Fix)
 
 ### 🐛 Bug Fixes & UX Polish
@@ -81,6 +95,13 @@
 ## [0.9.6] — 2026-09-01 (Session: JOB-007 Jig Protrusion & Projection)
 
 ### 🚀 Added
+- **Developer Suite Architecture**: Expanded Developer Mode into a full drill-down developer suite with categories for "UI & Theme Lab" and "State & Storage Tools".
+- **UI & Theme Scalability Adjustments**: Added dynamic CSS custom properties for `--pill-bottom` (controls setup drawer resting location), `--top-bar-thickness` (sticky header profile), and `--ui-radius` (global border-radius overrides for `.rounded-[size]`). Connected these to real-time adjustable sliders in the Developer UI Theme Lab.
+
+- **Semantic Debug Outlines**: Added a toggle to inject `.debug-layouts` which outlines major semantic DOM elements to assist in touch target and responsive testing.
+
+- **State Data Lab**: Added one-click utilities to inject dummy progression steps, dump the live Zustand tree to browser console, and irreversibly nuke `localStorage`.
+
 - **Blade Protrusion (Caliper) Measurement Mode**:
   - Implemented `$P_b$` (Blade Protrusion) mode in `GlobalSetupCard`, allowing users to directly input a caliper measurement rather than the full projection $A$.
   - Expanded `JigConfig` to track `length` (base length of the jig), `isAdjustableLength` (collar adjustable jigs), and `threadPitch`.
@@ -100,6 +121,13 @@
 ## [0.9.5] — 2026-08-31 (Session: Hardware Manager & Jigs/USB Profiles)
 
 ### 🚀 Added
+- **Developer Suite Architecture**: Expanded Developer Mode into a full drill-down developer suite with categories for "UI & Theme Lab" and "State & Storage Tools".
+- **UI & Theme Scalability Adjustments**: Added dynamic CSS custom properties for `--pill-bottom` (controls setup drawer resting location), `--top-bar-thickness` (sticky header profile), and `--ui-radius` (global border-radius overrides for `.rounded-[size]`). Connected these to real-time adjustable sliders in the Developer UI Theme Lab.
+
+- **Semantic Debug Outlines**: Added a toggle to inject `.debug-layouts` which outlines major semantic DOM elements to assist in touch target and responsive testing.
+
+- **State Data Lab**: Added one-click utilities to inject dummy progression steps, dump the live Zustand tree to browser console, and irreversibly nuke `localStorage`.
+
 - **Hardware Profile Manager**:
   - Replaced raw USB ($D_s$) and Jig ($D_j$) diameter inputs with a new `HardwareManagerView` (accessible via Settings > Hardware) that allows creating, editing, and deleting named Jigs and USBs profiles.
   - V5 schema migration automatically converts legacy raw diameters into generated named custom profiles for seamless backwards compatibility.
@@ -117,6 +145,13 @@
 ## [0.9.4] — 2026-08-30 (Session: Multi-Machine Profiles System)
 
 ### 🚀 Added
+- **Developer Suite Architecture**: Expanded Developer Mode into a full drill-down developer suite with categories for "UI & Theme Lab" and "State & Storage Tools".
+- **UI & Theme Scalability Adjustments**: Added dynamic CSS custom properties for `--pill-bottom` (controls setup drawer resting location), `--top-bar-thickness` (sticky header profile), and `--ui-radius` (global border-radius overrides for `.rounded-[size]`). Connected these to real-time adjustable sliders in the Developer UI Theme Lab.
+
+- **Semantic Debug Outlines**: Added a toggle to inject `.debug-layouts` which outlines major semantic DOM elements to assist in touch target and responsive testing.
+
+- **State Data Lab**: Added one-click utilities to inject dummy progression steps, dump the live Zustand tree to browser console, and irreversibly nuke `localStorage`.
+
 - **Multi-Machine Profiles System (`JOB-006`)**:
   - Replaced the legacy global constants card with a new `MachineManagerView` to create, edit, and set a default machine profile.
   - The `CalibrationWizard` is now launched strictly per machine directly from the manager view, updating that machine's constants seamlessly upon application.
@@ -125,6 +160,13 @@
 ## [0.9.3] — 2026-08-28 (Session: Suggested Front USB Height & Custom Override)
 
 ### 🚀 Added
+- **Developer Suite Architecture**: Expanded Developer Mode into a full drill-down developer suite with categories for "UI & Theme Lab" and "State & Storage Tools".
+- **UI & Theme Scalability Adjustments**: Added dynamic CSS custom properties for `--pill-bottom` (controls setup drawer resting location), `--top-bar-thickness` (sticky header profile), and `--ui-radius` (global border-radius overrides for `.rounded-[size]`). Connected these to real-time adjustable sliders in the Developer UI Theme Lab.
+
+- **Semantic Debug Outlines**: Added a toggle to inject `.debug-layouts` which outlines major semantic DOM elements to assist in touch target and responsive testing.
+
+- **State Data Lab**: Added one-click utilities to inject dummy progression steps, dump the live Zustand tree to browser console, and irreversibly nuke `localStorage`.
+
 - **Suggested Front USB Height Solver (`JOB-014`)**:
   - Implemented `computeSuggestedFrontUsbHeight` in `src/math/tormek.ts` to calculate the front USB bar datum height ($h_n$) or wheel height ($h_r$) that exactly matches the wheel center to USB center distance ($CA$) of the rear USB setting.
   - Guarantees that when moving a knife from rear (grinding) to front (honing) with the same wheel diameter and target angle, the required projection $A$ is identical, saving setup and reclamping time.
@@ -148,6 +190,13 @@
 ## [0.9.2] — 2026-08-27 (Session: Projection Solver & Fixed USB Mode)
 
 ### 🚀 Added
+- **Developer Suite Architecture**: Expanded Developer Mode into a full drill-down developer suite with categories for "UI & Theme Lab" and "State & Storage Tools".
+- **UI & Theme Scalability Adjustments**: Added dynamic CSS custom properties for `--pill-bottom` (controls setup drawer resting location), `--top-bar-thickness` (sticky header profile), and `--ui-radius` (global border-radius overrides for `.rounded-[size]`). Connected these to real-time adjustable sliders in the Developer UI Theme Lab.
+
+- **Semantic Debug Outlines**: Added a toggle to inject `.debug-layouts` which outlines major semantic DOM elements to assist in touch target and responsive testing.
+
+- **State Data Lab**: Added one-click utilities to inject dummy progression steps, dump the live Zustand tree to browser console, and irreversibly nuke `localStorage`.
+
 - **Exact Inverse Dutchman Projection Solver (`JOB-012`)**:
   - Implemented exact closed-form algebraic inverse Dutchman trigonometry in `computeRequiredProjection` (`src/math/tormek.ts`) solving for knife projection $A$ from wheel radius $R$, jig diameter $D_j$, USB diameter $D_s$, target bevel angle $\beta$, and fixed USB bar position ($h_n$ base datum or $h_r$ wheel surface).
   - Sub-nanometer precision identity ($< 10^{-13}\text{ mm}$ round-trip accuracy) with physical reachability boundary checks preventing negative square roots or physically unreachable geometries.
@@ -170,6 +219,13 @@
 ## [0.9.1] — 2026-08-26 (Session: Architecture & Usability Overhaul)
 
 ### 🚀 Added
+- **Developer Suite Architecture**: Expanded Developer Mode into a full drill-down developer suite with categories for "UI & Theme Lab" and "State & Storage Tools".
+- **UI & Theme Scalability Adjustments**: Added dynamic CSS custom properties for `--pill-bottom` (controls setup drawer resting location), `--top-bar-thickness` (sticky header profile), and `--ui-radius` (global border-radius overrides for `.rounded-[size]`). Connected these to real-time adjustable sliders in the Developer UI Theme Lab.
+
+- **Semantic Debug Outlines**: Added a toggle to inject `.debug-layouts` which outlines major semantic DOM elements to assist in touch target and responsive testing.
+
+- **State Data Lab**: Added one-click utilities to inject dummy progression steps, dump the live Zustand tree to browser console, and irreversibly nuke `localStorage`.
+
 - **Workshop Touch Steppers (`JOB-005`)**:
   - Reorganized Projection $A$ and Target Angle $\beta$ into a permanent 2-column side-by-side layout across all screen sizes (mobile through desktop) with full-width text-centered inputs and 4-button stepper button grids beneath each field (`[-5] [-1] [+1] [+5]` and `[-1°] [-0.5°] [+0.5°] [+1°]`) to minimize vertical screen usage.
   - Progressive disclosure: moved Height Readout Mode and Machine Diameters into the header's expandable panel for a clean, minimal default view.
@@ -213,6 +269,13 @@
 ## [0.9.0] — 2025-12-19 (Baseline & Dev Console)
 
 ### 🚀 Added
+- **Developer Suite Architecture**: Expanded Developer Mode into a full drill-down developer suite with categories for "UI & Theme Lab" and "State & Storage Tools".
+- **UI & Theme Scalability Adjustments**: Added dynamic CSS custom properties for `--pill-bottom` (controls setup drawer resting location), `--top-bar-thickness` (sticky header profile), and `--ui-radius` (global border-radius overrides for `.rounded-[size]`). Connected these to real-time adjustable sliders in the Developer UI Theme Lab.
+
+- **Semantic Debug Outlines**: Added a toggle to inject `.debug-layouts` which outlines major semantic DOM elements to assist in touch target and responsive testing.
+
+- **State Data Lab**: Added one-click utilities to inject dummy progression steps, dump the live Zustand tree to browser console, and irreversibly nuke `localStorage`.
+
 - Interactive developer console shell script (`angle-dev-console.sh`) with live status header, LAN QR code generation, quality precheck suite, and `gh-pages` deployment.
 - Initial Ton/Dutchman trigonometric math engine (`src/math/tormek.ts`).
 - Dual-base machine calibration wizard (`src/components/CalibrationWizard.tsx`).

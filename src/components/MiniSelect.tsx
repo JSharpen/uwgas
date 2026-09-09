@@ -40,7 +40,7 @@ function MiniSelect({
     // We hoist overflow on both the card and its containing panel to allow menus to escape.
     if (!liftOnOpen || !isMenuVisible) return;
     const hostCard = rootRef.current?.closest<HTMLElement>('.card-elevated, .bg-\\[\\#262626\\]');
-    const hostPanel = rootRef.current?.closest<HTMLElement>('.panel-card, .bg-\\[\\#262626\\]');
+    const hostPanel = rootRef.current?.closest<HTMLElement>('.neu-convex border border-black/40 rounded-3xl, .bg-\\[\\#262626\\]');
     const cleanups: (() => void)[] = [];
     const apply = (el: HTMLElement | null | undefined) => {
       if (!el) return;
@@ -155,7 +155,7 @@ function MiniSelect({
       <button
         type="button"
         className={`w-full min-h-[42px] bg-black/30 hover:bg-white/5 active:bg-white/10 border ${
-          isMenuVisible ? 'border-amber-400/60 ring-2 ring-amber-400/20' : 'border-white/10 hover:border-white/20'
+          isMenuVisible ? 'border-amber-400/60 ring-2 ring-amber-400/20' : 'border-white/5 hover:border-white/20'
         } rounded-xl px-3.5 py-2 text-xs font-semibold text-white flex items-center justify-between gap-2 min-w-0 transition-all`}
         aria-label={ariaLabel}
         onClick={() => {
@@ -192,7 +192,7 @@ function MiniSelect({
         <div
           className={`absolute z-30 mt-1.5 ${
             align === 'right' ? 'right-0' : 'left-0'
-          } ${menuWidthClass ?? 'w-48 sm:w-56 min-w-full'} bg-[#262626] border border-white/10 rounded-2xl shadow-2xl p-1.5 backdrop-blur-md overflow-hidden ${
+          } ${menuWidthClass ?? 'w-48 sm:w-56 min-w-full'} neu-convex border border-black/40 rounded-2xl shadow-2xl p-1.5 backdrop-blur-md overflow-hidden ${
             isMenuClosing ? 'dropdown-menu--closing' : 'dropdown-menu--opening'
           }`}
         >

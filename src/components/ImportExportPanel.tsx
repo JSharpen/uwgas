@@ -91,7 +91,7 @@ function ImportPanel({
   };
 
   return (
-    <section className="bg-[#262626] rounded-3xl border border-white/10 shadow-lg relative flex flex-col overflow-hidden">
+    <section className="neu-convex rounded-3xl border border-black/40 shadow-lg relative flex flex-col overflow-hidden">
       {/* Subtle Top Edge Highlight */}
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
 
@@ -128,7 +128,7 @@ function ImportPanel({
               const checked = importSections[key];
               const mode = importModes[key] || 'merge';
               return (
-                <div key={key} className="bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/10 rounded-2xl p-3.5 flex flex-col gap-2 transition-all">
+                <div key={key} className="bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/5 rounded-2xl p-3.5 flex flex-col gap-2 transition-all">
                   <label className="flex items-center gap-2.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -213,7 +213,7 @@ function ExportPanel({
   const anyChecked = Object.values(exportSections).some(Boolean);
 
   return (
-    <section className="bg-[#262626] rounded-3xl border border-white/10 shadow-lg relative flex flex-col overflow-hidden">
+    <section className="neu-convex rounded-3xl border border-black/40 shadow-lg relative flex flex-col overflow-hidden">
       {/* Subtle Top Edge Highlight */}
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
 
@@ -251,7 +251,7 @@ function ExportPanel({
               return (
                 <label
                   key={key}
-                  className="bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/10 rounded-2xl p-3.5 flex items-center gap-2.5 cursor-pointer select-none transition-all"
+                  className="bg-black/20 hover:bg-black/30 border border-white/5 hover:border-white/5 rounded-2xl p-3.5 flex items-center gap-2.5 cursor-pointer select-none transition-all"
                 >
                   <input
                     type="checkbox"
@@ -272,7 +272,7 @@ function ExportPanel({
           )}
 
           <textarea
-            className="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-4 font-mono text-xs text-white/90 focus:border-[var(--color-accent)] outline-none resize-y"
+            className="w-full h-32 bg-black/40 border border-white/5 rounded-2xl p-4 font-mono text-xs text-white/90 focus:border-[var(--color-accent)] outline-none resize-y"
             value={exportText}
             readOnly
           />
