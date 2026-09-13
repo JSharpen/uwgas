@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import type { JigConfig, UsbConfig } from '../../types/core';
 
 import { useHardwareState } from '../../state/store';
-import { useUIStore } from '../../state/uiStore';
 
 export type HardwareManagerViewProps = Record<string, never>;
 
 export default function HardwareManagerView() {
   const hardware = useHardwareState();
-  const setSettingsView = useUIStore((s) => s.setSettingsView);
 
   const {
     jigs,
@@ -20,7 +18,6 @@ export default function HardwareManagerView() {
     addUsb: onAddUsb,
     deleteUsb: onDeleteUsb,
   } = hardware;
-  const onClose = () => setSettingsView('root');
   const [activeTab, setActiveTab] = useState<'jigs' | 'usbs'>('jigs');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -28,7 +25,7 @@ export default function HardwareManagerView() {
     if (e.key === 'Enter') e.currentTarget.blur();
   };
 
-  const handleAdd = () => {
+  const handleAdd = React.useCallback(() => {
     if (activeTab === 'jigs') {
       onAddJig({
         id: `jig-custom-${Date.now()}`,
@@ -42,7 +39,12 @@ export default function HardwareManagerView() {
         Ds: 11.98,
       });
     }
-  };
+  }, [activeTab, onAddJig, onAddUsb]);
+
+  React.useEffect(() => {
+    window.addEventListener('openAddHardwareModal', handleAdd);
+    return () => window.removeEventListener('openAddHardwareModal', handleAdd);
+  }, [handleAdd]);
 
   const activeItems = activeTab === 'jigs' ? jigs : usbs;
 
@@ -260,21 +262,6 @@ export default function HardwareManagerView() {
             </div>
           );
         })}
-      </div>
-
-      <div className="relative z-10 p-5 sm:p-6 border-t border-white/5 bg-[#1f1f23]/90 backdrop-blur-md shrink-0 flex items-center justify-between gap-4">
-        <button
-          onClick={handleAdd}
-          className="px-5 h-11 bg-white/10 hover:bg-white/20 text-white text-xs font-bold tracking-wide uppercase rounded-2xl shadow-sm transition flex items-center justify-center cursor-pointer"
-        >
-          + Add {activeTab === 'jigs' ? 'Jig' : 'USB'}
-        </button>
-        <button
-          onClick={onClose}
-          className="px-6 h-11 bg-[var(--color-accent)] hover:brightness-110 text-neutral-950 text-xs font-bold tracking-wide uppercase rounded-2xl shadow transition active:scale-95 flex items-center justify-center cursor-pointer"
-        >
-          Done
-        </button>
       </div>
     </div>
   );

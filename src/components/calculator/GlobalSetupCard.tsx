@@ -1,472 +1,201 @@
 import * as React from 'react';
-import { DEFAULT_CONSTANTS } from '../../state/defaults';
-import { computeSuggestedFrontUsbHeight } from '../../math/tormek';
-import { _nz } from '../../utils/numbers';
-import { blurOnEnter } from '../../utils/dom';
-import ActionSheetPicker from './ActionSheetPicker';
+import { motion, AnimatePresence, type PanInfo, useDragControls, useScroll, useTransform, useMotionTemplate } from 'framer-motion';
 
-import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../../state/store';
+import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../state/uiStore';
-
-export type GlobalSetupCardProps = Record<string, never>;
+import { useBodyLock } from '../../hooks/useBodyLock';
+import ActionSheetPicker from './ActionSheetPicker';
+import { GlobalSetupSummaryPill } from './GlobalSetupSummaryPill';
+import { GlobalSetupInputs } from './GlobalSetupInputs';
 
 export function GlobalSetupCard() {
-  // Store subscriptions using atomic selectors
-  const global = useStore((s) => s.global);
+  const isSetupPanelOpen = useUIStore((s) => s.isSetupPanelOpen);
+  const setIsSetupPanelOpen = useUIStore((s) => s.setSetupPanelOpen);
+  
+  const activeSheet = useUIStore(s => s.activeSheet);
+  const setActiveSheet = useUIStore(s => s.setActiveSheet);
+
+  useBodyLock(isSetupPanelOpen || activeSheet !== 'none');
+
+  const selectedPresetId = useUIStore((s) => s.selectedPresetId);
+  const setSelectedPresetId = useUIStore((s) => s.setSelectedPresetId);
+
+  const global = useStore(useShallow((s) => s.global));
   const setGlobal = useStore((s) => s.setGlobal);
+  
   const machines = useStore(useShallow((s) => s.machines));
   const defaultMachineId = useStore((s) => s.defaultMachineId);
   const setDefaultMachineId = useStore((s) => s.setDefaultMachineId);
   const jigs = useStore(useShallow((s) => s.jigs));
   const usbs = useStore(useShallow((s) => s.usbs));
+  
   const sessionPresets = useStore(useShallow((s) => s.sessionPresets));
   const loadPreset = useStore((s) => s.loadPreset);
-  const heightMode = useStore((s) => s.heightMode);
-
-  // UI Store subscriptions
-  const isSetupPanelOpen = useUIStore((s) => s.isSetupPanelOpen);
-  const setIsSetupPanelOpen = useUIStore((s) => s.setSetupPanelOpen);
-  const selectedPresetId = useUIStore((s) => s.selectedPresetId);
-  const setSelectedPresetId = useUIStore((s) => s.setSelectedPresetId);
-  const setPresetDialogOpen = useUIStore((s) => s.setPresetDialogOpen);
-  const setPresetManagerOpen = useUIStore((s) => s.setPresetManagerOpen);
 
   const onLoadPreset = (id: string) => {
     setSelectedPresetId(id);
     if (id) loadPreset(id);
   };
 
-  const onOpenSavePreset = () => setPresetDialogOpen(true);
-  const onOpenManagePresets = () => setPresetManagerOpen(true);
-
-  const targetAngleSymbol = '\u03b2';
-  const constants =
-    machines.find((m) => m.id === defaultMachineId)?.constants ||
-    machines[0]?.constants ||
-    DEFAULT_CONSTANTS;
-  const isProjectionMode = global.calcMode === 'projection';
-  const [activeUsbTab, setActiveUsbTab] = React.useState<'rear' | 'front'>('rear');
-  const [activeSheet, setActiveSheet] = React.useState<'none' | 'jig' | 'usb' | 'preset' | 'machine'>('none');
-  
-  const effectiveConsts = constants ?? DEFAULT_CONSTANTS;
-  const rearVal = _nz(global.fixedUsbRear, _nz(global.fixedUsbHeight, 150));
-  const activeUsb = usbs.find(u => u.id === global.activeUsbId) || usbs[0]; 
   const activeJig = jigs.find(j => j.id === global.activeJigId) || jigs[0];
-  const activePreset = sessionPresets.find(p => p.id === selectedPresetId);
-  const dsVal = _nz(activeUsb?.Ds, 12);
-  
-  const suggestedFrontUsb = computeSuggestedFrontUsbHeight(
-    rearVal,
-    effectiveConsts,
-    dsVal,
-    heightMode === 'hr' ? 'hr' : 'hn'
-  );
-  const activeFrontUsb = global.useCustomFrontUsb
-    ? _nz(global.fixedUsbFront, suggestedFrontUsb)
-    : suggestedFrontUsb;
+  const activeUsb = usbs.find(u => u.id === global.activeUsbId) || usbs[0]; 
+
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll({ container: scrollRef });
+  const overlayOpacity = useTransform(scrollY, [0, 24], [0, 1], { clamp: true });
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const dragControls = useDragControls();
+  const [drawerMaxHeight, setDrawerMaxHeight] = React.useState('500px');
+  const [closeVelocity, setCloseVelocity] = React.useState(0);
+
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.y > 60 || info.velocity.y > 200) {
+      setCloseVelocity(info.velocity.y);
+      setIsSetupPanelOpen(false);
+    }
+  };
 
   React.useEffect(() => {
-    if (isSetupPanelOpen || activeSheet !== 'none') {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
+    let rafId: number;
+    const updateHeight = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        
+        const headerBottomStr = getComputedStyle(document.documentElement).getPropertyValue('--progression-header-bottom').trim();
+        const headerBottom = headerBottomStr ? parseFloat(headerBottomStr) : 76;
+        
+        const gapStr = getComputedStyle(document.documentElement).getPropertyValue('--card-stack-gap').trim();
+        const gap = gapStr ? parseFloat(gapStr) : 12;
+        
+        const drawerBottomY = rect.top + 24;
+        const maxH = Math.max(100, drawerBottomY - (headerBottom - 16) - gap);
+
+        setDrawerMaxHeight(`${maxH}px`);
+      });
     };
-  }, [isSetupPanelOpen, activeSheet]);
 
-  const touchStartY = React.useRef(0);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    updateHeight();
     
-    // Swipe down to close
-    if (isSetupPanelOpen && deltaY > 30) {
-      setIsSetupPanelOpen(false);
-    } 
-    // Swipe up to open
-    else if (!isSetupPanelOpen && deltaY < -30) {
-      setIsSetupPanelOpen(true);
-    }
-  };
-
-  const handleAngleStep = (delta: number) => {
-    setGlobal(g => {
-      const current = _nz(g.targetAngle, 15);
-      const next = Math.max(1, Math.round((current + delta) * 10) / 10);
-      return { ...g, targetAngle: next };
-    });
-  };
-
-  const handleProjectionStep = (delta: number) => {
-    setGlobal(g => {
-      const current = _nz(g.projection, 120);
-      const next = Math.max(10, Math.round((current + delta) * 100) / 100);
-      return { ...g, projection: next };
-    });
-  };
-
-  const handleFixedUsbRearStep = (delta: number) => {
-    setGlobal(g => {
-      const current = _nz(g.fixedUsbRear, _nz(g.fixedUsbHeight, 150));
-      const next = Math.max(10, Math.round((current + delta) * 100) / 100);
-      return { ...g, fixedUsbRear: next, fixedUsbHeight: next };
-    });
-  };
-
-  const handleFixedUsbFrontStep = (delta: number) => {
-    setGlobal(g => {
-      const current = _nz(g.fixedUsbFront, suggestedFrontUsb);
-      const next = Math.max(10, Math.round((current + delta) * 100) / 100);
-      return { ...g, fixedUsbFront: next, useCustomFrontUsb: true };
-    });
-  };
-
-  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.select();
-  };
+    const observer = new ResizeObserver(updateHeight);
+    if (containerRef.current) observer.observe(containerRef.current);
+    window.addEventListener('resize', updateHeight, { passive: true });
+    
+    return () => {
+      cancelAnimationFrame(rafId);
+      observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [isSetupPanelOpen]);
 
   return (
     <>
-      <div 
-        className="fixed left-3 right-3 sm:left-auto sm:right-auto sm:w-[576px] z-30 mx-auto pointer-events-none flex flex-col justify-end"
-        style={{ bottom: 'var(--pill-bottom, 72px)' }}
-      >
-        <div id="global-setup-card" className="relative w-full flex flex-col justify-end pointer-events-none max-h-[calc(100dvh-var(--progression-header-bottom,66px)-92px)] min-h-0">
-                              {/* === DRAWER BODY (Expands upwards from behind the pill) === */}
-          <div 
-            className={`w-full neu-convex border border-black/40 shadow-2xl rounded-t-3xl rounded-b-none pb-6 transition-all duration-300 ease-in-out relative overflow-hidden flex flex-col z-0 -mb-6 pt-2 min-h-0 ${isSetupPanelOpen ? 'max-h-[100dvh] opacity-100 pointer-events-auto' : 'max-h-0 opacity-0 pointer-events-none border-transparent pt-0 pb-0'}`}
-          >
-            {/* NIB AREA (Drag handle to close) */}
-            <div 
-              className="flex items-center justify-center w-full pt-2 pb-2 touch-none shrink-0 cursor-pointer relative z-10"
-              onClick={() => setIsSetupPanelOpen(false)}
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-            >
-              <div className="w-12 h-1.5 rounded-full bg-white/10 neu-concave mx-auto mb-1" />
-            </div>
+      <AnimatePresence>
+        {isSetupPanelOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-20"
+            onClick={() => setIsSetupPanelOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
-            {/* INPUTS AREA */}
-            <div 
-              className={`px-4 sm:px-5 pb-0 pt-2 flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overscroll-contain transition-opacity duration-300 relative z-10 ${isSetupPanelOpen ? 'opacity-100 delay-150' : 'opacity-0'}`}
-              style={{ maskImage: 'linear-gradient(to bottom, transparent, black 12px, black 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 12px, black 100%)' }}
-            >
-                {/* PRESET TRIGGER */}
-                <div className="flex flex-col gap-2.5 mt-2">
-                  <button 
-                    type="button" 
-                    className="flex items-center justify-between p-4 neu-button rounded-2xl transition-all w-full text-left"
-                    onClick={() => setActiveSheet('preset')}
+      <div className="fixed left-3 right-3 sm:left-auto sm:right-auto sm:w-[576px] z-30 mx-auto pointer-events-none flex flex-col justify-end bottom-[calc(64px_+_env(safe-area-inset-bottom)_+_12px)] sm:bottom-[calc(64px_+_env(safe-area-inset-bottom)_+_16px)]">
+        <div id="global-setup-card" ref={containerRef} className="relative w-full pointer-events-none">
+          
+          <AnimatePresence>
+            {isSetupPanelOpen && (
+              <motion.div 
+                className="absolute bottom-[calc(100%-24px)] left-0 right-0 overflow-hidden pointer-events-none rounded-t-3xl flex flex-col z-0 [transform:translateZ(0)]"
+                initial={{ maxHeight: '100px' }}
+                animate={{ maxHeight: drawerMaxHeight }}
+                exit={{ maxHeight: '100px' }}
+                style={{ maxHeight: drawerMaxHeight }}
+              >
+                <motion.div 
+                  className="w-full max-h-full neu-convex border border-black/40 shadow-2xl rounded-t-3xl rounded-b-none pb-6 pt-0 relative flex flex-col min-h-0 bg-[#09090b] [transform:translateZ(0)]"
+                  initial="closed"
+                  custom={closeVelocity}
+                  animate="open"
+                  exit="closed"
+                  variants={{
+                    open: { y: 0, pointerEvents: 'auto', transition: { type: "spring", damping: 25, stiffness: 200 } },
+                    closed: (velocity) => ({ 
+                      y: "100%", 
+                      pointerEvents: 'none', 
+                      transition: { type: "spring", damping: 25, stiffness: 200, velocity: Math.max(velocity, 0) } 
+                    })
+                  }}
+                  drag="y"
+                  dragListener={false}
+                  dragControls={dragControls}
+                  dragConstraints={{ top: 0 }}
+                  dragElastic={{ top: 0.1, bottom: 0.1 }}
+                  onDragEnd={handleDragEnd}
+                >
+                {/* WRAPPER: Handles relative positioning for the gradient overlay */}
+                <div className="flex-1 min-h-0 relative z-10 flex flex-col pt-0">
+                  
+                  {/* DRAG HANDLE (Absolute so content scrolls under it) */}
+                  <div 
+                    className="absolute top-0 left-0 right-0 h-8 flex flex-col items-center justify-center touch-none z-30 cursor-grab active:cursor-grabbing bg-gradient-to-b from-[#09090b] via-[#09090b]/90 to-transparent"
+                    onPointerDown={(e) => dragControls.start(e)}
                   >
-                    <div className="flex flex-col items-start min-w-0 pr-2">
-                      <span className="text-[10px] uppercase font-bold text-white/40 tracking-widest mb-0.5">Active Preset</span>
-                      <span className={`text-sm font-bold truncate max-w-[220px] ${activePreset ? 'text-white' : 'text-white/40'}`}>
-                        {activePreset ? activePreset.name : 'None selected'}
-                      </span>
-                    </div>
-                    <div className="text-xs font-bold text-amber-400 px-3.5 py-1.5 neu-concave border border-black/40 rounded-full shrink-0">
-                      Change
-                    </div>
-                  </button>
-                  <div className="flex gap-2.5">
-                    <button 
-                      type="button"
-                      className="flex-1 h-11 py-2 text-xs font-bold text-white/70 hover:text-white neu-button rounded-xl transition flex items-center justify-center"
-                      onClick={onOpenSavePreset}
-                    >
-                      Save Current
-                    </button>
-                    <button 
-                      type="button"
-                      className="flex-1 h-11 py-2 text-xs font-bold text-white/70 hover:text-white neu-button rounded-xl transition flex items-center justify-center"
-                      onClick={onOpenManagePresets}
-                    >
-                      Manage Presets
-                    </button>
+                    <div className="w-12 h-1.5 rounded-full bg-white/10 neu-concave mx-auto" />
                   </div>
-                </div>
-                <div className="h-px bg-white/5 w-full" />
-
-                {/* TARGET ANGLE */}
-                <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
-                  <div className="text-center">
-                    <label className="text-[10px] font-bold text-white/40 tracking-widest uppercase">Target Angle {targetAngleSymbol}°</label>
-                  </div>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="any"
-                    className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center text-amber-400 amber-glow focus:outline-none focus:text-amber-300 transition-colors"
-                    value={global.targetAngle}
-                    onFocus={handleInputFocus}
-                    onKeyDown={blurOnEnter}
-                    onChange={e =>
-                      setGlobal(g => ({ ...g, targetAngle: _nz(e.target.value, g.targetAngle) }))
-                    }
-                  />
-                  <div className="flex gap-2 w-full mt-1">
-                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(-1)}>-1°</button>
-                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(-0.5)}>-.5°</button>
-                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(0.5)}>+.5°</button>
-                    <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleAngleStep(1)}>+1°</button>
-                  </div>
-                </div>
-
-                <div className="h-px bg-white/5 w-full" />
-
-                {/* PROJECTION OR FIXED USB HEIGHT */}
-                {isProjectionMode ? (
-                  <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-white/40 tracking-widest uppercase">Fixed USB Height</label>
-                      <div 
-                        className="relative flex neu-concave rounded-full border border-black/40 p-1 select-none w-36 cursor-pointer"
-                        onClick={() => setActiveUsbTab(activeUsbTab === 'rear' ? 'front' : 'rear')}
-                      >
-                        <div className="absolute top-1 bottom-1 left-1 right-1 pointer-events-none">
-                          <div className={`w-1/2 h-full neu-button rounded-full shadow-sm transition-transform duration-300 ease-out ${activeUsbTab === 'rear' ? 'translate-x-0' : 'translate-x-full'}`} />
-                        </div>
-                        <div className="relative z-10 flex w-full">
-                          <div className={`flex-1 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-wider uppercase transition-colors duration-300 ${activeUsbTab === 'rear' ? 'text-white' : 'text-white/40'}`}>
-                            Rear
-                          </div>
-                          <div className={`flex-1 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-wider uppercase transition-colors duration-300 ${activeUsbTab === 'front' ? 'text-white' : 'text-white/40'}`}>
-                            Front
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {activeUsbTab === 'rear' ? (
-                      <>
-                        <div className="relative flex justify-center items-center w-full">
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            step="any"
-                            className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center text-white focus:outline-none focus:text-amber-400 transition-colors"
-                            value={global.fixedUsbRear ?? global.fixedUsbHeight ?? 150}
-                            onFocus={handleInputFocus}
-                            onKeyDown={blurOnEnter}
-                            onChange={e =>
-                              setGlobal(g => ({
-                                ...g,
-                                fixedUsbRear: _nz(e.target.value, g.fixedUsbRear ?? 150),
-                                fixedUsbHeight: _nz(e.target.value, g.fixedUsbRear ?? 150),
-                              }))
-                            }
-                          />
-                        </div>
-                        <div className="flex gap-2 w-full mt-1">
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(-5)}>-5</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(-1)}>-1</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(1)}>+1</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbRearStep(5)}>+5</button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="relative flex justify-center items-center w-full">
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            step="any"
-                            className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center focus:outline-none transition-colors disabled:opacity-50 disabled:text-white/30 disabled:bg-transparent text-white focus:text-amber-400"
-                            value={global.useCustomFrontUsb ? (global.fixedUsbFront ?? Math.round(suggestedFrontUsb * 100) / 100) : suggestedFrontUsb.toFixed(2)}
-                            onFocus={handleInputFocus}
-                            onKeyDown={blurOnEnter}
-                            disabled={!global.useCustomFrontUsb}
-                            onChange={e =>
-                              setGlobal(g => ({ ...g, fixedUsbFront: _nz(e.target.value, g.fixedUsbFront ?? suggestedFrontUsb) }))
-                            }
-                          />
-                          <div className="absolute right-0 flex items-center justify-end w-16">
-                            <button
-                              type="button"
-                              onClick={() => setGlobal(g => ({ ...g, useCustomFrontUsb: !g.useCustomFrontUsb, fixedUsbFront: !g.useCustomFrontUsb ? suggestedFrontUsb : g.fixedUsbFront }))}
-                              className={`px-2 py-1 rounded-md text-[9px] font-bold tracking-widest uppercase transition-colors border ${global.useCustomFrontUsb ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-black/40 text-white/40 border-black/60 shadow-inner'}`}
-                            >
-                              {global.useCustomFrontUsb ? 'Custom' : 'Auto'}
-                            </button>
-                          </div>
-                        </div>
-                        <div className={`flex gap-2 w-full mt-1 transition-opacity duration-300 ${global.useCustomFrontUsb ? 'opacity-100' : 'opacity-20 pointer-events-none'}`}>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-5)}>-5</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(-1)}>-1</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(1)}>+1</button>
-                          <button type="button" className="flex-1 h-12 rounded-xl neu-button text-white/80 font-bold tabular-nums text-sm flex items-center justify-center active:scale-95 transition-all" onClick={() => handleFixedUsbFrontStep(5)}>+5</button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
-                    <div className="text-center">
-                      <label className={`text-[10px] font-bold tracking-widest uppercase ${global.useProtrusionMode ? 'text-amber-400' : 'text-white/40'}`}>
-                        {global.useProtrusionMode ? "Blade Protrusion Pb" : "Projection A"}
-                      </label>
-                    </div>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      className={`touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center focus:outline-none transition-colors ${global.useProtrusionMode ? 'text-amber-400' : 'text-white focus:text-amber-400'}`}
-                      value={global.useProtrusionMode ? global.protrusion : global.projection}
-                      onFocus={handleInputFocus}
-                      onKeyDown={blurOnEnter}
-                      onChange={e => {
-                        const val = _nz(e.target.value, global.useProtrusionMode ? global.protrusion : global.projection);
-                        if (global.useProtrusionMode) setGlobal(g => ({ ...g, protrusion: val }));
-                        else setGlobal(g => ({ ...g, projection: val }));
-                      }}
+                    {/* Fixed Top Overlay Fade (Extended to smoothly fade content) */}
+                    <motion.div 
+                      className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-[#09090b] via-[#09090b]/80 to-transparent z-20 pointer-events-none"
+                      style={{ opacity: overlayOpacity }}
                     />
-                    <div className="flex gap-2 w-full mt-1">
-                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(-5)}>-5</button>
-                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(-1)}>-1</button>
-                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(1)}>+1</button>
-                      <button type="button" className={`flex-1 h-12 rounded-xl text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all ${global.useProtrusionMode ? 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'neu-button text-white/80'}`} onClick={() => handleProjectionStep(5)}>+5</button>
+                    {/* SCROLL CONTAINER: Handles the scrolling */}
+                    <div 
+                      ref={scrollRef}
+                      className="px-4 sm:px-5 pt-8 pb-0 flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y"
+                    >
+                      <GlobalSetupInputs />
+
+                      {/* Hardware Selection Action Sheet Triggers */}
+                      <div className="flex flex-row-reverse flex-wrap-reverse gap-2.5 w-full">
+                      <button 
+                        type="button" 
+                        className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
+                        onClick={() => setActiveSheet('jig')}
+                      >
+                        <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Jig</span>
+                        <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{activeJig?.name}</span>
+                      </button>
+                      <button 
+                        type="button" 
+                        className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
+                        onClick={() => setActiveSheet('usb')}
+                      >
+                        <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">USB</span>
+                        <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{activeUsb?.name}</span>
+                      </button>
+                      <button 
+                        type="button" 
+                        className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
+                        onClick={() => setActiveSheet('machine')}
+                      >
+                        <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Machine</span>
+                        <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{machines.find(m => m.id === defaultMachineId)?.name || 'Default'}</span>
+                      </button>
+                    </div>
+                    {/* Invisible spacer to ensure scrollable bottom padding (Safari fix) */}
+                    <div className="h-px shrink-0 w-full" />
                     </div>
                   </div>
-                )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-                {/* Protrusion Addon in Projection Mode */}
-                {isProjectionMode && global.useProtrusionMode && (
-                  <>
-                    <div className="h-px bg-white/5 w-full" />
-                    <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
-                      <div className="text-center">
-                        <label className="text-[10px] font-bold text-amber-400 tracking-widest uppercase">Blade Protrusion Pb</label>
-                      </div>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="any"
-                        className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center text-amber-400 focus:outline-none transition-colors"
-                        value={global.protrusion}
-                        onFocus={handleInputFocus}
-                        onKeyDown={blurOnEnter}
-                        onChange={e => setGlobal(g => ({ ...g, protrusion: _nz(e.target.value, g.protrusion) }))}
-                      />
-                      <div className="flex gap-2 w-full mt-1">
-                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(-5)}>-5</button>
-                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(-1)}>-1</button>
-                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(1)}>+1</button>
-                        <button type="button" className="flex-1 h-12 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20 text-sm font-bold tabular-nums flex items-center justify-center active:scale-95 transition-all" onClick={() => handleProjectionStep(5)}>+5</button>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <div className="h-px bg-white/5 w-full" />
-                {/* Hardware Selection Action Sheet Triggers */}
-                <div className="flex flex-row-reverse flex-wrap-reverse gap-2.5 w-full">
-                  <button 
-                    type="button" 
-                    className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
-                    onClick={() => setActiveSheet('jig')}
-                  >
-                    <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Jig</span>
-                    <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{activeJig?.name}</span>
-                  </button>
-                  <button 
-                    type="button" 
-                    className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
-                    onClick={() => setActiveSheet('usb')}
-                  >
-                    <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">USB</span>
-                    <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{activeUsb?.name}</span>
-                  </button>
-                  <button 
-                    type="button" 
-                    className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
-                    onClick={() => setActiveSheet('machine')}
-                  >
-                    <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Machine</span>
-                    <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{machines.find(m => m.id === defaultMachineId)?.name || 'Default'}</span>
-                  </button>
-                </div>
-                {/* Invisible spacer to ensure scrollable bottom padding (Safari fix) */}
-                <div className="h-px shrink-0 w-full" />
-              </div>
-            </div>
-
-            {/* === SUMMARY PILL (Front Layer, Static) === */}
-          <button 
-            type="button"
-            className={`relative z-10 pointer-events-auto w-full ${isSetupPanelOpen ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} shrink-0 border border-black/20 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-5 touch-none transition-all group overflow-hidden`}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onClick={() => setIsSetupPanelOpen(!isSetupPanelOpen)}
-          >
-            {/* Subtle Edge Highlight */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none rounded-3xl z-0" />
-
-            {/* Top Row: Preset Name & Hardware Pill Chips */}
-            <div className="relative z-10 flex flex-col items-start w-full gap-2 mb-3">
-              <span className={`text-sm sm:text-base font-bold truncate w-full ${activePreset ? 'text-amber-400 font-semibold' : 'text-white/60'}`}>
-                {activePreset ? activePreset.name : 'Custom Setup'}
-              </span>
-              <div className="grid grid-cols-3 gap-1.5 w-full">
-                <span className="rounded px-2 py-0.5 neu-concave border border-white/5 text-[9px] text-white/70 font-mono truncate text-center">
-                  {machines.find(m => m.id === defaultMachineId)?.name || 'Default'}
-                </span>
-                <span className="rounded px-2 py-0.5 neu-concave border border-white/5 text-[9px] text-white/70 font-mono truncate text-center">
-                  {activeUsb?.name || 'USB'}
-                </span>
-                <span className="rounded px-2 py-0.5 neu-concave border border-white/5 text-[9px] text-white/70 font-mono truncate text-center">
-                  {activeJig?.name || 'Jig'}
-                </span>
-              </div>
-            </div>
-            
-            {/* Main Readouts Row: Massive Monospace Angle & Projection */}
-            <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center justify-between w-full pt-2 border-t border-white/5 gap-2">
-              {/* Target Angle */}
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Angle</span>
-                <span className="text-2xl sm:text-3xl font-extrabold text-amber-400 tabular-nums tracking-tight amber-glow">
-                  {_nz(global.targetAngle, 15).toFixed(1)}°
-                </span>
-              </div>
-
-              {/* Separator / Drag Cue */}
-              <div className="hidden sm:flex items-center gap-1 text-white/20">
-                <div className="w-1.5 h-1.5 rounded-full bg-white/20 neu-concave" />
-              </div>
-
-              {/* Projection or USB Height */}
-              <div className="flex items-baseline gap-1.5 text-right ml-auto sm:ml-0">
-                {isProjectionMode ? (
-                  <>
-                    <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">USB R/F</span>
-                    <span className="text-xl sm:text-2xl font-extrabold text-white tabular-nums tracking-tight">
-                      {(global.fixedUsbRear ?? global.fixedUsbHeight ?? 150).toFixed(1)}
-                      <span className="text-white/40 text-sm font-normal mx-0.5">/</span>
-                      {activeFrontUsb.toFixed(1)}
-                      <span className="text-xs text-white/40 font-normal ml-0.5">mm</span>
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">
-                      {global.useProtrusionMode ? 'Pb' : 'Proj A'}
-                    </span>
-                    <span className="text-2xl sm:text-3xl font-extrabold text-white tabular-nums tracking-tight">
-                      {_nz(global.useProtrusionMode ? global.protrusion : global.projection, 120).toFixed(1)}
-                      <span className="text-xs text-white/40 font-normal ml-0.5">mm</span>
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          </button>
+          <GlobalSetupSummaryPill />
         </div>
       </div>
 

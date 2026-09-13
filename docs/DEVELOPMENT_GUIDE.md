@@ -46,7 +46,7 @@ The project includes an interactive terminal console (`angle-dev-console.sh`) de
 [origin/dev] ──(Work, Fixes, Features)──> [dev] ──(Precheck Pass)──> [main] ──(Deploy)──> [gh-pages]
 ```
 
-- **`dev` Branch**: Active development branch. All feature work, bug fixes, and refactoring MUST happen on `dev`.
+- **`dev` Branch**: Active development branch. All feature work, bug fixes, and refactoring should target `dev` (using feature branches when appropriate).
 - **`main` Branch**: Production-ready release branch. Only updated by merging `dev` once all precheck gates pass.
 - **`gh-pages` Branch**: Automated deployment target generated from `dist/` by `npm run deploy`.
 
@@ -54,48 +54,4 @@ The project includes an interactive terminal console (`angle-dev-console.sh`) de
 
 ## 🤖 Instructions for AI Coding Assistants (Future Sessions)
 
-When starting or resuming work on this repository, all AI assistants MUST adhere to the following rules:
-
-### 1. Session Start Discovery Protocol (CRITICAL)
-Every new AI session MUST first read:
-1. **`docs/PROJECT_PLAN.md`**: To inspect the **Active Job Schedule & Backlog** table, check what is `[IN PROGRESS]`, `[READY]`, or `[PROPOSED]`, and read the recent Decision Log.
-2. **`docs/CHANGELOG.md`**: To see the granular history of code changes, new components, and features added in previous sessions.
-3. **`docs/ARCHITECTURE.md`**: To verify math formulas, state schemas, and component boundaries before modifying code.
-
-### 2. Job Tracking & Autonomous Logging Protocol
-Whenever a user discusses a feature, proposed improvement, bug fix, or architectural change:
-1. **Immediate Job Logging**: If an idea or feature is proposed or discussed (even if not worked on immediately), add it as an entry in `docs/PROJECT_PLAN.md` under the **Active Job Schedule & Backlog** table with status `[PROPOSED]` or `[READY]`.
-2. **Standard Job Statuses**:
-   - `[PROPOSED]`: Discussed/requested idea; awaiting design refinement or prioritization.
-   - `[READY]`: Scoped and approved; ready for implementation.
-   - `[IN PROGRESS]`: Currently being developed in the active session.
-   - `[BLOCKED]`: Waiting on user input, physical measurement, or dependency.
-   - `[COMPLETED]`: Fully implemented, verified with tests, and built.
-   - `[DEFERRED]`: Shelved for future milestones.
-3. **Changelog Updates**: Whenever code is created or modified, append a structured release or session entry in `docs/CHANGELOG.md` detailing the files and features affected.
-4. **Catch-Up & Dynamic Suggestions**: When a user starts a new chat or asks *"What's on the schedule?"* or *"Where are we up to?"*, the agent MUST read `docs/PROJECT_PLAN.md` and `docs/CHANGELOG.md`, summarize the recent work and open jobs, and make proactive recommendations on what to tackle next based on priority.
-
-### 3. Math & Physics Integrity
-- All trigonometric calculations live in `src/math/tormek.ts`.
-- **Do not modify math equations** unless explicitly fixing a verified geometric discrepancy against Dutchman's canonical formulations.
-- Ensure all angles are converted between degrees and radians accurately (`deg2rad`, `rad2deg`).
-- Keep math functions **pure** (no React state or DOM dependencies).
-
-### 4. Data Storage & Backwards Compatibility
-- **Zustand Primary**: All global state lives in `src/state/store.ts`. Ephemeral UI state lives in `src/state/uiStore.ts`.
-- **The Zod Shield**: Never introduce breaking changes to the state. Always update `src/state/schema.ts` using `.optional()` or `.catch()` to gracefully handle legacy user data and guarantee backwards compatibility.
-- **Migration Strategy**: If altering a core type, increment the internal version in `store.ts` and ensure the Zod `merge` function provides backwards-compatible fallbacks for legacy `localStorage` keys.
-- **Import/Export Testing**: If you change the data structure, you must verify that the JSON Import/Export panel still correctly parses legacy backup files.
-- **Prop-Drilling Ban**: Use `useShallow` and atomic selectors to subscribe components directly to the store.
-
-### 5. UI & Workshop Ergonomics
-- Keep touch targets at or above $44\text{px} \times 44\text{px}$.
-- Use high-contrast font hierarchies for numbers ($h_n, h_r, A, \beta$).
-- Ensure all modal views listen to `Escape` key and click-outside dismissal (via `useModalLayout`).
-- Use standardized button styling classes from `src/ui/buttons.ts` (`BTN`, `BTN_MUTED`).
-
-### 6. Verification Before Ending Session
-Before ending any session:
-1. Run `npm run typecheck` to confirm zero TypeScript errors.
-2. Run `npm run lint` to confirm zero ESLint violations.
-3. Verify that `npm run build` succeeds cleanly.
+Please refer strictly to **`AGENTS.md`** in the root of the repository for all mandatory session start protocols, job tracking rules, state management, and UI verification gates. All AI rules have been centralized to prevent duplication.

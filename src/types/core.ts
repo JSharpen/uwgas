@@ -35,6 +35,7 @@ export type SessionPreset = {
   createdAt: string;
   version: 1;
   steps: PresetStepRef[];
+  includeHardware?: boolean;
 };
 
 export type JigConfig = {
@@ -73,6 +74,7 @@ export type CalcMode = 'height' | 'projection';
 
 export type GlobalState = {
   projection: number; // A (used when calcMode is 'height')
+  activeMachineId?: string;
   activeUsbId: string;
   targetAngle: number; // β per side
   activeJigId: string;

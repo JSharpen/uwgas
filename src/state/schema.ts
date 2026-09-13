@@ -37,6 +37,7 @@ export const SessionPresetSchema = z.object({
   createdAt: z.string(),
   version: z.literal(1),
   steps: z.array(PresetStepRefSchema),
+  includeHardware: z.boolean().optional(),
 });
 
 export const JigConfigSchema = z.object({
@@ -108,6 +109,7 @@ export const CalcModeSchema = z.enum(['height', 'projection']);
 
 export const GlobalStateSchema = z.object({
   projection: z.number(),
+  activeMachineId: z.string().optional(),
   activeUsbId: z.string(),
   targetAngle: z.number(),
   activeJigId: z.string(),

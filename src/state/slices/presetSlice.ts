@@ -5,7 +5,7 @@ import type { RootStoreState } from '../store';
 
 export interface PresetSlice {
   sessionPresets: SessionPreset[];
-  savePreset: (name: string) => void;
+  savePreset: (name: string, includeHardware?: boolean) => void;
   deletePreset: (id: string) => void;
   renamePreset: (id: string, newName: string) => void;
   loadPreset: (id: string) => void;
@@ -18,7 +18,7 @@ export const createPresetSlice: StateCreator<
   PresetSlice
 > = (set) => ({
   sessionPresets: [],
-  savePreset: (name) =>
+  savePreset: (name, includeHardware = false) =>
     set((state) => {
       const trimmed = name.trim();
       if (!trimmed || state.sessionSteps.length === 0) return state;
@@ -27,6 +27,7 @@ export const createPresetSlice: StateCreator<
         name: trimmed,
         createdAt: new Date().toISOString(),
         version: 1,
+        includeHardware,
         steps: state.sessionSteps.map((s) => {
           const w = state.wheels.find((wx) => wx.id === s.wheelId);
           return {
@@ -34,8 +35,8 @@ export const createPresetSlice: StateCreator<
             wheelName: w ? w.name : 'Unknown Wheel',
             base: s.base,
             angleOffset: s.angleOffset,
-            machineId: s.machineId,
-            usbId: s.usbId,
+            machineId: includeHardware ? s.machineId : undefined,
+            usbId: includeHardware ? s.usbId : undefined,
           };
         }),
       };
@@ -55,6 +56,9 @@ export const createPresetSlice: StateCreator<
     set((state) => {
       const preset = state.sessionPresets.find((p) => p.id === id);
       if (!preset) return state;
+      
+      const hasComplexHardware = preset.steps.some((s) => s.machineId || s.usbId);
+      
       const steps: SessionStep[] = preset.steps.map((s) => ({
         id: generateId(),
         wheelId: s.wheelId,
@@ -63,6 +67,15 @@ export const createPresetSlice: StateCreator<
         machineId: s.machineId,
         usbId: s.usbId,
       }));
-      return { sessionSteps: steps };
+      
+      let nextGlobal = state.global;
+      if (hasComplexHardware && !state.global.showAdvancedStepOverrides) {
+        nextGlobal = { ...state.global, showAdvancedStepOverrides: true };
+      }
+      
+      return { 
+        sessionSteps: steps,
+        global: nextGlobal
+      };
     }),
 });

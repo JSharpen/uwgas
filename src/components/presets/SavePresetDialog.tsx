@@ -17,24 +17,35 @@ export function SavePresetDialog() {
   const presetNameDraft = useUIStore((s) => s.presetNameDraft);
   const setPresetNameDraft = useUIStore((s) => s.setPresetNameDraft);
 
+  const [includeHardware, setIncludeHardware] = React.useState(false);
+
+  const clearAfterSave = useUIStore((s) => s.clearAfterSave);
+  const setClearAfterSave = useUIStore((s) => s.setClearAfterSave);
+
   const presetState = usePresetState();
   const sessionStepsCount = useStore((s) => s.sessionSteps.length);
+  const clearSessionSteps = useStore((s) => s.clearSessionSteps);
 
   const onClose = React.useCallback(() => {
     setIsClosing(true);
     window.setTimeout(() => {
       setIsOpen(false);
       setIsClosing(false);
+      setIncludeHardware(false);
+      setClearAfterSave(false);
     }, 180);
-  }, [setIsClosing, setIsOpen]);
+  }, [setIsClosing, setIsOpen, setClearAfterSave]);
 
   const onSave = React.useCallback(() => {
     const trimmed = presetNameDraft.trim();
     if (!trimmed) return;
-    presetState.savePreset(trimmed);
+    presetState.savePreset(trimmed, includeHardware);
+    if (clearAfterSave) {
+      clearSessionSteps();
+    }
     setPresetNameDraft('');
     onClose();
-  }, [presetNameDraft, presetState, setPresetNameDraft, onClose]);
+  }, [presetNameDraft, includeHardware, presetState, clearAfterSave, clearSessionSteps, setPresetNameDraft, onClose]);
 
   const canSave = sessionStepsCount > 0 && presetNameDraft.trim().length > 0;
   const dialogStyle = getDialogStyle();
@@ -70,6 +81,19 @@ export function SavePresetDialog() {
             autoFocus
           />
         </div>
+
+        <label className="flex items-center gap-3 bg-black/20 border border-white/5 rounded-2xl p-4 cursor-pointer transition-colors hover:bg-black/30">
+          <input
+            type="checkbox"
+            className="w-5 h-5 rounded border-white/10 bg-black/40 text-amber-400 focus:ring-amber-400/30 focus:ring-offset-0 transition-all cursor-pointer"
+            checked={includeHardware}
+            onChange={(e) => setIncludeHardware(e.target.checked)}
+          />
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-white/90">Bind Hardware</span>
+            <span className="text-[10px] text-white/40 leading-tight mt-0.5">Save current machine and USB selections with this preset.</span>
+          </div>
+        </label>
 
         <div className="flex justify-end items-center gap-3 pt-2">
           <button

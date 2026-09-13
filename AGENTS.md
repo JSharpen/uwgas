@@ -25,35 +25,36 @@ When starting or resuming a conversation on this codebase, you **MUST** immediat
 ## 📋 Autonomous Job Tracking Rules
 
 Whenever you or the user discuss a feature, bug fix, improvement, or idea:
-1. **Log Proposed Work**: If an idea is discussed but not implemented right away, add it as a new row in [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) under the Active Job Schedule (`JOB-xxx`) with status `[PROPOSED]`.
-2. **Update Status in Real Time**: When starting a task, update its status to `[IN PROGRESS]`. When completed and verified, mark it `[COMPLETED]`.
-3. **Log Code Changes**: After making code edits, record a descriptive entry under the active version in [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
+1. **Log Proposed Work**: If a significant, concrete feature is discussed and agreed upon but not implemented right away, add it to [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) as a `[PROPOSED]` job. Do not log minor tweaks or bugs.
+2. **Update Status**: For major, long-running jobs, update the status to `[IN PROGRESS]`, and `[COMPLETED]` when done. Skip this for quick fixes.
+3. **Log Code Changes**: Rely on Git history for granular changes. Only update [`docs/CHANGELOG.md`](docs/CHANGELOG.md) for significant milestones or when the user explicitly requests a release log.
 4. **Dynamic Catch-Up**: If the user asks *"Where are we up to?"* or *"What's on the schedule?"*, read [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) and [`docs/CHANGELOG.md`](docs/CHANGELOG.md), summarize current progress, and recommend the next priority task.
 
 ---
 
 ## ⚡ Core Development Rules
 
-- **Strict Math Engine Isolation (The Vault)**: All math belongs in `src/math/`. This is a pure algorithm layer. **NEVER** import React, UI types, or Zustand stores into the `math/` directory. The boundary is enforced by ESLint.
-- **Data Safety & Schema Migrations (CRITICAL)**: User data (wheels, jigs, presets) is sacred. If you add a new feature that requires new saved data, you **MUST** update `src/state/schema.ts` using Zod's `.optional()` or `.catch()` fallbacks. This guarantees that old user data seamlessly migrates to the new version without crashing.
-- **State Management (Zustand & Zod)**: The app uses a slice-based Zustand store (`src/state/store.ts`) with Zod validation. **NEVER** use React Context or `useState` in `App.tsx` for global domain data. All persistent state modifications must map to `src/state/schema.ts`.
-- **Zero Prop-Drilling**: UI Components must pull their required state directly from the Zustand stores using fine-grained selectors and `useShallow`. Do not drill global state down as props.
-- **Workshop Touch Ergonomics**: Minimum $44\text{px} \times 44\text{px}$ touch targets, large font sizes for numbers. **Viewport Targets**: Strict minimum of `360px` (crowding allowed, zero overlap/wrapping) and a comfortable baseline of `390px`. Full keyboard modal dismissal.
-- **Verification Gate**: Before ending any turn with code modifications, ensure that `npm run typecheck`, `npm run lint`, and `npm run build` all pass with **0 errors**.
-- **Comprehensive Reversions**: When removing or reverting a feature, you must completely remove all associated side-effects (orphaned classes like `touch-none`, event listeners, structural layout wrappers, etc.) that were introduced specifically for that feature. Never leave behind residual code that alters intended behavior. If unsure about the extent of the side-effects, explicitly ask the user before proceeding.
+- **Proactive Impact Assessment**: When modifying UI layouts, keep potential unintended consequences in mind (e.g., overflow issues), but do not waste tokens writing theoretical impact assessments before coding.
+- **Strict Math Engine Isolation**: All math belongs in `src/math/`. This is a pure algorithm layer. **NEVER** import React, UI types, or Zustand stores into the `math/` directory. The boundary is enforced by ESLint.
+- **Data Safety & Schema Migrations (CRITICAL)**: User data (wheels, jigs, presets) is sacred. If you add a new feature that requires new saved data, update `src/state/schema.ts`. Note that using Zod's `.catch()` will drop unrecognized old data; use proper migration logic if changing structural keys to avoid data loss.
+- **State Management (Zustand & Zod)**: The app uses a slice-based Zustand store (`src/state/store.ts`) with Zod validation. **NEVER** use React Context or `useState` in `App.tsx` for global domain data. All persistent state modifications must map to `src/state/schema.ts`. Avoid subscribing to an entire parent object if the component only needs a few primitive fields, as this causes unnecessary re-rendering.
+- **Minimize Prop-Drilling**: UI Components should generally pull their required state directly from the Zustand stores. However, passing objects down lists (e.g., mapping over a list of wheels) is perfectly acceptable and preferred over forcing every child component to independently subscribe to the store.
+- **Workshop Touch Ergonomics & Accessibility**: Minimum $44\text{px} \times 44\text{px}$ touch targets apply to *most* interactive elements, but use your best judgment if space is tight. **Accessibility is mandatory:** Visual `<label>`s must link to `<input>`s via `htmlFor`. Custom UI elements acting as checkboxes or switches must include `role="switch"`, `aria-checked`, `tabIndex={0}`, and `onKeyDown` handlers for Space/Enter to ensure full keyboard and screen reader support without breaking the premium aesthetic. **Viewport Targets**: Aim for a comfortable baseline of `390px`. If layout crowding occurs on smaller viewports, horizontal scrolling or wrapping is permitted. Full keyboard modal dismissal.
+- **Verification Gate**: Before finishing a major block of work or committing, ensure that `npm run typecheck`, `npm run lint`, and `npm run build` all pass with **0 errors**. You do not need to run these on every single iterative conversational turn.
+- **Comprehensive Reversions**: When removing or reverting a feature, remove all associated side-effects (orphaned classes, event listeners, etc.). Log the reversion as a new entry in `docs/CHANGELOG.md`. Do not retroactively scrub past entries.
+- **DOM Side-Effects & Layout Thrashing**: Never use raw, localized DOM mutations (e.g., `document.body.style.overflow = 'hidden'`) inside generic UI components. Always use centralized hooks (like `useBodyLock` or `useModalLayout`) to manage shared side-effects via reference counting. When dealing with `ResizeObserver` or scroll events, you MUST debounce the callback using `requestAnimationFrame` to prevent synchronous layout thrashing. Prefer pure CSS `calc()` over JavaScript-driven height calculations wherever possible.
 
 - **Scrollable Padding (Safari Fix)**: Never rely on `padding-bottom` (e.g., `pb-6`) on `overflow-y-auto` containers to provide bottom clearance for content, as mobile Safari ignores it. Instead, always append an invisible spacer block as the final child *inside* the scroll container.
 - **Flex Gap Math for Spacers**: When placing a spacer inside a `flex` container that uses `gap`, remember the spacer receives the gap spacing from the preceding element. To make the bottom scroll padding exactly match the container's gap, use a 1px spacer (e.g., `<div className="h-px shrink-0 w-full" />`).
-- **Parallel Refactoring (Expand & Contract)**: For major architectural changes, state migrations, or replacing complex components, do not overwrite the existing code immediately. Instead, build the new implementation in parallel (e.g., `[Component]V2`), verify it alongside the old one, and only rip out the legacy code once the new implementation is fully proven. *(Note: Skip this overhead for simple, isolated bug fixes or minor UI tweaks).*
+- **Experimentation (Feature Branches)**: For major architectural changes or new features with multiple approaches, prefer using standard git feature branches rather than building complex "V2" parallel components or developer toggles, unless you specifically need to A/B test live on the same build.
+- **Dynamic Default Labels in UI**: When building or updating developer tools, settings menus, or range sliders, the "Default" value displayed in the helper text or UI labels **must** dynamically reference the actual source of truth (e.g., the `initialState` constant in the Zustand store). Never use arbitrary hardcoded string values (e.g., "Default: 44px") in the JSX, so that when defaults are updated in the codebase, the UI accurately reflects the new baseline.
 
----
+- **Responsive Layout**: The UI should gracefully adapt to smaller viewports. While preventing horizontal scrolling is ideal, it is acceptable if necessary to accommodate standard touch targets or dense information (e.g., horizontally scrolling toolbars or tables).
+- **Single Component Per File (Strict Modularity)**: Non-trivial UI components SHOULD be extracted into their own dedicated files within the `src/components/` directory structure. **No "God Components":** Try to keep components focused. Layout orchestrators (like `App.tsx`) are naturally larger, but generic UI buttons and visual layers should be isolated.
+- **Native-First Fluidity & Modern Standards**: The app must feel like a premium native iOS/Android application, not a legacy website. When implementing layouts, transitions, or modals, you MUST prioritize modern web APIs and physics:
+  - **Reordering & Layout Shifts**: Use the View Transitions API (`document.startViewTransition`) instead of instantly snapping elements or relying on complex React unmounting.
+  - **Modals & Drawers**: Utilize the native Top Layer (`<dialog>` or `popover`) combined with `@starting-style` and `transition-behavior: allow-discrete`. Avoid older z-index wars and `opacity-0 delay-x` hacks.
+  - **Expandable Content**: Use CSS Grid (`grid-template-rows: 0fr -> 1fr`) for seamless accordion expansions, rather than arbitrary `max-height` hacks.
+  - **Touch Physics**: For swipeable elements (like drawers), use genuine spring physics and 1:1 gesture tracking (e.g., `framer-motion` or `use-gesture`) instead of arbitrary hardcoded `deltaY` thresholds that lack inertia.
 
-## 🛠️ Proactive Tool & Workflow Suggestions
 
-To maximize efficiency and collaboration, the AI assistant must proactively suggest optimal tools and slash commands based on the user's request context:
-
-- **Major Architecture & Design:** If the user proposes complex systemic changes (e.g., to the math engine or state schema), suggest using the `/grill-me` command to clarify edge cases and design decisions before writing code.
-- **Long-Running/Tedious Tasks:** If the request involves repetitive refactoring, large-scale file modifications, or extensive testing, remind the user about the `/goal` command for autonomous background execution.
-- **Deep Research/Planning:** If a task is highly ambiguous or requires multi-agent strategy, suggest the `/boost` command.
-- **Browser/UI Debugging:** When dealing with tricky CSS, layout bugs, or web APIs, remind the user that the AI can use Chrome DevTools to inspect the live DOM if the dev server is running.
-- **Terminal/System Tasks:** Before making assumptions about environment setup (e.g., installing new packages), offer to run the necessary terminal commands (e.g., `npm install`) directly on the user's behalf.

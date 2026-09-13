@@ -9,27 +9,13 @@
 
 | Job ID | Feature / Task | Status | Priority | Description & Next Action |
 | :--- | :--- | :--- | :--- | :--- |
-| **JOB-001** | `App.tsx` Modular Decomposition | `[COMPLETED]` | **HIGH** | Decomposed 2,900-line `App.tsx` into modular components (`src/components/calculator/`, `src/components/wheels/`, `src/components/presets/`, `src/components/settings/`). |
-| **JOB-002** | First-Run & Default Progression UX | `[COMPLETED]` | **HIGH** | Auto-populates / provides 1-click standard (Grind + Hone) progression so the user immediately gets calculated USB heights on initial load. |
-| **JOB-003** | Global MicroBump Removal | `[COMPLETED]` | **LOW** | Removed redundant global micro-bevel toggle and degree adjuster to streamline interface; per-step angle offsets remain for micro-beveling. |
-| **JOB-004** | Direct $h_n \leftrightarrow h_r$ Height Mode Toggle | `[COMPLETED]` | **HIGH** | Dedicated segmented control in the Global Setup card for switching between datum base height ($h_n$) and wheel surface height ($h_r$) in 1 click. |
-| **JOB-005** | Workshop Steppers & Mobile 2-Col Layout | `[COMPLETED]` | **HIGH** | Permanent 2-column side-by-side layout with touch-friendly $+/-$ steppers for Projection $A$ ($\pm 1\text{mm}$, $\pm 5\text{mm}$) and Angle $\beta$ ($\pm 0.5^\circ$, $\pm 1.0^\circ$). |
-| **JOB-006** | Multi-Machine Profiles System | `[COMPLETED]` | **MEDIUM** | Store multiple grinder configs (e.g. "T-8 Shop", "T-4 Mobile", "Jet Clone") with individual USB diameters and calibration offsets. |
-| **JOB-007** | Built-in Jig Catalog & Projection Calc | `[COMPLETED]` | **MEDIUM** | Provide jig presets (SVM-45, KJ-45 centering jig, etc.) and knife clamp projection calculators (blade width + clamp depth $\rightarrow A$). |
 | **JOB-008** | Large Readout Workshop HUD Mode | `[PROPOSED]` | **MEDIUM** | Fullscreen high-contrast view with massive $h_n$ readouts designed for viewing from 2 meters away while at the grinding wheel. |
 | **JOB-009** | Vitest Math Engine Unit Tests | `[PROPOSED]` | **MEDIUM** | Golden-master test suite validating Ton math against canonical Dutchman spreadsheet tables ([`docs/MATH_REFERENCE.md`](MATH_REFERENCE.md)). |
 | **JOB-010** | Wheel Wear & Trueing Logger | `[PROPOSED]` | **LOW** | Track wheel diameter reduction over time with trueing cut notes and quick $\Delta D$ adjustment. |
-| **JOB-011** | Device, Screen Size & Density Optimization | `[COMPLETED]` | **MEDIUM** | Define and enforce mobile viewport targets: 360px strict minimum (no overlap/wrapping) and 390px comfortable baseline. Audit existing UI components against these constraints. |
-| **JOB-012** | Projection Solver for Adjustable Jigs & Fixed USB | `[COMPLETED]` | **HIGH** | Exact closed-form inverse Dutchman solver calculating required knife projection $A$ for fixed USB bar ($h_n / h_r$) with header mode toggle and workshop steppers. |
-| **JOB-014** | Suggested Front USB Height & Custom Override for Projection Mode | `[COMPLETED]` | **HIGH** | Implemented suggested Front USB height matching Rear USB wheel distance ($CA$), high-contrast text display, custom setting checkbox override, and stepper removal. |
 | **JOB-015** | Direct Swap / Unadjusted Angle Calculator | `[PROPOSED]` | **LOW** | Add UI to display the exact angle hit when swapping wheels on the same base without adjusting the USB nut. The mathematical solver (`solveBetaForFixedSetup`) is already implemented in `tormek.ts`. |
-| **JOB-018** | Global Setup Drawer Migration | `[COMPLETED]` | **HIGH** | Migrate the global setup panel to an animated drawer with CSS grid transitions, pinning variables at the bottom and pulling the nib to the top on expansion. |
-| **JOB-019** | Preset Controls Migration | `[COMPLETED]` | **HIGH** | Migrate preset selection into the Global Setup Drawer and summary strip. Retained Save/Manage in Progression kebab menu pending Progression view overhaul. |
-| **JOB-020** | UI/UX Modernization: Live List & Setup Unification | `[COMPLETED]` | **HIGH** | Unify global settings by moving Machine selector and Preset Save/Manage into the Setup Drawer. Overhaul Progression view into a 'Live List' with inline accordion editing, removing separate edit modes and kebab menus. |
 | **JOB-021** | Gesture-Based Step Reordering (Drag and Drop) | `[PROPOSED]` | **MEDIUM** | Implement native-feeling touch drag-and-drop reordering for the Progression list (e.g. using `@dnd-kit`), adding drag handles to avoid clicking up/down buttons. |
-| **JOB-023** | Progression View Neumorphic Polish & Turn Calculation | `[COMPLETED]` | **HIGH** | Converted step cards to neumorphic UI, added thread pitch calculator for turns/marks, and implemented smart scroll-into-view.
-| **JOB-022** | Modern Sleek Dark Theme UI Visual Refactor Across All Components | `[COMPLETED]` | **HIGH** | Comprehensive visual refactor of all UI components (`ModalShell`, `ActionSheetPicker`, `MiniSelect`, `SavePresetDialog`, `PresetManagerModal`, `SettingsRootView`, `MeasurementSettingsView`, `HardwareManagerView`, `MachineManagerView`, `WheelManagerView`, `WheelFormFields`, `ImportExportPanel`, `CalibrationWizard`, `GlossaryPage`, `GlossaryCard`, `GrindDirToggle`, `ExpandToggle`, `GlobalSetupCard`, `App.tsx`, `index.css`) to match the dark zinc/amber aesthetic (`bg-[#262626]`, `rounded-3xl`, `border-white/10`, `rounded-2xl` inner wells, large responsive typography) established by `ProgressionView.tsx`. |
-| **JOB-024** | Global State & Architecture Overhaul (Zustand/Zod) | `[COMPLETED]` | **HIGH** | 4-tier architectural restructure. Migrated from monolithic App.tsx state to slice-based Zustand v5 store. Modernized local storage with 300ms debounce and Zod schema validation. Implemented two-tier strict isolation for the pure math engine. |
+| **JOB-028** | Full Hardware API Integration (Roadmap) | `[PROPOSED]` | **MEDIUM** | Extend initial `History API` back-button trap to full native hardware integration. Explore potential integrations with digital angle cubes (via WebBluetooth/WebUSB), digital calipers, physical keyboard steppers, or haptic feedback. |
+| **JOB-029** | Refine Versioning Logic | `[PROPOSED]` | **HIGH** | Discuss and implement bumping the version at the time of merging `dev` to `main`, and updating the build number on commits based on diffs. |
 
 
 ---
@@ -40,7 +26,6 @@
 | :--- | :--- | :--- | :--- | :--- |
 | *No open bugs* | — | — | All current quality gates and build prechecks are passing with 0 errors. | — |
 
-> *Tip: When testing at the bench, report any quirks or observations in chat to log them here as `BUG-xxx`.*
 
 ---
 
@@ -100,7 +85,7 @@ flowchart LR
 ### Phase 2: Multi-Machine Profiles & Advanced Grinding Features (Next Milestone)
 *Objective: Expand the math and configuration engine to handle multi-machine setups, alternative jigs, and advanced geometry.*
 
-- [ ] **2.1 Multi-Machine Profile Management (`JOB-006`)**
+- [x] **2.1 Multi-Machine Profile Management (`JOB-006`)**
 - [x] **2.2 Jig & Knife Projection Helpers (`JOB-007`)**
 - [ ] **2.3 Large Readout Workshop HUD Mode (`JOB-008`)**
 
@@ -110,7 +95,7 @@ flowchart LR
 
 | Date | Topic / Change | Rationale / Notes |
 | :--- | :--- | :--- |
-| **2026-09-06** | Defined Viewport Targets (`JOB-011`) | Standardized minimum supported viewport at 360px (base Android) with strict no-overlap/no-wrap rules, and 390px as the comfortable target (iPhone 13+/Pixel). |
+| **2026-09-06** | Defined Viewport Targets (`JOB-011`) | Standardized minimum supported viewport at 360px (base Android) with guidelines to minimize overlap/wrapping, and 390px as the comfortable target (iPhone 13+/Pixel). |
 | **2026-09-03** | Completed Modern Sleek Dark Theme UI Refactor (`JOB-022`) | System-wide visual overhaul across all modals, dialogs, managers, settings views, calibration wizard, glossary, and setup drawer to establish 100% aesthetic consistency with `ProgressionView.tsx` dark zinc/amber design tokens (`bg-[#262626]`, `border-white/10`, `rounded-3xl`, responsive scaling). Pass all typecheck, lint, and build verification gates with 0 errors. |
 | **2026-09-01** | Completed Built-in Jig Catalog & Projection Calc (`JOB-007`) | Added Protrusion ($P_b$) mode to the Global Setup card. Expanded Hardware Settings to include Jig Base Length, Adjustable Collar toggle, and Thread Pitch. Included automated projection-to-protrusion solver output indicating exact Jig collar mm and turns to hit a target angle in Projection Solver mode. Relocated Reference Base toggle to App Settings. |
 | **2026-08-28** | Completed Suggested Front USB Height (`JOB-014`) | Added pure geometric solver matching axle-to-USB distance ($CA$) between front and rear bases in Projection Mode so projection $A$ remains identical across matched wheel operations without reclamping. Cleaned UI with high-contrast text readout, custom setting checkbox override, and removed front steppers. |

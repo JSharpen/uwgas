@@ -6,9 +6,28 @@
 
 ## [Unreleased] (Session: Developer Mode & UI Scaling)
 
+### 🛠️ Architecture & UI Refactor: Global Setup Drawer
+- **Decomposed the "God Component"**: Split the monolithic `GlobalSetupCard.tsx` into strict, single-responsibility files (`GlobalSetupCard.tsx`, `GlobalSetupSummaryPill.tsx`, `GlobalSetupInputs.tsx`, and `StepperButtonGroup.tsx`).
+- **Eliminated Zustand Blob Anti-Pattern**: Replaced the global state subscription (`useStore(s => s.global)`) with `useShallow` to prevent catastrophic re-renders across the drawer. Migrated ephemeral UI state (`activeUsbTab`, `activeSheet`) to `useUIStore.ts`.
+- **Removed JS Layout Thrashing**: Replaced synchronous `getComputedStyle` layout thrashing in the `ResizeObserver` with a `requestAnimationFrame` debouncer. Replaced the generic `document.body.style.overflow` hack with a centralized, reference-counted `useBodyLock` hook.
+- **Workshop Ergonomics & A11y**: 
+  - Enhanced touch targets: the "Custom/Auto" toggle is now a `min-h-[44px]` rounded-xl button, and the "Rear/Front" pill switch now includes `role="switch"`, `aria-checked`, and `tabIndex={0}` for proper keyboard navigability and A11y support.
+
+### 💄 UI & Native App Feel Overhaul (Animations)
+- **Global Setup Drawer Physics (`framer-motion`)**: Replaced the legacy manual gesture math and CSS `opacity-0 delay-x` transitions with genuine iOS-style drawer physics. Implemented `<motion.div>` with `drag="y"`, `dragConstraints`, and a velocity-based `onDragEnd` resolver.
+- **Top Layer Native Modals**: Refactored `ModalShell.tsx` (and consequently `PresetManagerModal` and `SavePresetDialog`) to utilize the modern HTML5 `<dialog>` element via `.showModal()`. Upgraded the backdrop to `backdrop:bg-black/75 backdrop:backdrop-blur-sm` utilizing native pseudo-elements.
+- **Progression List View Transitions**: Wrapped step reordering (Up/Down) and step deletion events inside `document.startViewTransition()` along with dynamic `viewTransitionName` properties on the step cards. The browser now performs flawless, native gliding reorder animations.
+- **Card Expansion Accordion (CSS Grid)**: Eliminated the buggy `max-h-[500px]` transition hack from `ProgressionView.tsx` which caused non-linear easing. Replaced with modern CSS Grid (`grid-template-rows: 0fr -> 1fr`) applied dynamically based on `isExpanded` state, ensuring perfect content-hugging expansions.
+
 ### 🚀 Added
 - **Developer Suite Architecture**: Expanded Developer Mode into a full drill-down developer suite with categories for "UI & Theme Lab" and "State & Storage Tools".
 - **UI & Theme Scalability Adjustments**: Added dynamic CSS custom properties for `--pill-bottom` (controls setup drawer resting location), `--top-bar-thickness` (sticky header profile), and `--ui-radius` (global border-radius overrides for `.rounded-[size]`). Connected these to real-time adjustable sliders in the Developer UI Theme Lab.
+- **Scroll Fades**: Added dynamic mask fades using `#09090b` box-shadows to smoothly fade out progression list content as it scrolls underneath the top `ContextBar` (`maskTopFade`) and the bottom `GlobalSetupCard` summary pill (`maskBottomFade`).
+- **Context Bar & Summary Pill Highlights**: 
+  - Fixed a stacking context bug where solid `#09090b` mask blocks (using `before:-z-10`) were clipping the `ring-1` highlights on the `ContextBar`. Replaced with independent `z-[45]` and `z-[15]` sibling `div` masks in `App.tsx` and `CalculatorView.tsx`.
+  - Refactored inline `boxShadow` styles to use `--tw-shadow` to preserve Tailwind's native ring rendering.
+  - Applied the `border-amber-500/30 ring-1 ring-amber-500/20` styling to the `GlobalSetupCard` summary pill to match the Context Bar's glowing aesthetic.
+  - Removed the `activePreset.name` span from the summary pill to reduce vertical height and visual clutter (preset name remains visible in the Context Bar).
 
 - **Semantic Debug Outlines**: Added a toggle to inject `.debug-layouts` which outlines major semantic DOM elements to assist in touch target and responsive testing.
 

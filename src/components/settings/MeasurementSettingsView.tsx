@@ -1,5 +1,5 @@
 import { useStore } from '../../state/store';
-import { useUIStore } from '../../state/uiStore';
+
 
 export type MeasurementSettingsViewProps = Record<string, never>;
 
@@ -10,16 +10,8 @@ export default function MeasurementSettingsView() {
   const useProtrusionMode = useStore((s) => s.global.useProtrusionMode);
   const showAdvancedStepOverrides = useStore((s) => s.global.showAdvancedStepOverrides);
   const setGlobal = useStore((s) => s.setGlobal);
-  const setSettingsView = useUIStore((s) => s.setSettingsView);
-  const onBack = () => setSettingsView('root');
   return (
     <section className="flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-200 max-w-3xl mx-auto pb-20">
-      <div className="flex items-center gap-3">
-        <button type="button" onClick={onBack} className="text-neutral-400 hover:text-white p-2 -ml-2">
-          &larr; Back
-        </button>
-        <h2 className="text-lg font-bold u-text">Measurement</h2>
-      </div>
 
       <div className="flex flex-col gap-4">
         {/* Calculation Solver Mode */}

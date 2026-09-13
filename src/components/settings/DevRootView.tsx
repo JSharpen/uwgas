@@ -5,8 +5,9 @@ import { useUIStore } from '../../state/uiStore';
 export default function DevRootView() {
   const setSettingsView = useUIStore((s) => s.setSettingsView);
 
-  const sections: { id: 'dev-ui' | 'dev-state'; label: string; desc: string }[] = [
+  const sections: { id: 'dev-ui' | 'dev-interaction' | 'dev-state'; label: string; desc: string }[] = [
     { id: 'dev-ui', label: 'UI & Theme Lab', desc: 'Scaling sliders, layout testing' },
+    { id: 'dev-interaction', label: 'Setup Interaction Style', desc: 'Toggle between drawer, modal, and accordion styles' },
     { id: 'dev-state', label: 'State & Storage Tools', desc: 'State injection, console logs, nuke' },
   ];
 

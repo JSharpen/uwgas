@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useBodyLock } from '../../hooks/useBodyLock';
 
 type Option = {
   value: string;
@@ -17,6 +18,7 @@ type Props = {
 
 export default function ActionSheetPicker({ isOpen, onClose, title, options, value, onChange }: Props) {
   const [isClosing, setIsClosing] = React.useState(false);
+  useBodyLock(isOpen);
 
   React.useEffect(() => {
     if (isOpen) {

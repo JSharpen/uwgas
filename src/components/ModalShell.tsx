@@ -23,18 +23,40 @@ export function ModalShell({
   closing = false,
 }: ModalShellProps) {
   const hasSubtitle = Boolean(subtitle);
+  const dialogRef = React.useRef<HTMLDialogElement>(null);
+
+  React.useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open && !closing) {
+      dialog.showModal();
+    }
+  }, [closing]);
+
+  // Handle native escape key
+  React.useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const handleCancel = (e: Event) => {
+      e.preventDefault();
+      onClose();
+    };
+    dialog.addEventListener('cancel', handleCancel);
+    return () => dialog.removeEventListener('cancel', handleCancel);
+  }, [onClose]);
 
   return (
-    <div
+    <dialog
+      ref={dialogRef}
       className={
-        'fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/75 backdrop-blur-sm p-4 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+16px)] min-h-[100dvh] motion-overlay ' +
-        (closing ? 'motion-overlay--closing' : '')
+        'z-50 m-auto overflow-y-auto bg-transparent p-4 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+16px)] motion-overlay ' +
+        (closing ? 'motion-overlay--closing ' : '') + 
+        'backdrop:bg-black/75 backdrop:backdrop-blur-sm'
       }
       style={overlayStyle}
     >
       <div
         className={
-          'relative w-full max-w-lg neu-convex rounded-3xl border border-black/40 shadow-2xl p-6 flex flex-col max-h-[90vh] overflow-y-auto motion-dialog ' +
+          'relative w-full max-w-lg neu-convex rounded-3xl border border-black/40 shadow-2xl p-6 flex flex-col max-h-[90vh] overflow-y-auto motion-dialog mx-auto ' +
           (closing ? 'motion-dialog--closing' : '')
         }
         style={dialogStyle}
@@ -70,7 +92,7 @@ export function ModalShell({
           </div>
         ) : null}
       </div>
-    </div>
+    </dialog>
   );
 }
 

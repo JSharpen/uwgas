@@ -49,7 +49,7 @@ export default function MachineManagerView() {
     setEditingMachineId(null);
   };
 
-  const openAdd = () => {
+  const openAdd = React.useCallback(() => {
     setDraftName('');
     setDraftAxleDiameter(12);
     setDraftConstants({
@@ -57,7 +57,12 @@ export default function MachineManagerView() {
       front: { hc: 0, o: 0 }
     });
     setIsAddModalOpen(true);
-  };
+  }, []);
+
+  React.useEffect(() => {
+    window.addEventListener('openAddMachineModal', openAdd);
+    return () => window.removeEventListener('openAddMachineModal', openAdd);
+  }, [openAdd]);
 
   const closeAdd = () => {
     setIsAddModalOpen(false);
@@ -106,16 +111,6 @@ export default function MachineManagerView() {
 
   return (
     <section className="flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-200 max-w-3xl mx-auto pb-20 w-full">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-wide">Machine Manager</h2>
-        <button
-          type="button"
-          className="px-4 h-11 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider rounded-2xl shadow-sm transition flex items-center justify-center cursor-pointer"
-          onClick={openAdd}
-        >
-          + Add Machine
-        </button>
-      </div>
 
       <div className="flex flex-col gap-4">
         {machines.map((m, idx) => (

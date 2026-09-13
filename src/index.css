@@ -26,7 +26,7 @@ html, body {
 
 /* Your global tweaks */
 :root {
-  font-size: calc(16px * var(--ui-scale, 1));
+  font-size: calc(13.6px * var(--ui-scale, 1));
   line-height: 1.4;
   font-weight: 400;
   text-rendering: optimizeLegibility;

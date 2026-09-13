@@ -1,0 +1,25 @@
+        {/* EXPERIMENTAL FEATURES */}
+        <div className="flex flex-col gap-4 border border-white/10 rounded-3xl p-4 bg-white/5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-amber-500/80">Experimental Top Lip</h3>
+          
+          <div className="flex flex-col gap-3">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-semibold text-white/90">
+                Drawer Top Style
+              </label>
+              <select 
+                className="bg-black border border-white/10 text-xs px-2 py-1 rounded-lg text-amber-400 font-mono"
+                value={uiState.drawerTopStyle}
+                onChange={(e) => uiState.setDrawerTopStyle(e.target.value as any)}
+              >
+                <option value="flat">Hard Cutoff (Flat)</option>
+                <option value="dynamic-fade">Dynamic Scroll Fade</option>
+                <option value="shadow-lip">Drop-Shadow Lip</option>
+                <option value="blur-header">Glass Blur Header</option>
+              </select>
+            </div>
+            <p className="text-xs text-white/40 leading-snug">
+              Evaluate different physical structures for the drawer's top edge to solve the "unfinished cutoff" problem.
+            </p>
+          </div>
+        </div>

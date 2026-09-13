@@ -1,0 +1,14 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -1,9 +1,10 @@
+ import * as React from 'react';
+ import { useUIStore } from './state/uiStore';
+ import { useDevStore } from './state/devStore';
+ import { IconCalculator, IconDisc, IconSettings } from './icons';
+ import { APP_VERSION, APP_VERSION_DISPLAY } from './version';
++import CalculatorView from './views/CalculatorView';
+ import WheelManagerView from './components/wheels/WheelManagerView';
+ import SettingsView from './views/SettingsView';
+ import { PresetManagerModal } from './components/presets/PresetManagerModal';
+ import { SavePresetDialog } from './components/presets/SavePresetDialog';
+ import { ContextBar } from './components/layout/ContextBar';

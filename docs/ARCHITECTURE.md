@@ -102,10 +102,10 @@ To guarantee strict data safety and absolute backwards compatibility, UWGAS uses
 
 When the application boots (or when a user imports a `.json` backup), the Zustand `merge` function intercepts the raw data from `localStorage` and passes it through the Zod schema.
 1. **Validation**: Zod strips out any corrupted or strictly invalid data (e.g., `NaN` resulting from a bad math calculation).
-2. **Seamless Upgrades**: If a user's data is from an older version of the app and is missing newly added features (e.g., a new "grit" property on wheels), Zod automatically injects safe default values (`.optional()` or `.catch()`).
-3. **Legacy Fallback**: This ensures the app never crashes on boot due to outdated state schemas, and user data is permanently protected across app updates.
+2. **Seamless Additions**: If a user's data is from an older version of the app and is missing newly added features (e.g., a new "grit" property on wheels), Zod automatically injects safe default values (using `.optional()` or `.default()`).
+3. **Data Loss Warning (`.catch()`)**: Be extremely careful with `.catch()`. If you change a structural key (e.g., renaming `grindAngle` to `targetAngle`), Zod's `.catch()` will not migrate the data; it will discard the old data and insert the factory default. Use proper migration logic in `storage.ts` for structural changes.
 
-### Dual Solver Architectural Flow
+### Solver Architectural Flow
 1. **Height Solver Mode (`calcMode: 'height'`)**:
    - Inputs: Projection $A$, Target Angle $\beta$, step offsets $\Delta\beta$.
    - Output: Calculated USB heights ($h_n$ base datum, $h_r$ wheel surface).
@@ -118,7 +118,7 @@ When the application boots (or when a user imports a `.json` backup), the Zustan
 | Schema Version | Storage Key | Migration Strategy |
 | :--- | :--- | :--- |
 | **Legacy v0** | Multiple Keys | Unversioned synchronous localStorage. Migrated seamlessly by Zustand initialization. |
-| **`v1` (Zustand)** | `uwgas_app_state_v1` | Unified debounced JSON. Schema changes managed via Zod `.catch()` and `.optional()` fallbacks. |
+| **`v1` (Zustand)** | `uwgas_app_state_v1` | Unified debounced JSON. Schema changes managed via proper storage migrations and Zod `.optional()` fallbacks. |
 
 ### Migration Rules
 - **NEVER** introduce breaking changes to the state. Always update `src/state/schema.ts` to gracefully handle legacy user data.
@@ -185,9 +185,9 @@ The styling uses **Tailwind CSS v4** with a custom CSS variable design token lay
   - `--color-text-primary`, `--color-text-muted`, `--color-accent`
   - `--color-border-subtle`, `--color-border-focus`
 - **Workshop Usability Standards**:
-  - Minimum touch target: $44\text{px} \times 44\text{px}$ for interactive elements.
+  - Minimum touch target: Aim for $44\text{px} \times 44\text{px}$ for interactive elements, but use judgment if space is tight.
   - **Viewport Constraints**:
-    - **Strict Minimum (360px)**: Covers base Androids (e.g., Galaxy S23). Crowding is permitted, but overlapping, wrapping, or layout breaks are strictly prohibited.
+    - **Minimum Target (360px)**: Covers base Androids (e.g., Galaxy S23). Try to keep content visible without wrapping or overlapping. If a row of buttons or complex UI cannot fit, prefer horizontal scrolling or wrapping over breaking the layout.
     - **Comfortable Baseline (390px - 393px)**: Target for modern devices (iPhone 13+, Pixel 8). UI should feel spacious and balanced.
   - Large-scale high-contrast monospace fonts for numerical readouts ($h_n, h_r$).
   - Full keyboard navigation support (Enter/Escape modal handling, number incrementers).

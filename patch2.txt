@@ -1,0 +1,6 @@
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [isScrolled, setIsScrolled] = React.useState(false);
+  const handleScroll = React.useCallback(() => {
+    if (!scrollRef.current) return;
+    setIsScrolled(scrollRef.current.scrollTop > 10);
+  }, []);

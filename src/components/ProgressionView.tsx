@@ -30,6 +30,7 @@ const StepCard = React.memo(function StepCard({
   const heightMode = useStore((s) => s.heightMode);
   const isProjectionMode = useStore((s) => s.global.calcMode === 'projection');
   const showAdvancedStepOverrides = useStore((s) => s.global.showAdvancedStepOverrides);
+  const globalMachineId = useStore((s) => s.global.activeMachineId);
   const globalUsbId = useStore((s) => s.global.activeUsbId);
   const globalJigId = useStore((s) => s.global.activeJigId);
   const defaultMachineId = useStore((s) => s.defaultMachineId);
@@ -66,14 +67,24 @@ const StepCard = React.memo(function StepCard({
     }
   };
 
+  const effectiveSessionMachineId = globalMachineId || defaultMachineId;
+
   const effectiveMachine = r.step?.machineId
     ? machines.find(m => m.id === r.step!.machineId)
-    : machines.find(m => m.id === defaultMachineId);
+    : machines.find(m => m.id === effectiveSessionMachineId);
 
   const angleOffset = r.step?.angleOffset ?? 0;
   const hasOffset = angleOffset !== 0;
   const effectiveUsb = usbs.find(u => u.id === (r.step?.usbId || globalUsbId));
   const effectiveJig = jigs?.find(j => j.id === globalJigId);
+
+  const prevEffectiveMachineId = index === 0 ? null : (prevR?.step?.machineId || effectiveSessionMachineId);
+  const currEffectiveMachineId = r.step?.machineId || effectiveSessionMachineId;
+  const isMachineChanged = currEffectiveMachineId !== prevEffectiveMachineId;
+
+  const prevEffectiveUsbId = index === 0 ? null : (prevR?.step?.usbId || globalUsbId);
+  const currEffectiveUsbId = r.step?.usbId || globalUsbId;
+  const isUsbChanged = currEffectiveUsbId !== prevEffectiveUsbId;
 
   let deltaText = null;
   let deltaTurnsText = null;
@@ -114,11 +125,33 @@ const StepCard = React.memo(function StepCard({
     }
   }
 
+  const handleMoveStep = (e: React.MouseEvent, idx: number, dir: 1 | -1) => {
+    e.stopPropagation();
+    if (!document.startViewTransition) {
+      onMoveStep?.(idx, dir);
+      return;
+    }
+    document.startViewTransition(() => {
+      onMoveStep?.(idx, dir);
+    });
+  };
+
+  const handleDeleteStep = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!document.startViewTransition) {
+      onDeleteStep?.(id);
+      return;
+    }
+    document.startViewTransition(() => {
+      onDeleteStep?.(id);
+    });
+  };
+
   return (
     <div
       ref={cardRef}
       className="relative flex flex-col motion-list-item transition-all duration-300 group scroll-m-[120px] sm:scroll-m-[160px]"
-      style={{ '--motion-order': index } as React.CSSProperties}
+      style={{ '--motion-order': index, viewTransitionName: `step-${stepId}` } as React.CSSProperties}
     >
       {/* ===== View State (Clickable to Expand) ===== */}
       <div 
@@ -155,6 +188,22 @@ const StepCard = React.memo(function StepCard({
               {formatDeg(r.betaEffDeg)}° / {r.step?.base === 'front' ? 'FRONT' : 'REAR'}
             </span>
           </div>
+
+          {/* Row 3: Hardware Pills */}
+          {(showAdvancedStepOverrides || r.step?.machineId || r.step?.usbId) && (
+            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+              {(showAdvancedStepOverrides || r.step?.machineId) && effectiveMachine && (
+                <span className={`rounded px-1.5 py-0.5 text-[9px] font-mono truncate text-center transition-all ${isMachineChanged ? 'bg-amber-400 text-black shadow-[0_0_8px_rgba(251,191,36,0.3)] font-bold' : 'neu-concave border border-white/5 text-white/40'}`}>
+                  {effectiveMachine.name}
+                </span>
+              )}
+              {(showAdvancedStepOverrides || r.step?.usbId) && effectiveUsb && (
+                <span className={`rounded px-1.5 py-0.5 text-[9px] font-mono truncate text-center transition-all ${isUsbChanged ? 'bg-amber-400 text-black shadow-[0_0_8px_rgba(251,191,36,0.3)] font-bold' : 'neu-concave border border-white/5 text-white/40'}`}>
+                  {effectiveUsb.name}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Massive USB/Projection Output */}
@@ -175,26 +224,15 @@ const StepCard = React.memo(function StepCard({
           
           <div className="flex flex-col items-end mt-1">
             {deltaTurnsText ? (
-               <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-white/30 font-bold uppercase tracking-widest">{deltaText}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded neu-concave border border-black/40 text-amber-400 font-bold tracking-widest">{deltaTurnsText}</span>
+               <div className="flex flex-col items-end gap-1">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded neu-concave border border-black/40 text-amber-400 font-bold tracking-wide">{deltaTurnsText}</span>
+                  <span className="text-[10px] text-white/30 font-bold uppercase tracking-wide">{deltaText}</span>
                </div>
             ) : deltaText ? (
-              <span className="text-[10px] text-amber-400 uppercase tracking-widest font-bold">
+              <span className="text-[10px] text-amber-400 uppercase tracking-wide font-bold">
                 {deltaText}
               </span>
             ) : null}
-            
-            {(showAdvancedStepOverrides || r.step?.usbId) && effectiveUsb && (
-              <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-0.5">
-                {effectiveUsb.name}
-              </span>
-            )}
-            {(showAdvancedStepOverrides || r.step?.machineId) && effectiveMachine && (
-              <span className="text-[10px] text-white/60 uppercase tracking-widest font-bold mt-0.5">
-                {effectiveMachine.name}
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -202,108 +240,115 @@ const StepCard = React.memo(function StepCard({
       {/* ===== Edit State (Collapsible) ===== */}
       {r.step && onUpdateStep && (
         <div 
-          className={`relative z-10 neu-concave overflow-hidden transition-all duration-300 ease-in-out border border-black/40 border-t-0 rounded-b-3xl -mt-6 pt-6 ${isExpanded ? 'max-h-[500px] opacity-100 pointer-events-auto shadow-inner' : 'max-h-0 opacity-0 border-transparent pointer-events-none'}`}
-          
+          className={`relative z-10 neu-concave transition-[grid-template-rows,opacity,border-color] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] border-b border-l border-r border-t-0 rounded-b-3xl -mt-6 pt-6 grid ${isExpanded ? 'grid-rows-[1fr] opacity-100 pointer-events-auto shadow-inner border-black/40' : 'grid-rows-[0fr] opacity-0 border-transparent pointer-events-none'}`}
         >
-          <div className="px-4 sm:px-5 pb-5 pt-3 flex flex-col gap-4">
-            
-            {/* Steppers */}
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="flex-1 flex flex-col gap-2 w-full">
-                <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1 flex justify-between">
-                  <span>Wheel Diameter</span>
-                  <span className="text-white/30 hover:text-white cursor-pointer" onClick={() => setSheetConfig({ type: 'wheel', stepId })}>Change</span>
-                </label>
-                <div className="neu-concave border border-black/40 rounded-2xl flex items-center justify-between p-1 shadow-inner">
-                  <button 
-                    className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
-                    onClick={() => onUpdateWheel?.(r.wheel.id, { D: Math.max(100, (r.wheel.D || 250) - 1) })}
-                  >-</button>
-                  <span className="text-sm tabular-nums font-bold text-white tracking-wider">{r.wheel.D?.toFixed(1) || 250} mm</span>
-                  <button 
-                    className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
-                    onClick={() => onUpdateWheel?.(r.wheel.id, { D: Math.min(300, (r.wheel.D || 250) + 1) })}
-                  >+</button>
-                </div>
-              </div>
-
-              <div className="flex-1 flex flex-col gap-2 w-full">
-                <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1 flex justify-between">
-                  <span>Micro-bevel (Δ°)</span>
-                  <span className="text-white/30 hover:text-white cursor-pointer" onClick={() => onUpdateStep(stepId, { angleOffset: 0 })}>Reset</span>
-                </label>
-                <div className="neu-concave border border-black/40 rounded-2xl flex items-center justify-between p-1 shadow-inner">
-                  <button 
-                    className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
-                    onClick={() => onUpdateStep(stepId, { angleOffset: Math.max(-5, (r.step!.angleOffset || 0) - 0.5) })}
-                  >-</button>
-                  <span className="text-sm tabular-nums font-bold text-white tracking-wider">{(r.step!.angleOffset || 0) > 0 ? '+' : ''}{(r.step!.angleOffset || 0).toFixed(1)}°</span>
-                  <button 
-                    className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
-                    onClick={() => onUpdateStep(stepId, { angleOffset: Math.min(5, (r.step!.angleOffset || 0) + 0.5) })}
-                  >+</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Base Override */}
-            <div className="flex flex-col gap-2 w-full">
-              <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Sharpening Base</label>
-              <button 
-                className="flex items-center justify-between w-full p-3.5 neu-button rounded-2xl text-xs font-semibold text-white/90 transition active:scale-[0.98]"
-                onClick={() => setSheetConfig({ type: 'base', stepId })}
-              >
-                <span className="truncate tracking-wide">{r.step?.base === 'front' ? 'Front Base (Edge Trailing)' : 'Rear Base (Edge Leading)'}</span>
-                <span className="text-white/30 ml-2">▼</span>
-              </button>
-            </div>
-
-            {/* Advanced Step Overrides */}
-            {showAdvancedStepOverrides && (
-              <div className="flex items-center gap-4 pt-1">
+          <div className="overflow-hidden">
+            <div className="px-4 sm:px-5 pb-5 pt-3 flex flex-col gap-4">
+              
+              {/* Steppers */}
+              <div className="flex flex-col sm:flex-row items-center gap-4">
                 <div className="flex-1 flex flex-col gap-2 w-full">
-                  <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Machine Override</label>
-                  <button 
-                    className="flex items-center justify-between w-full p-3 neu-button rounded-2xl text-[11px] font-semibold text-white/80 transition active:scale-[0.98]"
-                    onClick={() => setSheetConfig({ type: 'machine', stepId })}
-                  >
-                    <span className="truncate">{effectiveMachine?.name || 'Default Machine'}</span>
-                    <span className="text-white/30 ml-2">▼</span>
-                  </button>
+                  <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1 flex justify-between">
+                    <span>Wheel Diameter</span>
+                    <span className="text-white/30 hover:text-white cursor-pointer" onClick={() => setSheetConfig({ type: 'wheel', stepId })}>Change</span>
+                  </label>
+                  <div className="neu-concave border border-black/40 rounded-2xl flex items-center justify-between p-1 shadow-inner">
+                    <button 
+                      className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
+                      onClick={() => onUpdateWheel?.(r.wheel.id, { D: Math.max(100, (r.wheel.D || 250) - 1) })}
+                    >-</button>
+                    <span className="text-sm tabular-nums font-bold text-white tracking-wider">{r.wheel.D?.toFixed(1) || 250} mm</span>
+                    <button 
+                      className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
+                      onClick={() => onUpdateWheel?.(r.wheel.id, { D: Math.min(300, (r.wheel.D || 250) + 1) })}
+                    >+</button>
+                  </div>
                 </div>
-                <div className="flex-1 flex flex-col gap-2 w-full">
-                  <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Support Bar</label>
-                  <button 
-                    className="flex items-center justify-between w-full p-3 neu-button rounded-2xl text-[11px] font-semibold text-white/80 transition active:scale-[0.98]"
-                    onClick={() => setSheetConfig({ type: 'usb', stepId })}
-                  >
-                    <span className="truncate">{effectiveUsb?.name || 'Default USB'}</span>
-                    <span className="text-white/30 ml-2">▼</span>
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {/* Actions Bar */}
-            <div className="flex justify-between items-center mt-3 pt-5 border-t border-black/40">
-              <div className="flex gap-3">
-                <button 
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition ${index === 0 ? 'bg-black/20 opacity-30 cursor-not-allowed text-white/30' : 'neu-button text-white active:scale-95'}`}
-                  onClick={(e) => { e.stopPropagation(); onMoveStep?.(index, -1); }}
-                  disabled={index === 0}
-                >↑</button>
-                <button 
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition ${index === totalSteps - 1 ? 'bg-black/20 opacity-30 cursor-not-allowed text-white/30' : 'neu-button text-white active:scale-95'}`}
-                  onClick={(e) => { e.stopPropagation(); onMoveStep?.(index, 1); }}
-                  disabled={index === totalSteps - 1}
-                >↓</button>
+                <div className="flex-1 flex flex-col gap-2 w-full">
+                  <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1 flex justify-between">
+                    <span>Micro-bevel (Δ°)</span>
+                    <span className="text-white/30 hover:text-white cursor-pointer" onClick={() => onUpdateStep(stepId, { angleOffset: 0 })}>Reset</span>
+                  </label>
+                  <div className="neu-concave border border-black/40 rounded-2xl flex items-center justify-between p-1 shadow-inner">
+                    <button 
+                      className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
+                      onClick={() => onUpdateStep(stepId, { angleOffset: Math.max(-5, (r.step!.angleOffset || 0) - 0.5) })}
+                    >-</button>
+                    <span className="text-sm tabular-nums font-bold text-white tracking-wider">{(r.step!.angleOffset || 0) > 0 ? '+' : ''}{(r.step!.angleOffset || 0).toFixed(1)}°</span>
+                    <button 
+                      className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
+                      onClick={() => onUpdateStep(stepId, { angleOffset: Math.min(5, (r.step!.angleOffset || 0) + 0.5) })}
+                    >+</button>
+                  </div>
+                </div>
               </div>
-              <button 
-                className="px-5 h-12 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 font-bold text-xs transition active:scale-95 tracking-widest uppercase"
-                onClick={(e) => { e.stopPropagation(); onDeleteStep?.(stepId); }}
-              >
-                Delete
-              </button>
+
+              {/* Base Override */}
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Sharpening Base</label>
+                <button 
+                  className="flex items-center justify-between w-full p-3.5 neu-button rounded-2xl text-xs font-semibold text-white/90 transition active:scale-[0.98]"
+                  onClick={() => setSheetConfig({ type: 'base', stepId })}
+                >
+                  <span className="truncate tracking-wide">{r.step?.base === 'front' ? 'Front Base (Edge Trailing)' : 'Rear Base (Edge Leading)'}</span>
+                  <span className="text-white/30 ml-2">▼</span>
+                </button>
+              </div>
+
+              {/* Advanced Step Overrides */}
+              {showAdvancedStepOverrides && (
+                <div className="flex items-center gap-4 pt-1">
+                  <div className="flex-1 flex flex-col gap-2 w-full">
+                    <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Machine Override</label>
+                    <button 
+                      className="flex items-center justify-between w-full p-3 neu-button rounded-2xl text-[11px] font-semibold text-white/80 transition active:scale-[0.98]"
+                      onClick={() => setSheetConfig({ type: 'machine', stepId })}
+                    >
+                      <span className="truncate">
+                        {r.step?.machineId ? <span className="text-amber-400">Override: </span> : <span className="text-white/40">Inherit: </span>}
+                        {effectiveMachine?.name || 'Default Machine'}
+                      </span>
+                      <span className="text-white/30 ml-2">▼</span>
+                    </button>
+                  </div>
+                  <div className="flex-1 flex flex-col gap-2 w-full">
+                    <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Support Bar</label>
+                    <button 
+                      className="flex items-center justify-between w-full p-3 neu-button rounded-2xl text-[11px] font-semibold text-white/80 transition active:scale-[0.98]"
+                      onClick={() => setSheetConfig({ type: 'usb', stepId })}
+                    >
+                      <span className="truncate">
+                        {r.step?.usbId ? <span className="text-amber-400">Override: </span> : <span className="text-white/40">Inherit: </span>}
+                        {effectiveUsb?.name || 'Default USB'}
+                      </span>
+                      <span className="text-white/30 ml-2">▼</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions Bar */}
+              <div className="flex justify-between items-center mt-3 pt-5 border-t border-black/40">
+                <div className="flex gap-3">
+                  <button 
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center transition ${index === 0 ? 'bg-black/20 opacity-30 cursor-not-allowed text-white/30' : 'neu-button text-white active:scale-95'}`}
+                    onClick={(e) => handleMoveStep(e, index, -1)}
+                    disabled={index === 0}
+                  >↑</button>
+                  <button 
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center transition ${index === totalSteps - 1 ? 'bg-black/20 opacity-30 cursor-not-allowed text-white/30' : 'neu-button text-white active:scale-95'}`}
+                    onClick={(e) => handleMoveStep(e, index, 1)}
+                    disabled={index === totalSteps - 1}
+                  >↓</button>
+                </div>
+                <button 
+                  className="px-5 h-12 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 font-bold text-xs transition active:scale-95 tracking-widest uppercase"
+                  onClick={(e) => handleDeleteStep(e, stepId)}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         </div>

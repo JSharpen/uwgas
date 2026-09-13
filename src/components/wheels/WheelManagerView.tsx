@@ -51,7 +51,7 @@ export function WheelManagerView() {
     [editingWheelId, wheels]
   );
 
-  const openAddWheelModal = () => {
+  const openAddWheelModal = React.useCallback(() => {
     setNewWheelDraft({
       name: '',
       D: NaN,
@@ -62,7 +62,12 @@ export function WheelManagerView() {
     });
     setIsAddWheelModalVisible(true);
     setIsAddWheelModalClosing(false);
-  };
+  }, []);
+
+  React.useEffect(() => {
+    window.addEventListener('openAddWheelModal', openAddWheelModal);
+    return () => window.removeEventListener('openAddWheelModal', openAddWheelModal);
+  }, [openAddWheelModal]);
 
   const closeAddWheelModal = () => {
     setIsAddWheelModalClosing(true);
@@ -108,16 +113,6 @@ export function WheelManagerView() {
 
   return (
     <section className="flex flex-col gap-6 max-w-3xl mx-auto pb-20 w-full">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-wide">Wheel Manager</h2>
-        <button
-          type="button"
-          className="px-4 h-11 bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider rounded-2xl shadow-sm transition flex items-center justify-center cursor-pointer"
-          onClick={openAddWheelModal}
-        >
-          + Add Wheel
-        </button>
-      </div>
 
       <div className="flex flex-col gap-4">
         {wheels.length === 0 ? (
