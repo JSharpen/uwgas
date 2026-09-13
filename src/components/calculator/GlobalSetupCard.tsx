@@ -43,7 +43,9 @@ export function GlobalSetupCard() {
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll({ container: scrollRef });
-  const overlayOpacity = useTransform(scrollY, [0, 24], [0, 1], { clamp: true });
+  const topMaskOpacity = useTransform(scrollY, [0, 24], [1, 0], { clamp: true });
+  const headerShadowOpacity = useTransform(scrollY, [0, 24], [0, 1], { clamp: true });
+  const maskImage = useMotionTemplate`linear-gradient(to bottom, rgba(0,0,0,${topMaskOpacity}), black 72px, black 100%)`;
   const containerRef = React.useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
   const [drawerMaxHeight, setDrawerMaxHeight] = React.useState('500px');
@@ -114,10 +116,10 @@ export function GlobalSetupCard() {
                 initial={{ maxHeight: '100px' }}
                 animate={{ maxHeight: drawerMaxHeight }}
                 exit={{ maxHeight: '100px' }}
-                style={{ maxHeight: drawerMaxHeight }}
+                style={{ maxHeight: drawerMaxHeight, height: drawerMaxHeight }}
               >
                 <motion.div 
-                  className="w-full max-h-full neu-convex border border-black/40 shadow-2xl rounded-t-3xl rounded-b-none pb-6 pt-0 relative flex flex-col min-h-0 bg-[#09090b] [transform:translateZ(0)]"
+                  className="w-full h-full max-h-full neu-convex border border-black/40 shadow-2xl rounded-t-3xl rounded-b-none pb-6 pt-0 relative flex flex-col min-h-0 bg-[#09090b] [transform:translateZ(0)]"
                   initial="closed"
                   custom={closeVelocity}
                   animate="open"
@@ -125,9 +127,9 @@ export function GlobalSetupCard() {
                   variants={{
                     open: { y: 0, pointerEvents: 'auto', transition: { type: "spring", damping: 25, stiffness: 200 } },
                     closed: (velocity) => ({ 
-                      y: "100%", 
+                      y: drawerMaxHeight, 
                       pointerEvents: 'none', 
-                      transition: { type: "spring", damping: 25, stiffness: 200, velocity: Math.max(velocity, 0) } 
+                      transition: { type: "spring", velocity, damping: 25, stiffness: 200 } 
                     })
                   }}
                   drag="y"
@@ -137,59 +139,67 @@ export function GlobalSetupCard() {
                   dragElastic={{ top: 0.1, bottom: 0.1 }}
                   onDragEnd={handleDragEnd}
                 >
-                {/* WRAPPER: Handles relative positioning for the gradient overlay */}
-                <div className="flex-1 min-h-0 relative z-10 flex flex-col pt-0">
+                {/* WRAPPER: Handles relative positioning for the scroll layout */}
+                <div className="flex-1 min-h-0 relative z-10">
                   
-                  {/* DRAG HANDLE (Absolute so content scrolls under it) */}
+                  {/* THE ULTIMATE HEADER (Option 2 Physical Shape) */}
                   <div 
-                    className="absolute top-0 left-0 right-0 h-8 flex flex-col items-center justify-center touch-none z-30 cursor-grab active:cursor-grabbing bg-gradient-to-b from-[#09090b] via-[#09090b]/90 to-transparent"
+                    className="absolute top-0 left-0 right-0 h-10 neu-convex border-b border-black/40 rounded-t-3xl flex flex-col items-center justify-center touch-none z-30 cursor-grab active:cursor-grabbing shadow-sm"
                     onPointerDown={(e) => dragControls.start(e)}
                   >
-                    <div className="w-12 h-1.5 rounded-full bg-white/10 neu-concave mx-auto" />
+                    <div className="w-12 h-1.5 rounded-full bg-white/20 neu-concave mx-auto" />
                   </div>
-                    {/* Fixed Top Overlay Fade (Extended to smoothly fade content) */}
-                    <motion.div 
-                      className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-[#09090b] via-[#09090b]/80 to-transparent z-20 pointer-events-none"
-                      style={{ opacity: overlayOpacity }}
-                    />
+
+                  {/* DYNAMIC DROP SHADOW (Fades in on scroll) */}
+                  <motion.div 
+                    className="absolute top-10 left-0 right-0 h-6 bg-gradient-to-b from-black/80 to-transparent z-20 pointer-events-none"
+                    style={{ opacity: headerShadowOpacity }}
+                  />
+
+                  {/* MASK WRAPPER: Option 1 Transparency Fade */}
+                  <motion.div 
+                    className="absolute inset-0 z-10"
+                    style={{ maskImage: maskImage, WebkitMaskImage: maskImage }}
+                  >
                     {/* SCROLL CONTAINER: Handles the scrolling */}
                     <div 
                       ref={scrollRef}
-                      className="px-4 sm:px-5 pt-8 pb-0 flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y"
+                      className="absolute inset-0 px-4 sm:px-5 pt-14 pb-0 flex flex-col gap-4 overflow-y-auto overscroll-contain touch-pan-y"
                     >
                       <GlobalSetupInputs />
 
                       {/* Hardware Selection Action Sheet Triggers */}
                       <div className="flex flex-row-reverse flex-wrap-reverse gap-2.5 w-full">
-                      <button 
-                        type="button" 
-                        className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
-                        onClick={() => setActiveSheet('jig')}
-                      >
-                        <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Jig</span>
-                        <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{activeJig?.name}</span>
-                      </button>
-                      <button 
-                        type="button" 
-                        className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
-                        onClick={() => setActiveSheet('usb')}
-                      >
-                        <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">USB</span>
-                        <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{activeUsb?.name}</span>
-                      </button>
-                      <button 
-                        type="button" 
-                        className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
-                        onClick={() => setActiveSheet('machine')}
-                      >
-                        <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Machine</span>
-                        <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{machines.find(m => m.id === defaultMachineId)?.name || 'Default'}</span>
-                      </button>
+                        <button 
+                          type="button" 
+                          className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
+                          onClick={() => setActiveSheet('jig')}
+                        >
+                          <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Jig</span>
+                          <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{activeJig?.name}</span>
+                        </button>
+                        <button 
+                          type="button" 
+                          className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
+                          onClick={() => setActiveSheet('usb')}
+                        >
+                          <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">USB</span>
+                          <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{activeUsb?.name}</span>
+                        </button>
+                        <button 
+                          type="button" 
+                          className="flex-auto min-w-[90px] flex flex-col items-center justify-center p-3.5 neu-button rounded-2xl transition-all min-h-[56px] overflow-hidden" 
+                          onClick={() => setActiveSheet('machine')}
+                        >
+                          <span className="text-[10px] uppercase font-bold text-white/40 mb-1 tracking-widest text-center w-full truncate">Machine</span>
+                          <span className="text-xs font-bold text-white/90 truncate w-full text-center tabular-nums">{machines.find(m => m.id === defaultMachineId)?.name || 'Default'}</span>
+                        </button>
+                      </div>
+                      {/* Invisible spacer to ensure scrollable bottom padding (Safari fix) */}
+                      <div className="h-px shrink-0 w-full" />
                     </div>
-                    {/* Invisible spacer to ensure scrollable bottom padding (Safari fix) */}
-                    <div className="h-px shrink-0 w-full" />
-                    </div>
-                  </div>
+                  </motion.div>
+                </div>
                 </motion.div>
               </motion.div>
             )}
