@@ -5,6 +5,7 @@ import { useDevStore } from './state/devStore';
 import CalculatorView from './views/CalculatorView';
 import WheelManagerView from './components/wheels/WheelManagerView';
 import SettingsView from './views/SettingsView';
+import PresetsView from './views/PresetsView';
 import { PresetManagerModal } from './components/presets/PresetManagerModal';
 import { SavePresetDialog } from './components/presets/SavePresetDialog';
 import { ContextBar } from './components/layout/ContextBar';
@@ -68,6 +69,7 @@ export default function App() {
       <main className="flex-1 w-full">
         {view === 'calculator' && <CalculatorView />}
         {view === 'wheels' && <WheelManagerView />}
+        {view === 'presets' && <PresetsView />}
         {view === 'settings' && <SettingsView />}
       </main>
 

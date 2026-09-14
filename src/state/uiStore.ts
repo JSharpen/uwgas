@@ -26,7 +26,7 @@ export type TopBarConfirmation = {
 };
 
 export interface UIState {
-  view: 'calculator' | 'wheels' | 'settings';
+  view: 'calculator' | 'wheels' | 'presets' | 'settings';
   settingsView: 'root' | 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction';
   isSetupPanelOpen: boolean;
   activeUsbTab: 'rear' | 'front';
@@ -42,12 +42,13 @@ export interface UIState {
   isConfirmingClear: boolean; // Note: to be replaced by topBarConfirmation eventually, but keeping for now
   topBarConfirmation: TopBarConfirmation | null;
   focusWheelId: string | null;
+  expandedPresetId: string | null;
   exportSections: ImportSections;
   importSections: ImportSections;
   importModes: ImportModes;
 
   // Actions
-  setView: (view: 'calculator' | 'wheels' | 'settings') => void;
+  setView: (view: 'calculator' | 'wheels' | 'presets' | 'settings') => void;
   setSettingsView: (
     view: 'root' | 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction'
   ) => void;
@@ -56,6 +57,7 @@ export interface UIState {
   setActiveSheet: (sheet: 'none' | 'jig' | 'usb' | 'preset' | 'machine') => void;
   toggleSetupPanel: () => void;
   setSelectedPresetId: (id: string) => void;
+  setExpandedPresetId: (id: string | null) => void;
   setPresetMenuOpen: (isOpen: boolean) => void;
   setPresetDialogOpen: (isOpen: boolean) => void;
   setPresetDialogClosing: (isClosing: boolean) => void;
@@ -100,6 +102,7 @@ export const useUIStore = create<UIState>((set) => ({
   activeUsbTab: 'rear',
   activeSheet: 'none',
   selectedPresetId: '',
+  expandedPresetId: null,
   isPresetMenuOpen: false,
   isPresetDialogOpen: false,
   isPresetDialogClosing: false,
@@ -121,6 +124,7 @@ export const useUIStore = create<UIState>((set) => ({
   setActiveSheet: (activeSheet) => set({ activeSheet }),
   toggleSetupPanel: () => set((state) => ({ isSetupPanelOpen: !state.isSetupPanelOpen })),
   setSelectedPresetId: (selectedPresetId) => set({ selectedPresetId }),
+  setExpandedPresetId: (expandedPresetId) => set({ expandedPresetId }),
   setPresetMenuOpen: (isPresetMenuOpen) => set({ isPresetMenuOpen }),
   setPresetDialogOpen: (isPresetDialogOpen) => set({ isPresetDialogOpen }),
   setPresetDialogClosing: (isPresetDialogClosing) => set({ isPresetDialogClosing }),

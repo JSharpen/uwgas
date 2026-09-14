@@ -12,8 +12,8 @@ export function PresetMenuPopover() {
   const setSelectedPresetId = useUIStore(s => s.setSelectedPresetId);
   
   const loadPreset = useStore(s => s.loadPreset);
-  const setPresetDialogOpen = useUIStore(s => s.setPresetDialogOpen);
-  const setPresetManagerOpen = useUIStore(s => s.setPresetManagerOpen);
+  const machines = useStore(s => s.machines);
+  const usbs = useStore(s => s.usbs);
   
   const onLoadPreset = (id: string) => {
     setSelectedPresetId(id);
@@ -76,6 +76,11 @@ export function PresetMenuPopover() {
           
           {sessionPresets.map(p => {
             const isSelected = p.id === selectedPresetId;
+            const hwStep = p.includeHardware ? p.steps.find(s => s.machineId || s.usbId) : null;
+            const machine = hwStep?.machineId ? machines?.find(m => m.id === hwStep.machineId) : null;
+            const usb = hwStep?.usbId ? usbs?.find(u => u.id === hwStep.usbId) : null;
+            const hwStr = [machine?.name, usb?.name].filter(Boolean).join(' • ');
+
             return (
               <button
                 key={p.id}
@@ -85,38 +90,30 @@ export function PresetMenuPopover() {
                 }`}
                 onClick={() => onLoadPreset(p.id)}
               >
-                <div className={`font-bold text-[13px] ${isSelected ? 'text-amber-400' : 'text-white'}`}>
-                  {p.name}
+                <div className="flex items-center gap-2 w-full min-w-0">
+                  <span className={`font-bold text-[13px] truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
+                    {p.name}
+                  </span>
+                  {p.includeHardware && (
+                    <span className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full shrink-0 leading-none flex items-center">
+                      HW Bound
+                    </span>
+                  )}
                 </div>
-                <div className="text-[11px] text-white/40 mt-1">
-                  {p.steps.length} step{p.steps.length === 1 ? '' : 's'}
+                <div className={`flex items-center gap-2 text-[11px] mt-1.5 truncate w-full ${isSelected ? 'text-amber-400/60' : 'text-white/40'}`}>
+                  <span>{p.steps.length} step{p.steps.length === 1 ? '' : 's'}</span>
+                  <span className="opacity-50">•</span>
+                  <span>__° (TBD)</span>
+                  {p.includeHardware && hwStr && (
+                    <>
+                      <span className="opacity-50">•</span>
+                      <span className="truncate text-cyan-400/70">{hwStr}</span>
+                    </>
+                  )}
                 </div>
               </button>
             );
           })}
-        </div>
-        
-        <div className="p-4 bg-[#18181b] border-t border-white/5 flex gap-3 shrink-0">
-          <button 
-            type="button"
-            className="flex-1 h-11 py-2 text-xs font-bold text-white/70 hover:text-white neu-button rounded-xl transition flex items-center justify-center"
-            onClick={() => {
-              setOpen(false);
-              setPresetDialogOpen(true);
-            }}
-          >
-            Save Current
-          </button>
-          <button 
-            type="button"
-            className="flex-1 h-11 py-2 text-xs font-bold text-white/70 hover:text-white neu-button rounded-xl transition flex items-center justify-center"
-            onClick={() => {
-              setOpen(false);
-              setPresetManagerOpen(true);
-            }}
-          >
-            Manage Presets
-          </button>
         </div>
       </div>
     </>

@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useUIStore } from '../../state/uiStore';
-import { useDevStore } from '../../state/devStore';
 import { useProgressionState, useStore } from '../../state/store';
 import { useShallow } from 'zustand/react/shallow';
 import { APP_VERSION_DISPLAY } from '../../version';
@@ -14,8 +13,8 @@ export function ContextBar() {
   const { sessionSteps, addStep, clearSessionSteps } = useProgressionState();
   
   
-  const maskTopFade = useDevStore((s) => s.maskTopFade);
   const selectedPresetId = useUIStore(s => s.selectedPresetId);
+  const expandedPresetId = useUIStore(s => s.expandedPresetId);
   const sessionPresets = useStore(useShallow(s => s.sessionPresets));
   const isPresetMenuOpen = useUIStore(s => s.isPresetMenuOpen);
   const setPresetMenuOpen = useUIStore(s => s.setPresetMenuOpen);
@@ -119,49 +118,96 @@ export function ContextBar() {
   let rightSlot = <div className="flex-1 flex justify-end min-w-[80px]" />;
 
   if (view === 'calculator') {
-    leftSlot = (
-      <div className="flex-1 flex justify-start min-w-[80px]">
-        <button
-          type="button"
-          className={`h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider border transition flex items-center justify-center
-            ${sessionSteps.length === 0
-              ? 'bg-transparent border-white/5 text-white/20 cursor-not-allowed'
-              : 'bg-white/5 border-white/10 text-white hover:bg-white/10 active:scale-95 cursor-pointer'
-            }`}
-          onClick={() => {
-            if (sessionSteps.length > 0) {
-              if (selectedPresetId === '') {
-                // Custom setup -> 3 buttons
-                useUIStore.getState().setTopBarConfirmation({
-                  confirmLabel: 'Clear',
-                  cancelLabel: 'Cancel',
-                  onConfirm: () => clearSessionSteps(),
-                  centerAction: {
-                    label: 'Save & Clear',
-                    onClick: () => {
-                      useUIStore.getState().setClearAfterSave(true);
-                      useUIStore.getState().setPresetDialogOpen(true);
+    if (isPresetMenuOpen) {
+      leftSlot = (
+        <div className="flex-1 flex justify-start min-w-[80px]">
+          <button
+            type="button"
+            className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
+            onClick={() => {
+              useUIStore.setState({
+                isPresetMenuOpen: false,
+                isPresetDialogOpen: true
+              });
+            }}
+          >
+            Save
+          </button>
+        </div>
+      );
+      rightSlot = (
+        <div className="flex-1 flex justify-end min-w-[80px]">
+          <button
+            type="button"
+            className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer shrink-0"
+            onClick={() => {
+              useUIStore.setState({
+                isPresetMenuOpen: false,
+                isPresetManagerOpen: true
+              });
+            }}
+          >
+            Manage
+          </button>
+        </div>
+      );
+    } else {
+      leftSlot = (
+        <div className="flex-1 flex justify-start min-w-[80px]">
+          <button
+            type="button"
+            className={`h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider border transition flex items-center justify-center
+              ${sessionSteps.length === 0
+                ? 'bg-transparent border-white/5 text-white/20 cursor-not-allowed'
+                : 'bg-white/5 border-white/10 text-white hover:bg-white/10 active:scale-95 cursor-pointer'
+              }`}
+            onClick={() => {
+              if (sessionSteps.length > 0) {
+                if (selectedPresetId === '') {
+                  // Custom setup -> 3 buttons
+                  useUIStore.getState().setTopBarConfirmation({
+                    confirmLabel: 'Clear',
+                    cancelLabel: 'Cancel',
+                    onConfirm: () => clearSessionSteps(),
+                    centerAction: {
+                      label: 'Save & Clear',
+                      onClick: () => {
+                        useUIStore.getState().setClearAfterSave(true);
+                        useUIStore.getState().setPresetDialogOpen(true);
+                      }
                     }
-                  }
-                });
-              } else {
-                // Preset loaded -> 2 buttons
-                useUIStore.getState().setTopBarConfirmation({
-                  message: 'Clear Progression?',
-                  confirmLabel: 'Yes',
-                  cancelLabel: 'No',
-                  onConfirm: () => clearSessionSteps()
-                });
+                  });
+                } else {
+                  // Preset loaded -> 2 buttons
+                  useUIStore.getState().setTopBarConfirmation({
+                    message: 'Clear Progression?',
+                    confirmLabel: 'Yes',
+                    cancelLabel: 'No',
+                    onConfirm: () => clearSessionSteps()
+                  });
+                }
               }
-            }
-          }}
-          disabled={sessionSteps.length === 0}
-        >
-          Clear All
-        </button>
-      </div>
-    );
-    
+            }}
+            disabled={sessionSteps.length === 0}
+          >
+            Clear All
+          </button>
+        </div>
+      );
+      
+      rightSlot = (
+        <div className="flex-1 flex justify-end min-w-[80px]">
+          <button
+            type="button"
+            className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
+            onClick={() => addStep()}
+          >
+            + Add Step
+          </button>
+        </div>
+      );
+    }
+
     centerSlot = (
       <button 
         type="button"
@@ -174,18 +220,64 @@ export function ContextBar() {
         <span className={`text-[10px] text-white/30 transition-transform ${isPresetMenuOpen ? 'rotate-180' : ''}`}>▼</span>
       </button>
     );
-    
-    rightSlot = (
-      <div className="flex-1 flex justify-end min-w-[80px]">
+  } else if (view === 'presets') {
+    if (expandedPresetId) {
+      leftSlot = (
+        <div className="flex-1 flex justify-start min-w-[80px]">
+          <button
+            type="button"
+            className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
+            onClick={() => {
+              useUIStore.getState().setTopBarConfirmation({
+                message: 'Delete Preset?',
+                confirmLabel: 'Delete',
+                cancelLabel: 'Cancel',
+                onConfirm: () => {
+                  useStore.getState().deletePreset(expandedPresetId);
+                  useUIStore.getState().setExpandedPresetId(null);
+                }
+              });
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      );
+
+      centerSlot = (
         <button
           type="button"
-          className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
-          onClick={() => addStep()}
+          className="flex-shrink flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-white/5 active:bg-white/10 transition-colors mx-2 min-w-0 cursor-pointer"
+          onClick={() => {
+            // Trigger a rename event that PresetsView can listen to
+            window.dispatchEvent(new CustomEvent('beginRenamePreset', { detail: expandedPresetId }));
+          }}
         >
-          + Add Step
+          <h2 className="text-xs sm:text-sm font-bold tracking-widest uppercase truncate text-white/60">
+            Rename
+          </h2>
         </button>
-      </div>
-    );
+      );
+
+      rightSlot = (
+        <div className="flex-1 flex justify-end min-w-[80px]">
+          <button
+            type="button"
+            className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
+            onClick={() => {
+              useUIStore.getState().setSelectedPresetId(expandedPresetId);
+              useStore.getState().loadPreset(expandedPresetId);
+              useUIStore.getState().setView('calculator');
+            }}
+          >
+            Load
+          </button>
+        </div>
+      );
+    } else {
+      // Empty slots when nothing is selected
+      centerSlot = null;
+    }
   } else if (view === 'wheels') {
     centerSlot = (
       <h2 className="text-xs sm:text-sm font-bold tracking-widest uppercase truncate text-white/60 mx-2 text-center">

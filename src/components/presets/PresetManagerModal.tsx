@@ -3,7 +3,7 @@ import type { SessionPreset } from '../../types/core';
 import ModalShell from '../ModalShell';
 import useModalLayout from '../../hooks/useModalLayout';
 import { useUIStore } from '../../state/uiStore';
-import { usePresetState } from '../../state/store';
+import { usePresetState, useStore } from '../../state/store';
 
 export type PresetManagerModalProps = Record<string, never>;
 
@@ -19,6 +19,8 @@ export function PresetManagerModal() {
 
   const presetState = usePresetState();
   const sessionPresets = presetState.sessionPresets;
+  const machines = useStore(s => s.machines);
+  const usbs = useStore(s => s.usbs);
 
   const onClose = React.useCallback(() => {
     setIsClosing(true);
@@ -92,6 +94,11 @@ export function PresetManagerModal() {
               const renameDisabled =
                 !isEditing || renameTrimmed.length === 0 || renameConflicts;
               const isSelected = selectedPresetId === preset.id;
+              
+              const hwStep = preset.includeHardware ? preset.steps.find(s => s.machineId || s.usbId) : null;
+              const machine = hwStep?.machineId ? machines?.find(m => m.id === hwStep.machineId) : null;
+              const usb = hwStep?.usbId ? usbs?.find(u => u.id === hwStep.usbId) : null;
+              const hwStr = [machine?.name, usb?.name].filter(Boolean).join(' • ');
 
               return (
                 <li
@@ -121,6 +128,11 @@ export function PresetManagerModal() {
                           <span className="text-base font-semibold text-white tracking-wide truncate">
                             {preset.name}
                           </span>
+                          {preset.includeHardware && (
+                            <span className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full shrink-0">
+                              HW Bound
+                            </span>
+                          )}
                           {isSelected && (
                             <span className="bg-amber-400/10 border border-amber-400/30 text-amber-400 text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full shrink-0">
                               active
@@ -129,8 +141,16 @@ export function PresetManagerModal() {
                         </>
                       )}
                     </div>
-                    <div className="text-xs text-white/40 font-mono font-medium">
-                      {preset.steps.length} step{preset.steps.length === 1 ? '' : 's'}
+                    <div className="flex items-center gap-2 text-xs text-white/40 font-mono font-medium truncate w-full text-left">
+                      <span>{preset.steps.length} step{preset.steps.length === 1 ? '' : 's'}</span>
+                      <span className="opacity-50">•</span>
+                      <span>__° (TBD)</span>
+                      {preset.includeHardware && hwStr && (
+                        <>
+                          <span className="opacity-50">•</span>
+                          <span className="truncate text-cyan-400/70">{hwStr}</span>
+                        </>
+                      )}
                     </div>
                     {isEditing && renameConflicts && (
                       <div className="text-xs text-amber-400 font-medium">

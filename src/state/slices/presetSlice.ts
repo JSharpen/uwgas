@@ -22,23 +22,50 @@ export const createPresetSlice: StateCreator<
     set((state) => {
       const trimmed = name.trim();
       if (!trimmed || state.sessionSteps.length === 0) return state;
+      
+      const newSteps = state.sessionSteps.map((s) => {
+        const w = state.wheels.find((wx) => wx.id === s.wheelId);
+        return {
+          wheelId: s.wheelId,
+          wheelName: w ? w.name : 'Unknown Wheel',
+          base: s.base,
+          angleOffset: s.angleOffset,
+          machineId: includeHardware ? s.machineId : undefined,
+          usbId: includeHardware ? s.usbId : undefined,
+        };
+      });
+
+      const existingIndex = state.sessionPresets.findIndex(
+        p => p.name.toLowerCase() === trimmed.toLowerCase()
+      );
+
+      if (existingIndex !== -1) {
+        const updatedPresets = [...state.sessionPresets];
+        updatedPresets[existingIndex] = {
+          ...updatedPresets[existingIndex],
+          name: trimmed,
+          version: 2,
+          includeHardware,
+          steps: newSteps,
+          context: includeHardware ? {
+            machineId: state.global.activeMachineId,
+            usbId: state.global.activeUsbId,
+          } : undefined,
+        };
+        return { sessionPresets: updatedPresets };
+      }
+
       const newPreset: SessionPreset = {
         id: generateId(),
         name: trimmed,
         createdAt: new Date().toISOString(),
-        version: 1,
+        version: 2,
         includeHardware,
-        steps: state.sessionSteps.map((s) => {
-          const w = state.wheels.find((wx) => wx.id === s.wheelId);
-          return {
-            wheelId: s.wheelId,
-            wheelName: w ? w.name : 'Unknown Wheel',
-            base: s.base,
-            angleOffset: s.angleOffset,
-            machineId: includeHardware ? s.machineId : undefined,
-            usbId: includeHardware ? s.usbId : undefined,
-          };
-        }),
+        steps: newSteps,
+        context: includeHardware ? {
+          machineId: state.global.activeMachineId,
+          usbId: state.global.activeUsbId,
+        } : undefined,
       };
       return { sessionPresets: [...state.sessionPresets, newPreset] };
     }),
@@ -69,8 +96,25 @@ export const createPresetSlice: StateCreator<
       }));
       
       let nextGlobal = state.global;
-      if (hasComplexHardware && !state.global.showAdvancedStepOverrides) {
-        nextGlobal = { ...state.global, showAdvancedStepOverrides: true };
+      
+      // Apply hardware from context if available, otherwise fallback to complex step inspection
+      if (preset.context?.machineId || preset.context?.usbId) {
+        nextGlobal = {
+          ...nextGlobal,
+          activeMachineId: preset.context.machineId ?? nextGlobal.activeMachineId,
+          activeUsbId: preset.context.usbId ?? nextGlobal.activeUsbId,
+          showAdvancedStepOverrides: true,
+        };
+      } else if (hasComplexHardware && !state.global.showAdvancedStepOverrides) {
+        nextGlobal = { ...nextGlobal, showAdvancedStepOverrides: true };
+      }
+      
+      // Apply angle from context if available
+      if (preset.context?.targetAngle !== undefined) {
+        nextGlobal = {
+          ...nextGlobal,
+          targetAngle: preset.context.targetAngle,
+        };
       }
       
       return { 

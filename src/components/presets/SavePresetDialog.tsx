@@ -48,6 +48,9 @@ export function SavePresetDialog() {
   }, [presetNameDraft, includeHardware, presetState, clearAfterSave, clearSessionSteps, setPresetNameDraft, onClose]);
 
   const canSave = sessionStepsCount > 0 && presetNameDraft.trim().length > 0;
+  const isOverwrite = presetState.sessionPresets.some(
+    p => p.name.trim().toLowerCase() === presetNameDraft.trim().toLowerCase()
+  );
   const dialogStyle = getDialogStyle();
 
   if (!isOpen) return null;
@@ -80,6 +83,11 @@ export function SavePresetDialog() {
             onChange={e => setPresetNameDraft(e.target.value)}
             autoFocus
           />
+          {isOverwrite && (
+            <div className="text-red-400 text-xs px-1 font-medium mt-1">
+              A preset with this name already exists and will be overwritten.
+            </div>
+          )}
         </div>
 
         <label className="flex items-center gap-3 bg-black/20 border border-white/5 rounded-2xl p-4 cursor-pointer transition-colors hover:bg-black/30">
@@ -106,11 +114,15 @@ export function SavePresetDialog() {
 
           <button
             type="button"
-            className="h-12 px-6 rounded-2xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 disabled:opacity-30 disabled:hover:bg-amber-400 disabled:cursor-not-allowed text-black font-bold text-sm shadow-lg shadow-amber-950/30 transition-all"
+            className={`h-12 px-6 rounded-2xl ${
+              isOverwrite 
+                ? 'bg-red-500 hover:bg-red-400 active:bg-red-600 shadow-red-950/30 text-white' 
+                : 'bg-amber-400 hover:bg-amber-300 active:bg-amber-500 shadow-amber-950/30 text-black'
+            } disabled:opacity-30 disabled:cursor-not-allowed font-bold text-sm shadow-lg transition-all`}
             onClick={onSave}
             disabled={!canSave}
           >
-            Save Preset
+            {isOverwrite ? 'Overwrite Preset' : 'Save Preset'}
           </button>
         </div>
       </div>

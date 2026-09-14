@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useUIStore } from '../../state/uiStore';
-import { IconCalculator, IconDisc, IconSettings } from '../../icons';
+import { IconCalculator, IconDisc, IconSettings, IconFolder } from '../../icons';
 
 export function BottomTabBar() {
   const view = useUIStore((s) => s.view);
@@ -19,13 +19,15 @@ export function BottomTabBar() {
         aria-label="Calculator View"
       >
         <div
-          className={`flex items-center justify-center w-12 h-10 rounded-2xl transition-all ${
+          className={`flex items-center justify-center w-12 h-8 rounded-2xl transition-all ${
             view === 'calculator' ? 'bg-amber-400/10' : ''
           }`}
         >
-          <IconCalculator className="w-6 h-6" />
+          <IconCalculator className="w-[22px] h-[22px]" />
         </div>
+        <span className="text-[9px] mt-0.5 tracking-wide">Calc</span>
       </button>
+      
       <button
         type="button"
         onClick={() => setView('wheels')}
@@ -35,13 +37,33 @@ export function BottomTabBar() {
         aria-label="Wheels View"
       >
         <div
-          className={`flex items-center justify-center w-12 h-10 rounded-2xl transition-all ${
+          className={`flex items-center justify-center w-12 h-8 rounded-2xl transition-all ${
             view === 'wheels' ? 'bg-amber-400/10' : ''
           }`}
         >
-          <IconDisc className="w-6 h-6" />
+          <IconDisc className="w-[22px] h-[22px]" />
         </div>
+        <span className="text-[9px] mt-0.5 tracking-wide">Wheels</span>
       </button>
+      
+      <button
+        type="button"
+        onClick={() => setView('presets')}
+        className={`flex flex-col items-center justify-center w-full h-full transition-colors cursor-pointer ${
+          view === 'presets' ? 'text-amber-400 font-bold' : 'text-white/40 hover:text-white/80'
+        }`}
+        aria-label="Presets View"
+      >
+        <div
+          className={`flex items-center justify-center w-12 h-8 rounded-2xl transition-all ${
+            view === 'presets' ? 'bg-amber-400/10' : ''
+          }`}
+        >
+          <IconFolder className="w-[22px] h-[22px]" />
+        </div>
+        <span className="text-[9px] mt-0.5 tracking-wide">Presets</span>
+      </button>
+      
       <button
         type="button"
         onClick={() => setView('settings')}
@@ -51,12 +73,13 @@ export function BottomTabBar() {
         aria-label="Settings View"
       >
         <div
-          className={`flex items-center justify-center w-12 h-10 rounded-2xl transition-all ${
+          className={`flex items-center justify-center w-12 h-8 rounded-2xl transition-all ${
             view === 'settings' ? 'bg-amber-400/10' : ''
           }`}
         >
-          <IconSettings className="w-6 h-6" />
+          <IconSettings className="w-[22px] h-[22px]" />
         </div>
+        <span className="text-[9px] mt-0.5 tracking-wide">Settings</span>
       </button>
     </nav>
   );

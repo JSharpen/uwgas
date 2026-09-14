@@ -3,6 +3,7 @@ import { IconChevronRight } from '../../icons';
 import { APP_VERSION, APP_VERSION_DISPLAY } from '../../version';
 
 import { useUIStore } from '../../state/uiStore';
+import { useStore } from '../../state/store';
 
 export type SettingsSection = 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary';
 
@@ -10,13 +11,92 @@ export type SettingsRootViewProps = Record<string, never>;
 
 export default function SettingsRootView() {
   const setSettingsView = useUIStore((s) => s.setSettingsView);
-  const onSelectSection = setSettingsView;
-  const sections: { id: SettingsSection | 'dev'; label: string; desc: string }[] = [
+  
+  const handleBugReport = () => {
+    const version = APP_VERSION_DISPLAY;
+    const build = APP_VERSION;
+    const userAgent = navigator.userAgent;
+    const screen = `${window.innerWidth}x${window.innerHeight} (DPR: ${window.devicePixelRatio || 1})`;
+    
+    const isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+    const displayMode = isStandalone ? 'Standalone PWA' : 'Browser Tab';
+    
+    const cores = navigator.hardwareConcurrency || 'Unknown';
+    const touchPoints = navigator.maxTouchPoints || 0;
+    
+    // Attempt to pull a meaningful but compact snapshot of the app's current state
+    let stateDump = '';
+    let uiDump = '';
+    let storageSize = 'Unknown';
+    
+    try {
+      const store = useStore.getState();
+      const summary = {
+        global: store.global,
+        heightMode: store.heightMode,
+        defaultMachineId: store.defaultMachineId,
+        stepCount: store.sessionSteps?.length || 0,
+        jigCount: store.jigs?.length || 0,
+        usbCount: store.usbs?.length || 0,
+        wheelCount: store.wheels?.length || 0,
+        calibApplied: store.calibAppliedIds
+      };
+      stateDump = JSON.stringify(summary, null, 2);
+      
+      const uiState = useUIStore.getState();
+      uiDump = JSON.stringify({
+        view: uiState.view,
+        settingsView: uiState.settingsView,
+        isSetupPanelOpen: uiState.isSetupPanelOpen,
+        activeSheet: uiState.activeSheet
+      }, null, 2);
+      
+      if (typeof localStorage !== 'undefined') {
+        const stateStr = localStorage.getItem('uwgas_app_state_v1') || '';
+        storageSize = (stateStr.length / 1024).toFixed(2) + ' KB';
+      }
+    } catch (e) {
+      stateDump = 'Unable to serialize state.';
+      uiDump = 'Unable to serialize UI.';
+    }
+    
+    const body = `Please describe the bug you encountered:
+[Type here...]
+
+
+
+---
+Diagnostic Info:
+App Version: ${version} (Build ${build})
+User Agent: ${userAgent}
+Screen Size: ${screen}
+Display Mode: ${displayMode}
+Cores: ${cores} | Max Touch Points: ${touchPoints}
+Local Storage Size (uwgas_app_state_v1): ${storageSize}
+
+UI State:
+${uiDump}
+
+App State Snapshot:
+${stateDump}
+
+Note: If your bug is highly specific to a tool or custom profile, please also attach a full JSON backup (Settings > Import / Export > Export JSON backup) to this email.
+`;
+
+    const subject = `UWGAS Bug Report - v${version}`;
+    // Replace this with your actual monitoring email
+    const targetEmail = 'bug-report@example.com';
+    
+    window.location.href = `mailto:${targetEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const sections: { id: SettingsSection | 'dev' | 'bug_report'; label: string; desc: string; action?: () => void }[] = [
     { id: 'machine', label: 'Machines', desc: 'Profiles, constants, and calibration' },
     { id: 'hardware', label: 'Hardware', desc: 'Jigs and Universal Support Bars' },
     { id: 'measurement', label: 'Measurement', desc: 'Calculation & measurement modes' },
     { id: 'import', label: 'Import / Export', desc: 'Backup and restore data' },
     { id: 'glossary', label: 'Glossary', desc: 'Terminology and formulas' },
+    { id: 'bug_report', label: 'Report a Bug', desc: 'Email a bug report to the developer', action: handleBugReport },
   ];
 
   if (import.meta.env.DEV) {
@@ -47,7 +127,14 @@ export default function SettingsRootView() {
             className={`group relative z-10 flex items-center justify-between p-4 sm:p-5 text-left hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer ${
               i < sections.length - 1 ? 'border-b border-white/5' : ''
             }`}
-            onClick={() => onSelectSection(sec.id)}
+            onClick={() => {
+              if (sec.action) {
+                sec.action();
+              } else {
+                // @ts-ignore
+                setSettingsView(sec.id);
+              }
+            }}
           >
             <div className="flex flex-col gap-0.5">
               <span className="text-base font-semibold text-white tracking-wide group-hover:text-white transition-colors">

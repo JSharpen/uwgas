@@ -31,14 +31,47 @@ export const PresetStepRefSchema = z.object({
   usbId: z.string().optional(),
 });
 
-export const SessionPresetSchema = z.object({
+export const PresetContextSchema = z.object({
+  targetAngle: z.number().optional(),
+  machineId: z.string().optional(),
+  usbId: z.string().optional(),
+});
+
+export const SessionPresetSchema = z.preprocess((val: unknown) => {
+  if (val && typeof val === 'object' && 'version' in val && (val as Record<string, unknown>).version === 1) {
+    // Migrate v1 to v2
+    const typedVal = val as Record<string, unknown>;
+    const includeHardware = typedVal.includeHardware as boolean | undefined;
+    let machineId: string | undefined;
+    let usbId: string | undefined;
+    
+    if (includeHardware && Array.isArray(typedVal.steps)) {
+      const hwStep = typedVal.steps.find((s: unknown) => {
+        const step = s as Record<string, unknown>;
+        return step && (step.machineId || step.usbId);
+      }) as Record<string, unknown> | undefined;
+      if (hwStep) {
+        machineId = hwStep.machineId as string | undefined;
+        usbId = hwStep.usbId as string | undefined;
+      }
+    }
+
+    return {
+      ...typedVal,
+      version: 2,
+      context: (includeHardware && (machineId || usbId)) ? { machineId, usbId } : undefined,
+    };
+  }
+  return val;
+}, z.object({
   id: z.string(),
   name: z.string(),
   createdAt: z.string(),
-  version: z.literal(1),
+  version: z.literal(2),
   steps: z.array(PresetStepRefSchema),
   includeHardware: z.boolean().optional(),
-});
+  context: PresetContextSchema.optional(),
+}));
 
 export const JigConfigSchema = z.object({
   id: z.string(),

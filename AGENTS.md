@@ -12,6 +12,7 @@ The user is the Product Owner and Designer, but has minimal to no understanding 
 - **Guard the Data:** If you corrupt the local storage data, the user cannot manually recover it. Be exceptionally careful with Zod schema migrations.
 - **Explain in Plain English:** When making significant technical decisions, explain them to the user in simple language. Do not ask the user to review code diffs to understand what you did.
 - **Own the Process:** You are responsible for safely managing Git branches, running the dev server, testing the UI, and deploying. Do not assume the user will catch your syntax errors.
+- **Proactive UX Ideation:** When refactoring legacy UI or removing outdated defaults (such as empty states or placeholder screens), do not simply delete them and leave a void. Proactively analyze the workshop domain and propose creative, context-aware alternatives (e.g., quick-start dashboards, recent presets, hardware verification checks) with brief explanations of *why* they work ergonomically before proceeding.
 
 ---
 
@@ -44,6 +45,7 @@ Whenever you or the user discuss a feature, bug fix, improvement, or idea:
 
 ## ⚡ Core Development Rules
 
+- **Context-Specific Controls (Context Bar)**: The Context Bar (especially on mobile) and its displayed controls MUST be strictly relevant to the *currently displayed screen content*. Structurally, it consists of 3 main sections: Left, Centre, and Right. Typically, the Left and Right sections are reserved for context-sensitive interactive buttons, while the Centre is used for a context-sensitive label or descriptive text (though it can occasionally be interactive when practical). Do not arbitrarily append new controls to existing ones if they don't relate to the active view (e.g., do not add calculator preset controls alongside progression controls). When designing or modifying the UI, ensure the Context Bar dynamically swaps or replaces controls to match the active screen/view context, rather than accumulating global controls.
 - **Proactive Impact Assessment**: When modifying UI layouts, keep potential unintended consequences in mind (e.g., overflow issues), but do not waste tokens writing theoretical impact assessments before coding.
 - **Strict Math Engine Isolation**: All math belongs in `src/math/`. This is a pure algorithm layer. **NEVER** import React, UI types, or Zustand stores into the `math/` directory. The boundary is enforced by ESLint.
 - **Data Safety & Schema Migrations (CRITICAL)**: User data (wheels, jigs, presets) is sacred. If you add a new feature that requires new saved data, update `src/state/schema.ts`. Note that using Zod's `.catch()` will drop unrecognized old data; use proper migration logic if changing structural keys to avoid data loss.

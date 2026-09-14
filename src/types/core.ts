@@ -29,13 +29,20 @@ export type PresetStepRef = {
   usbId?: string;
 };
 
+export type PresetContext = {
+  targetAngle?: number;
+  machineId?: string;
+  usbId?: string;
+};
+
 export type SessionPreset = {
   id: string;
   name: string;
   createdAt: string;
-  version: 1;
+  version: 2;
   steps: PresetStepRef[];
   includeHardware?: boolean;
+  context?: PresetContext;
 };
 
 export type JigConfig = {
