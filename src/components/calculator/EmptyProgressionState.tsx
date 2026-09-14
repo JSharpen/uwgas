@@ -7,9 +7,6 @@ export function EmptyProgressionState() {
   const sessionPresets = useStore(useShallow(s => s.sessionPresets));
   const loadPreset = useStore(s => s.loadPreset);
   const setSelectedPresetId = useUIStore(s => s.setSelectedPresetId);
-  const machines = useStore(s => s.machines);
-  const usbs = useStore(s => s.usbs);
-
   // Get up to 3 most recent presets
   const recentPresets = [...sessionPresets]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -27,11 +24,6 @@ export function EmptyProgressionState() {
           <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest pl-2">Quick Start</h3>
           <div className="flex flex-col gap-2">
             {recentPresets.map(p => {
-              const hwStep = p.includeHardware ? p.steps.find(s => s.machineId || s.usbId) : null;
-              const machine = hwStep?.machineId ? machines?.find(m => m.id === hwStep.machineId) : null;
-              const usb = hwStep?.usbId ? usbs?.find(u => u.id === hwStep.usbId) : null;
-              const hwStr = [machine?.name, usb?.name].filter(Boolean).join(' • ');
-
               return (
                 <button
                   key={p.id}
@@ -46,15 +38,18 @@ export function EmptyProgressionState() {
                         HW Bound
                       </span>
                     )}
+                    {p.context?.targetAngle !== undefined && (
+                      <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shrink-0">
+                        {p.context.targetAngle}°
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-white/40 mt-1 truncate w-full text-left">
-                    <span>{p.steps.length} step{p.steps.length === 1 ? '' : 's'}</span>
-                    <span className="opacity-50">•</span>
-                    <span>__° (TBD)</span>
-                    {p.includeHardware && hwStr && (
+                    <span className="shrink-0">{p.steps.length} step{p.steps.length === 1 ? '' : 's'}</span>
+                    {p.steps.length > 0 && (
                       <>
-                        <span className="opacity-50">•</span>
-                        <span className="truncate text-cyan-400/70">{hwStr}</span>
+                        <span className="opacity-50 shrink-0">•</span>
+                        <span className="truncate">{p.steps.map(s => s.wheelName).join(' ➔ ')}</span>
                       </>
                     )}
                   </div>

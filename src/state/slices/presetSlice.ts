@@ -1,11 +1,11 @@
 import type { StateCreator } from 'zustand';
-import type { SessionPreset, SessionStep } from '../../types/core';
+import type { SessionPreset, SessionStep, PresetContext } from '../../types/core';
 import { generateId } from '../../utils/id';
 import type { RootStoreState } from '../store';
 
 export interface PresetSlice {
   sessionPresets: SessionPreset[];
-  savePreset: (name: string, includeHardware?: boolean) => void;
+  savePreset: (name: string, options?: { saveTargetAngle?: boolean; saveMachine?: boolean; saveUsb?: boolean }) => void;
   deletePreset: (id: string) => void;
   renamePreset: (id: string, newName: string) => void;
   loadPreset: (id: string) => void;
@@ -18,10 +18,13 @@ export const createPresetSlice: StateCreator<
   PresetSlice
 > = (set) => ({
   sessionPresets: [],
-  savePreset: (name, includeHardware = false) =>
+  savePreset: (name, options = {}) =>
     set((state) => {
+      const { saveTargetAngle, saveMachine, saveUsb } = options;
       const trimmed = name.trim();
       if (!trimmed || state.sessionSteps.length === 0) return state;
+      
+      const includeHardware = !!(saveMachine || saveUsb);
       
       const newSteps = state.sessionSteps.map((s) => {
         const w = state.wheels.find((wx) => wx.id === s.wheelId);
@@ -30,10 +33,25 @@ export const createPresetSlice: StateCreator<
           wheelName: w ? w.name : 'Unknown Wheel',
           base: s.base,
           angleOffset: s.angleOffset,
-          machineId: includeHardware ? s.machineId : undefined,
-          usbId: includeHardware ? s.usbId : undefined,
+          machineId: s.machineId,
+          usbId: s.usbId,
         };
       });
+
+      const contextObj: PresetContext = {};
+      let hasContext = false;
+      if (saveTargetAngle) {
+        contextObj.targetAngle = state.global.targetAngle;
+        hasContext = true;
+      }
+      if (saveMachine && state.global.activeMachineId) {
+        contextObj.machineId = state.global.activeMachineId;
+        hasContext = true;
+      }
+      if (saveUsb && state.global.activeUsbId) {
+        contextObj.usbId = state.global.activeUsbId;
+        hasContext = true;
+      }
 
       const existingIndex = state.sessionPresets.findIndex(
         p => p.name.toLowerCase() === trimmed.toLowerCase()
@@ -47,10 +65,7 @@ export const createPresetSlice: StateCreator<
           version: 2,
           includeHardware,
           steps: newSteps,
-          context: includeHardware ? {
-            machineId: state.global.activeMachineId,
-            usbId: state.global.activeUsbId,
-          } : undefined,
+          context: hasContext ? contextObj : undefined,
         };
         return { sessionPresets: updatedPresets };
       }
@@ -62,10 +77,7 @@ export const createPresetSlice: StateCreator<
         version: 2,
         includeHardware,
         steps: newSteps,
-        context: includeHardware ? {
-          machineId: state.global.activeMachineId,
-          usbId: state.global.activeUsbId,
-        } : undefined,
+        context: hasContext ? contextObj : undefined,
       };
       return { sessionPresets: [...state.sessionPresets, newPreset] };
     }),

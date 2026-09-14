@@ -17,7 +17,9 @@ export function SavePresetDialog() {
   const presetNameDraft = useUIStore((s) => s.presetNameDraft);
   const setPresetNameDraft = useUIStore((s) => s.setPresetNameDraft);
 
-  const [includeHardware, setIncludeHardware] = React.useState(false);
+  const [saveTargetAngle, setSaveTargetAngle] = React.useState(true);
+  const [saveMachine, setSaveMachine] = React.useState(true);
+  const [saveUsb, setSaveUsb] = React.useState(true);
 
   const clearAfterSave = useUIStore((s) => s.clearAfterSave);
   const setClearAfterSave = useUIStore((s) => s.setClearAfterSave);
@@ -31,21 +33,23 @@ export function SavePresetDialog() {
     window.setTimeout(() => {
       setIsOpen(false);
       setIsClosing(false);
-      setIncludeHardware(false);
+      setSaveTargetAngle(true);
+      setSaveMachine(true);
+      setSaveUsb(true);
       setClearAfterSave(false);
     }, 180);
-  }, [setIsClosing, setIsOpen, setClearAfterSave]);
+  }, [setIsClosing, setIsOpen, setSaveTargetAngle, setSaveMachine, setSaveUsb, setClearAfterSave]);
 
   const onSave = React.useCallback(() => {
     const trimmed = presetNameDraft.trim();
     if (!trimmed) return;
-    presetState.savePreset(trimmed, includeHardware);
+    presetState.savePreset(trimmed, { saveTargetAngle, saveMachine, saveUsb });
     if (clearAfterSave) {
       clearSessionSteps();
     }
     setPresetNameDraft('');
     onClose();
-  }, [presetNameDraft, includeHardware, presetState, clearAfterSave, clearSessionSteps, setPresetNameDraft, onClose]);
+  }, [presetNameDraft, saveTargetAngle, saveMachine, saveUsb, presetState, clearAfterSave, clearSessionSteps, setPresetNameDraft, onClose]);
 
   const canSave = sessionStepsCount > 0 && presetNameDraft.trim().length > 0;
   const isOverwrite = presetState.sessionPresets.some(
@@ -90,18 +94,53 @@ export function SavePresetDialog() {
           )}
         </div>
 
-        <label className="flex items-center gap-3 bg-black/20 border border-white/5 rounded-2xl p-4 cursor-pointer transition-colors hover:bg-black/30">
-          <input
-            type="checkbox"
-            className="w-5 h-5 rounded border-white/10 bg-black/40 text-amber-400 focus:ring-amber-400/30 focus:ring-offset-0 transition-all cursor-pointer"
-            checked={includeHardware}
-            onChange={(e) => setIncludeHardware(e.target.checked)}
-          />
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-white/90">Bind Hardware</span>
-            <span className="text-[10px] text-white/40 leading-tight mt-0.5">Save current machine and USB selections with this preset.</span>
+        <div className="flex flex-col gap-2">
+          <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-0.5">
+            Context Overrides
+          </label>
+          <div className="flex flex-col bg-black/20 border border-white/5 rounded-2xl overflow-hidden">
+            <label className="flex items-center gap-3 p-4 border-b border-white/5 cursor-pointer transition-colors hover:bg-black/30">
+              <input
+                type="checkbox"
+                className="w-5 h-5 rounded border-white/10 bg-black/40 text-amber-400 focus:ring-amber-400/30 focus:ring-offset-0 transition-all cursor-pointer"
+                checked={saveTargetAngle}
+                onChange={(e) => setSaveTargetAngle(e.target.checked)}
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white/90">Target Angle</span>
+                <span className="text-[10px] text-white/40 leading-tight mt-0.5">Save the current target angle.</span>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 p-4 border-b border-white/5 cursor-pointer transition-colors hover:bg-black/30">
+              <input
+                type="checkbox"
+                className="w-5 h-5 rounded border-white/10 bg-black/40 text-amber-400 focus:ring-amber-400/30 focus:ring-offset-0 transition-all cursor-pointer"
+                checked={saveMachine}
+                onChange={(e) => setSaveMachine(e.target.checked)}
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white/90">Bind Global Machine</span>
+                <span className="text-[10px] text-white/40 leading-tight mt-0.5">
+                  Force the entire app to switch to your active machine. (Step overrides are always saved).
+                </span>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 p-4 cursor-pointer transition-colors hover:bg-black/30">
+              <input
+                type="checkbox"
+                className="w-5 h-5 rounded border-white/10 bg-black/40 text-amber-400 focus:ring-amber-400/30 focus:ring-offset-0 transition-all cursor-pointer"
+                checked={saveUsb}
+                onChange={(e) => setSaveUsb(e.target.checked)}
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white/90">Bind Global USB Setup</span>
+                <span className="text-[10px] text-white/40 leading-tight mt-0.5">
+                  Force the entire app to switch to your active USB. (Step overrides are always saved).
+                </span>
+              </div>
+            </label>
           </div>
-        </label>
+        </div>
 
         <div className="flex justify-end items-center gap-3 pt-2">
           <button

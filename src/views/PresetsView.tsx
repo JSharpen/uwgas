@@ -55,15 +55,6 @@ export default function PresetsView() {
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Presets</h1>
-          <p className="text-sm text-white/50 font-medium mt-1">
-            Manage your saved setups and progressions.
-          </p>
-        </div>
-      </div>
-
       {sessionPresets.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 bg-black/20 rounded-3xl border border-white/5 text-center mt-8">
           <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 text-white/20">
@@ -149,13 +140,11 @@ export default function PresetsView() {
                     </div>
                   )}
                   <div className={`flex items-center gap-2 text-xs mt-1 truncate w-full text-left ${isActive ? 'text-amber-400/60' : 'text-white/40'}`}>
-                    <span>{p.steps.length} step{p.steps.length === 1 ? '' : 's'}</span>
-                    <span className="opacity-50">•</span>
-                    <span>{p.context?.targetAngle !== undefined ? `${p.context.targetAngle}°` : '__° (TBD)'}</span>
-                    {(p.context?.machineId || p.includeHardware) && hwStr && (
+                    <span className="shrink-0">{p.steps.length} step{p.steps.length === 1 ? '' : 's'}</span>
+                    {p.steps.length > 0 && (
                       <>
-                        <span className="opacity-50">•</span>
-                        <span className="truncate text-cyan-400/70">{hwStr}</span>
+                        <span className="opacity-50 shrink-0">•</span>
+                        <span className="truncate">{p.steps.map(s => s.wheelName).join(' ➔ ')}</span>
                       </>
                     )}
                   </div>

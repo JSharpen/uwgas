@@ -14,7 +14,8 @@ export default function DevStateView() {
   };
 
   const handleInjectDummyData = () => {
-    const { addStep, wheels } = useStore.getState();
+    const state = useStore.getState();
+    const wheels = state.wheels;
     const coarseWheel = wheels.find((w) => w.id === 'w-sg250') || wheels[0];
     const fineWheel = wheels.find((w) => w.id === 'w-sj250') || wheels[0];
     const leatherWheel = wheels.find((w) => w.id === 'w-la220') || wheels[1] || wheels[0];
@@ -24,10 +25,51 @@ export default function DevStateView() {
       return;
     }
 
-    addStep(coarseWheel.id);
-    addStep(fineWheel.id);
-    addStep(leatherWheel.id);
-    alert('Injected 3 dummy progression steps!');
+    import('../../utils/id').then(({ generateId }) => {
+      const dummyPreset1: import('../../types/core').SessionPreset = {
+        id: generateId(),
+        name: 'Standard Kitchen Knife',
+        createdAt: new Date().toISOString(),
+        version: 2 as const,
+        steps: [
+          { wheelId: coarseWheel.id, wheelName: coarseWheel.name, base: 'rear', angleOffset: 0 },
+          { wheelId: fineWheel.id, wheelName: fineWheel.name, base: 'rear', angleOffset: 0 },
+          { wheelId: leatherWheel.id, wheelName: leatherWheel.name, base: 'front', angleOffset: 0.2 },
+        ],
+        includeHardware: true,
+        context: {
+          targetAngle: 15,
+          machineId: 'tormek-t8',
+          usbId: 'front-vertical'
+        }
+      };
+
+      const dummyPreset2: import('../../types/core').SessionPreset = {
+        id: generateId(),
+        name: 'Quick Touch Up',
+        createdAt: new Date().toISOString(),
+        version: 2 as const,
+        steps: [
+          { wheelId: fineWheel.id, wheelName: fineWheel.name, base: 'rear', angleOffset: 0 },
+        ],
+        includeHardware: false,
+        context: {
+          targetAngle: 20
+        }
+      };
+
+      useStore.setState(s => ({
+        sessionPresets: [...s.sessionPresets, dummyPreset1, dummyPreset2]
+      }));
+
+      // Also set it as the active progression just in case
+      state.clearSessionSteps();
+      state.addStep(coarseWheel.id);
+      state.addStep(fineWheel.id);
+      state.addStep(leatherWheel.id);
+      
+      alert('Injected 3 dummy progression steps and 2 dummy presets with full metadata!');
+    });
   };
 
   const handleNukeState = () => {
@@ -64,9 +106,9 @@ export default function DevStateView() {
             onClick={handleInjectDummyData}
             className="flex items-center justify-center p-3 rounded-xl bg-amber-400/10 hover:bg-amber-400/20 active:bg-amber-400/30 text-amber-400 font-semibold border border-amber-400/20 transition-colors"
           >
-            Inject Dummy Progression
+            Inject Dummy Data
           </button>
-          <p className="text-xs text-white/40 -mt-2">Fills your active progression list with a coarse, fine, and honing wheel step.</p>
+          <p className="text-xs text-white/40 -mt-2">Injects dummy presets with full metadata, and populates your active progression.</p>
         </div>
 
         <div className="flex flex-col gap-4 border-t border-white/5 pt-6">

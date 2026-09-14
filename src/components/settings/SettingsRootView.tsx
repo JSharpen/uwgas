@@ -55,7 +55,7 @@ export default function SettingsRootView() {
         const stateStr = localStorage.getItem('uwgas_app_state_v1') || '';
         storageSize = (stateStr.length / 1024).toFixed(2) + ' KB';
       }
-    } catch (e) {
+    } catch {
       stateDump = 'Unable to serialize state.';
       uiDump = 'Unable to serialize UI.';
     }
@@ -131,7 +131,7 @@ Note: If your bug is highly specific to a tool or custom profile, please also at
               if (sec.action) {
                 sec.action();
               } else {
-                // @ts-ignore
+                // @ts-expect-error: TypeScript complains about sec.id not strictly matching SettingsSection union, but we enforce it upstream
                 setSettingsView(sec.id);
               }
             }}

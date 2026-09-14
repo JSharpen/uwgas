@@ -275,8 +275,12 @@ export function ContextBar() {
         </div>
       );
     } else {
-      // Empty slots when nothing is selected
-      centerSlot = null;
+      // Ambient info when nothing is selected
+      centerSlot = (
+        <h2 className="text-[10px] sm:text-xs font-bold tracking-widest uppercase truncate text-white/40 mx-2 text-center">
+          {sessionPresets.length} Saved {sessionPresets.length === 1 ? 'Setup' : 'Setups'}
+        </h2>
+      );
     }
   } else if (view === 'wheels') {
     centerSlot = (

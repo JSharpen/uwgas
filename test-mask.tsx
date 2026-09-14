@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useMotionTemplate, motion } from "framer-motion";
 
 export const Component = () => {
@@ -10,7 +11,7 @@ export const Component = () => {
         '--mask-image': maskImage,
         maskImage: 'var(--mask-image)',
         WebkitMaskImage: 'var(--mask-image)'
-      } as any}
+      } as React.CSSProperties & Record<string, unknown>}
     />
   );
 };

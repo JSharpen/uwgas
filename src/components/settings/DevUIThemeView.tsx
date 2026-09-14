@@ -53,7 +53,7 @@ export default function DevUIThemeView() {
               <select 
                 className="bg-black border border-white/10 text-xs px-2 py-1 rounded-lg text-amber-400 font-mono"
                 value={state.debugLayoutMode}
-                onChange={(e) => state.setDebugLayoutMode(e.target.value as any)}
+                onChange={(e) => state.setDebugLayoutMode(e.target.value as 'none' | 'semantic' | 'universal' | 'touch' | 'wireframe')}
               >
                 <option value="none">Off (Production)</option>
                 <option value="semantic">Semantic (Containers)</option>
