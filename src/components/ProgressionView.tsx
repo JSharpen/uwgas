@@ -128,12 +128,14 @@ const StepCard = React.memo(function StepCard({
   return (
     <div
       ref={cardRef}
-      className="relative flex flex-col motion-list-item transition-all duration-300 group scroll-m-[120px] sm:scroll-m-[160px]"
+      className={`relative flex flex-col motion-list-item overflow-hidden transition-all duration-300 group scroll-m-[120px] sm:scroll-m-[160px] neu-convex rounded-3xl border shadow-lg ${isExpanded ? 'border-amber-400/30' : 'border-black/40'}`}
       style={{ '--motion-order': index, viewTransitionName: `step-${stepId}` } as React.CSSProperties}
     >
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+
       {/* ===== View State (Clickable to Expand) ===== */}
       <div 
-        className={`flex justify-between items-center px-4 sm:px-6 relative z-20 cursor-pointer ${isExpanded ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} transition-all duration-300 rounded-3xl border border-black/40 shadow-lg select-none`}
+        className={`flex justify-between items-center px-4 sm:px-6 relative z-10 cursor-pointer transition-colors ${isExpanded ? 'bg-white/5' : 'hover:bg-white/5 active:bg-white/10'}`}
         style={{ minHeight: 'var(--step-card-height, 5.5rem)' }}
         onClick={onToggleExpand}
         onTouchStart={handleTouchStart}
@@ -218,10 +220,10 @@ const StepCard = React.memo(function StepCard({
       {/* ===== Edit State (Collapsible) ===== */}
       {r.step && onUpdateStep && (
         <div 
-          className={`relative z-10 neu-concave transition-[grid-template-rows,opacity,border-color] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] border-b border-l border-r border-t-0 rounded-b-3xl -mt-6 pt-6 grid ${isExpanded ? 'grid-rows-[1fr] opacity-100 pointer-events-auto shadow-inner border-black/40' : 'grid-rows-[0fr] opacity-0 border-transparent pointer-events-none'}`}
+          className="grid transition-[grid-template-rows] duration-300 ease-in-out relative z-10" style={{ gridTemplateRows: isExpanded ? "1fr" : "0fr" }}
         >
-          <div className="overflow-hidden">
-            <div className="px-4 sm:px-5 pb-5 pt-3 flex flex-col gap-4">
+          <div className="overflow-hidden min-h-0">
+            <div className="px-4 sm:px-6 pb-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
               
               {/* Steppers */}
               <div className="flex flex-col sm:flex-row items-center gap-4">

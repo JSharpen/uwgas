@@ -118,14 +118,14 @@ export function ContextBar() {
   }
 
   // --- Normal Layouts ---
-  let leftSlot = <div className="flex-1 flex justify-start min-w-[80px]" />;
+  let leftSlot = <div className="flex-1 flex justify-start min-w-[80px] min-h-11" />;
   let centerSlot = null;
-  let rightSlot = <div className="flex-1 flex justify-end min-w-[80px]" />;
+  let rightSlot = <div className="flex-1 flex justify-end min-w-[80px] min-h-11" />;
 
   if (calibratingMachineId) {
     if (calibrationStep === 'measuring') {
       leftSlot = (
-        <div className="flex-1 flex justify-start min-w-[80px]">
+        <div className="flex-1 flex justify-start min-w-[80px] min-h-11">
           <button
             type="button"
             className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
@@ -136,7 +136,7 @@ export function ContextBar() {
         </div>
       );
       rightSlot = (
-        <div className="flex-1 flex justify-end min-w-[80px]">
+        <div className="flex-1 flex justify-end min-w-[80px] min-h-11">
           <button
             type="button"
             className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
@@ -148,7 +148,7 @@ export function ContextBar() {
       );
     } else {
       leftSlot = (
-        <div className="flex-1 flex justify-start min-w-[80px]">
+        <div className="flex-1 flex justify-start min-w-[80px] min-h-11">
           <button
             type="button"
             className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
@@ -160,7 +160,7 @@ export function ContextBar() {
       );
       if (calibrationStep === 'intro') {
         rightSlot = (
-          <div className="flex-1 flex justify-end min-w-[80px]">
+          <div className="flex-1 flex justify-end min-w-[80px] min-h-11">
             <button
               type="button"
               className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
@@ -171,7 +171,7 @@ export function ContextBar() {
           </div>
         );
       } else {
-        rightSlot = <div className="flex-1 flex justify-end min-w-[80px]" />;
+        rightSlot = <div className="flex-1 flex justify-end min-w-[80px] min-h-11" />;
       }
     }
     
@@ -190,7 +190,7 @@ export function ContextBar() {
     );
   } else if (expandedEquipmentId) {
     leftSlot = (
-      <div className="flex-1 flex justify-start min-w-[80px]">
+      <div className="flex-1 flex justify-start min-w-[80px] min-h-11">
         <button
           type="button"
           className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
@@ -221,7 +221,7 @@ export function ContextBar() {
       </h2>
     );
 
-    rightSlot = <div className="flex-1 flex justify-end min-w-[80px]" />;
+    rightSlot = <div className="flex-1 flex justify-end min-w-[80px] min-h-11" />;
   } else if (expandedStepId) {
     const stepIndex = sessionSteps.findIndex(s => s.id === expandedStepId);
     
@@ -235,7 +235,7 @@ export function ContextBar() {
     };
 
     leftSlot = (
-      <div className="flex-1 flex justify-start min-w-[80px]">
+      <div className="flex-1 flex justify-start min-w-[80px] min-h-11">
         <button
           type="button"
           className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 active:scale-95 transition flex items-center justify-center cursor-pointer"
@@ -253,12 +253,12 @@ export function ContextBar() {
     );
 
     rightSlot = (
-      <div className="flex-1 flex justify-end min-w-[80px]">
-        <div className="flex items-center rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-sm">
+      <div className="flex-1 flex justify-end min-w-[80px] min-h-11">
+        <div className="h-11 flex items-center rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-sm">
           <button
             type="button"
             disabled={stepIndex === 0}
-            className="h-11 px-4 sm:px-5 font-bold text-lg text-white hover:bg-white/10 active:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition border-r border-white/10 flex items-center justify-center cursor-pointer"
+            className="h-full px-4 sm:px-5 font-bold text-lg text-white hover:bg-white/10 active:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition border-r border-white/10 flex items-center justify-center cursor-pointer"
             onClick={() => {
               const action = () => useStore.getState().moveStep(stepIndex, -1);
               if (document.startViewTransition) document.startViewTransition(action);
@@ -270,7 +270,7 @@ export function ContextBar() {
           <button
             type="button"
             disabled={stepIndex === sessionSteps.length - 1}
-            className="h-11 px-4 sm:px-5 font-bold text-lg text-white hover:bg-white/10 active:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition flex items-center justify-center cursor-pointer"
+            className="h-full px-4 sm:px-5 font-bold text-lg text-white hover:bg-white/10 active:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition flex items-center justify-center cursor-pointer"
             onClick={() => {
               const action = () => useStore.getState().moveStep(stepIndex, 1);
               if (document.startViewTransition) document.startViewTransition(action);
@@ -285,7 +285,7 @@ export function ContextBar() {
   } else if (view === 'calculator') {
     if (isPresetMenuOpen) {
       leftSlot = (
-        <div className="flex-1 flex justify-start min-w-[80px]">
+        <div className="flex-1 flex justify-start min-w-[80px] min-h-11">
           <button
             type="button"
             className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
@@ -301,7 +301,7 @@ export function ContextBar() {
         </div>
       );
       rightSlot = (
-        <div className="flex-1 flex justify-end min-w-[80px]">
+        <div className="flex-1 flex justify-end min-w-[80px] min-h-11">
           <button
             type="button"
             className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer shrink-0"
@@ -318,7 +318,7 @@ export function ContextBar() {
       );
     } else {
       leftSlot = (
-        <div className="flex-1 flex justify-start min-w-[80px]">
+        <div className="flex-1 flex justify-start min-w-[80px] min-h-11">
           <button
             type="button"
             className={`h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider border transition flex items-center justify-center
@@ -361,7 +361,7 @@ export function ContextBar() {
       );
       
       rightSlot = (
-        <div className="flex-1 flex justify-end min-w-[80px]">
+        <div className="flex-1 flex justify-end min-w-[80px] min-h-11">
           <button
             type="button"
             className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
@@ -388,7 +388,7 @@ export function ContextBar() {
   } else if (view === 'presets') {
     if (expandedPresetId) {
       leftSlot = (
-        <div className="flex-1 flex justify-start min-w-[80px]">
+        <div className="flex-1 flex justify-start min-w-[80px] min-h-11">
           <button
             type="button"
             className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
@@ -425,7 +425,7 @@ export function ContextBar() {
       );
 
       rightSlot = (
-        <div className="flex-1 flex justify-end min-w-[80px]">
+        <div className="flex-1 flex justify-end min-w-[80px] min-h-11">
           <button
             type="button"
             className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
@@ -450,7 +450,7 @@ export function ContextBar() {
   } else if (view === 'settings') {
     if (settingsView === 'root') {
       leftSlot = (
-        <div className="flex-1 flex justify-start min-w-[80px]">
+        <div className="flex-1 flex justify-start min-w-[80px] min-h-11">
           <div className="h-11 px-3 rounded-2xl font-mono text-[10px] sm:text-xs text-white/30 border border-white/5 bg-black/20 flex items-center justify-center">
             v{APP_VERSION_DISPLAY}
           </div>
@@ -463,7 +463,7 @@ export function ContextBar() {
       );
     } else {
       leftSlot = (
-        <div className="flex-1 flex justify-start min-w-[80px]">
+        <div className="flex-1 flex justify-start min-w-[80px] min-h-11">
           <button
             onClick={() => setSettingsView(settingsView.startsWith('dev-') ? 'dev' : 'root')}
             className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider border bg-white/5 border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"

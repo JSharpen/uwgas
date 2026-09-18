@@ -40,3 +40,9 @@ The UI heavily depends on runtime-injected CSS variables (`--ui-scale`, `--step-
 - **Invisible Fixed-Header Spacers**: Because the `ContextBar` is fixed, elements behind it need to be pushed down. Instead of a hardcoded margin, an invisible `div` reserves the exact space using the injected CSS vars: 
   `<div className="w-full shrink-0" style={{ height: \`calc(${headerActualHeight}px + var(--card-stack-gap, 12px) - 1rem)\` }} />`
 - **Safari `padding-bottom` Scrolling Bug**: The app avoids placing `padding-bottom` directly on `overflow-y-auto` elements (which iOS Safari ignores). Instead, it relies on adding structural spacer divs or expanding the Bottom Tab Bar's physical height to achieve bottom clearance.
+
+## 7. Selection & Expansion Behavior (Cards & Accordions)
+- **Unified Selection Highlight:** When a card (such as a Machine, Wheel, or Progression Step) is expanded/selected, the outer container must use `border-amber-400/30`. The unselected state uses `border-black/40`.
+- **Inner Header Highlight:** The clickable header region of the card changes from `hover:bg-white/5 active:bg-white/10` to a flat `bg-white/5` when expanded.
+- **Title Accent Color:** The title text within the header transitions from `text-white` to `text-amber-400` (or `text-amber-400/80`) when selected, reinforcing the active state.
+- **Collapsible Details (Grid Trick):** The detail pane inside the card expands using CSS grid (`grid-template-rows: 1fr` vs `0fr`). To prevent layout clipping during the transition, the container applies `overflow-hidden` and houses the padding elements *inside* the child `div`.
