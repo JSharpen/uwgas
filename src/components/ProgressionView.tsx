@@ -141,7 +141,7 @@ const StepCard = React.memo(function StepCard({
       >
         <div className="flex flex-col gap-1 min-w-0 flex-1 pr-3 sm:pr-4 relative z-10">
           <div className="flex items-center gap-2 w-full">
-            <span className="text-base font-medium text-white tracking-wide truncate">
+            <span className={`text-base font-medium tracking-wide truncate transition-colors ${isExpanded ? 'text-amber-400' : 'text-white'}`}>
               {r.wheel.name}
             </span>
           </div>

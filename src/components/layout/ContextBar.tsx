@@ -254,13 +254,32 @@ export function ContextBar() {
 
     rightSlot = (
       <div className="flex-1 flex justify-end min-w-[80px]">
-        <button
-          type="button"
-          className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
-          onClick={() => useUIStore.getState().setExpandedStepId(null)}
-        >
-          Done
-        </button>
+        <div className="flex items-center rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-sm">
+          <button
+            type="button"
+            disabled={stepIndex === 0}
+            className="h-11 px-4 sm:px-5 font-bold text-lg text-white hover:bg-white/10 active:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition border-r border-white/10 flex items-center justify-center cursor-pointer"
+            onClick={() => {
+              const action = () => useStore.getState().moveStep(stepIndex, -1);
+              if (document.startViewTransition) document.startViewTransition(action);
+              else action();
+            }}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            disabled={stepIndex === sessionSteps.length - 1}
+            className="h-11 px-4 sm:px-5 font-bold text-lg text-white hover:bg-white/10 active:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition flex items-center justify-center cursor-pointer"
+            onClick={() => {
+              const action = () => useStore.getState().moveStep(stepIndex, 1);
+              if (document.startViewTransition) document.startViewTransition(action);
+              else action();
+            }}
+          >
+            ↓
+          </button>
+        </div>
       </div>
     );
   } else if (view === 'calculator') {
