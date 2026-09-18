@@ -39,7 +39,6 @@ export const DEFAULT_WHEELS: Wheel[] = [
     id: `wheel-sg250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: 'SG-250 Original Grindstone',
     D: 250.0,
-    angleOffset: 0,
     baseForHn: 'rear',
     isHoning: false,
   },
@@ -47,7 +46,6 @@ export const DEFAULT_WHEELS: Wheel[] = [
     id: `wheel-sj250-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: 'SJ-250 Japanese Waterstone',
     D: 250.0,
-    angleOffset: 0,
     baseForHn: 'rear',
     isHoning: false,
   },
@@ -58,7 +56,6 @@ export const DEFAULT_WHEELS: Wheel[] = [
     id: `wheel-la220-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: 'LA-220 Leather Honing Wheel',
     D: 215.0, // you can change to your measured value (e.g. 215) if you prefer
-    angleOffset: 0,
     baseForHn: 'front',
     isHoning: true,
   },

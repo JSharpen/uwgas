@@ -24,7 +24,11 @@ export const createPresetSlice: StateCreator<
       const trimmed = name.trim();
       if (!trimmed || state.sessionSteps.length === 0) return state;
       
-      const includeHardware = !!(saveMachine || saveUsb);
+      const includeHardware = !!(
+        saveMachine || 
+        saveUsb || 
+        state.sessionSteps.some(s => s.machineId || s.usbId)
+      );
       
       const newSteps = state.sessionSteps.map((s) => {
         const w = state.wheels.find((wx) => wx.id === s.wheelId);
@@ -109,15 +113,17 @@ export const createPresetSlice: StateCreator<
       
       let nextGlobal = state.global;
       
-      // Apply hardware from context if available, otherwise fallback to complex step inspection
+      // Apply hardware from context if available
       if (preset.context?.machineId || preset.context?.usbId) {
         nextGlobal = {
           ...nextGlobal,
           activeMachineId: preset.context.machineId ?? nextGlobal.activeMachineId,
           activeUsbId: preset.context.usbId ?? nextGlobal.activeUsbId,
-          showAdvancedStepOverrides: true,
         };
-      } else if (hasComplexHardware && !state.global.showAdvancedStepOverrides) {
+      }
+      
+      // Independently enable advanced step overrides if the preset relies on them
+      if (hasComplexHardware && !state.global.showAdvancedStepOverrides) {
         nextGlobal = { ...nextGlobal, showAdvancedStepOverrides: true };
       }
       

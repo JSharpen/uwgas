@@ -22,12 +22,19 @@ export const createWheelSlice: StateCreator<
   wheels: DEFAULT_WHEELS,
   addWheel: (wheel) =>
     set((state) => ({
-      wheels: [...state.wheels, normalizeWheel({ ...wheel, id: generateId() })],
+      wheels: [...state.wheels, normalizeWheel({ ...wheel, id: generateId(), measuredAt: Date.now() })],
     })),
   updateWheel: (id, patch) =>
-    set((state) => ({
-      wheels: state.wheels.map((w) => (w.id === id ? normalizeWheel({ ...w, ...patch }) : w)),
-    })),
+    set((state) => {
+      // If diameter is modified, automatically update the measurement timestamp
+      const updatedPatch = { ...patch };
+      if ('D' in updatedPatch || 'DText' in updatedPatch) {
+        updatedPatch.measuredAt = Date.now();
+      }
+      return {
+        wheels: state.wheels.map((w) => (w.id === id ? normalizeWheel({ ...w, ...updatedPatch }) : w)),
+      };
+    }),
   deleteWheel: (id) =>
     set((state) => ({
       wheels: state.wheels.filter((w) => w.id !== id),

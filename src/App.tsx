@@ -3,7 +3,7 @@ import { useUIStore } from './state/uiStore';
 import { useDevStore } from './state/devStore';
 
 import CalculatorView from './views/CalculatorView';
-import WheelManagerView from './components/wheels/WheelManagerView';
+import EquipmentView from './views/EquipmentView';
 import SettingsView from './views/SettingsView';
 import PresetsView from './views/PresetsView';
 import { PresetManagerModal } from './components/presets/PresetManagerModal';
@@ -52,7 +52,7 @@ export default function App() {
   ]);
 
   return (
-    <div className="min-h-dvh bg-[#09090b] text-white px-3 py-3 sm:px-0 sm:py-4 pb-[200px] flex flex-col gap-4 max-w-[576px] mx-auto selection:bg-amber-400/30 selection:text-white">
+    <div className="min-h-dvh bg-[#09090b] text-white px-3 py-3 sm:px-0 sm:py-4 pb-[110px] flex flex-col gap-4 max-w-[576px] mx-auto selection:bg-amber-400/30 selection:text-white">
       {import.meta.env.DEV && (
         <div className="fixed top-1 left-1 opacity-40 pointer-events-none z-[100] px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-[9px] font-mono font-bold text-amber-400">
           UWGAS DEV BUILD
@@ -68,7 +68,7 @@ export default function App() {
       {/* Main Routed View */}
       <main className="flex-1 w-full">
         {view === 'calculator' && <CalculatorView />}
-        {view === 'wheels' && <WheelManagerView />}
+        {view === 'equipment' && <EquipmentView />}
         {view === 'presets' && <PresetsView />}
         {view === 'settings' && <SettingsView />}
       </main>

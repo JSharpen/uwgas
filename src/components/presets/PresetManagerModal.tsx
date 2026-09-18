@@ -164,7 +164,7 @@ export function PresetManagerModal() {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className="h-10 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 disabled:opacity-30 disabled:hover:bg-amber-400 disabled:cursor-not-allowed text-black font-bold text-xs shadow-sm transition-all"
+                          className="h-11 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-30 disabled:hover:bg-amber-400 disabled:cursor-not-allowed text-black font-bold text-xs uppercase tracking-wider shadow-sm transition-all active:scale-95 flex items-center justify-center"
                           disabled={renameDisabled}
                           onClick={handleCommitRename}
                         >
@@ -172,7 +172,7 @@ export function PresetManagerModal() {
                         </button>
                         <button
                           type="button"
-                          className="h-10 px-3.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/25 text-white font-semibold text-xs transition-colors"
+                          className="h-11 px-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center"
                           onClick={handleCancelRename}
                         >
                           Cancel
@@ -182,7 +182,7 @@ export function PresetManagerModal() {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className="h-10 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-bold text-xs shadow-sm transition-all flex items-center justify-center"
+                          className="h-11 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-xs uppercase tracking-wider shadow-sm transition-all active:scale-95 flex items-center justify-center"
                           onClick={() => {
                             onLoadPreset(preset.id);
                             onClose();
@@ -192,14 +192,14 @@ export function PresetManagerModal() {
                         </button>
                         <button
                           type="button"
-                          className="h-10 px-3.5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/25 text-white font-semibold text-xs transition-colors flex items-center justify-center"
+                          className="h-11 px-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center"
                           onClick={() => handleBeginRename(preset)}
                         >
                           Rename
                         </button>
                         <button
                           type="button"
-                          className="h-10 px-3.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-400 hover:text-red-300 font-semibold text-xs transition-colors flex items-center justify-center"
+                          className="h-11 px-3.5 rounded-xl bg-red-500 hover:bg-red-400 text-white font-bold text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all active:scale-95 flex items-center justify-center"
                           onClick={() => onDeletePreset(preset.id)}
                         >
                           Delete

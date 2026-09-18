@@ -30,19 +30,54 @@ export const createCalculatorSlice: StateCreator<
 > = (set) => ({
   global: DEFAULT_GLOBAL,
   setGlobal: (patch) =>
-    set((state) => ({
-      global: typeof patch === 'function' ? patch(state.global) : { ...state.global, ...patch },
-    })),
+    set((state) => {
+      const nextGlobal = typeof patch === 'function' ? patch(state.global) : { ...state.global, ...patch };
+      
+      // If we are in projection mode, enforce that the active jig is adjustable
+      if (nextGlobal.calcMode === 'projection') {
+        const activeJig = state.jigs.find(j => j.id === nextGlobal.activeJigId);
+        if (activeJig && !activeJig.isAdjustableLength) {
+          // Find the first adjustable jig
+          const fallbackJig = state.jigs.find(j => j.isAdjustableLength);
+          if (fallbackJig) {
+            nextGlobal.activeJigId = fallbackJig.id;
+          }
+        }
+      }
+      
+      return { global: nextGlobal };
+    }),
   setTargetAngle: (targetAngle) =>
     set((state) => ({ global: { ...state.global, targetAngle } })),
   setProjection: (projection) =>
     set((state) => ({ global: { ...state.global, projection } })),
   setCalcMode: (calcMode) =>
-    set((state) => ({ global: { ...state.global, calcMode } })),
+    set((state) => {
+      const nextGlobal = { ...state.global, calcMode };
+      if (calcMode === 'projection') {
+        const activeJig = state.jigs.find(j => j.id === nextGlobal.activeJigId);
+        if (activeJig && !activeJig.isAdjustableLength) {
+          const fallbackJig = state.jigs.find(j => j.isAdjustableLength);
+          if (fallbackJig) {
+            nextGlobal.activeJigId = fallbackJig.id;
+          }
+        }
+      }
+      return { global: nextGlobal };
+    }),
   setActiveUsbId: (activeUsbId) =>
     set((state) => ({ global: { ...state.global, activeUsbId } })),
   setActiveJigId: (activeJigId) =>
-    set((state) => ({ global: { ...state.global, activeJigId } })),
+    set((state) => {
+      if (state.global.calcMode === 'projection') {
+        const selectedJig = state.jigs.find(j => j.id === activeJigId);
+        if (selectedJig && !selectedJig.isAdjustableLength) {
+          // Reject the change if the jig is not adjustable and we are in projection mode
+          return state;
+        }
+      }
+      return { global: { ...state.global, activeJigId } };
+    }),
   setFixedUsbHeight: (fixedUsbHeight) =>
     set((state) => ({ global: { ...state.global, fixedUsbHeight } })),
   setFixedUsbRear: (fixedUsbRear) =>

@@ -16,6 +16,8 @@
 | **JOB-021** | Gesture-Based Step Reordering (Drag and Drop) | `[PROPOSED]` | **MEDIUM** | Implement native-feeling touch drag-and-drop reordering for the Progression list (e.g. using `@dnd-kit`), adding drag handles to avoid clicking up/down buttons. |
 | **JOB-028** | Full Hardware API Integration (Roadmap) | `[PROPOSED]` | **MEDIUM** | Extend initial `History API` back-button trap to full native hardware integration. Explore potential integrations with digital angle cubes (via WebBluetooth/WebUSB), digital calipers, physical keyboard steppers, or haptic feedback. |
 | **JOB-029** | Refine Versioning Logic | `[PROPOSED]` | **HIGH** | Discuss and implement bumping the version at the time of merging `dev` to `main`, and updating the build number on commits based on diffs. |
+| **JOB-030** | JSON Import/Export & Alias Mapping Wizard | `[PROPOSED]` | **HIGH** | Build full JSON state import/export. When importing presets, batch-scan the JSON for missing hardware UUIDs and present a single 'Global Alias Mapping' modal to resolve all unknown hardware before atomically committing to the Zustand store. |
+| **JOB-031** | True Least-Squares Calibration Solver | `[READY]` | **MEDIUM** | Upgrade `calibrateBase` from the current anchored algebraic shortcut to a true least-squares optimization (distributing error evenly across all measured points) to maximize mathematical robustness against human measurement errors on Point 1. |
 
 
 ---

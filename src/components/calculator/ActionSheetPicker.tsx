@@ -5,6 +5,7 @@ type Option = {
   value: string;
   label: string;
   meta?: React.ReactNode;
+  disabled?: boolean;
 };
 
 type Props = {
@@ -69,16 +70,19 @@ export default function ActionSheetPicker({ isOpen, onClose, title, options, val
               <button
                 key={opt.value}
                 type="button"
+                disabled={opt.disabled}
                 className={`flex items-center justify-between p-4 rounded-2xl border transition-all min-h-[48px] ${
                   isSelected 
                     ? 'bg-amber-400/10 border-amber-400/40 text-amber-300 shadow-sm font-bold' 
-                    : 'bg-black/30 hover:bg-white/5 active:bg-white/10 border-white/5 text-white/90'
+                    : opt.disabled
+                      ? 'bg-black/20 border-white/5 text-white/30 cursor-not-allowed opacity-50'
+                      : 'bg-black/30 hover:bg-white/5 active:bg-white/10 border-white/5 text-white/90'
                 }`}
                 onClick={() => handleSelect(opt.value)}
               >
                 <span className="font-semibold text-sm sm:text-base text-left truncate">{opt.label}</span>
                 {opt.meta && (
-                  <span className={`text-xs font-mono ml-2 shrink-0 ${isSelected ? 'text-amber-300/80 font-bold' : 'text-white/40'}`}>
+                  <span className={`text-xs font-mono ml-2 shrink-0 ${isSelected ? 'text-amber-300/80 font-bold' : opt.disabled ? 'text-white/20' : 'text-white/40'}`}>
                     {opt.meta}
                   </span>
                 )}

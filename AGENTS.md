@@ -14,6 +14,11 @@ The user is the Product Owner and Designer, but has minimal to no understanding 
 - **Own the Process:** You are responsible for safely managing Git branches, running the dev server, testing the UI, and deploying. Do not assume the user will catch your syntax errors.
 - **Proactive UX Ideation:** When refactoring legacy UI or removing outdated defaults (such as empty states or placeholder screens), do not simply delete them and leave a void. Proactively analyze the workshop domain and propose creative, context-aware alternatives (e.g., quick-start dashboards, recent presets, hardware verification checks) with brief explanations of *why* they work ergonomically before proceeding.
 
+## 📢 Mandatory Rule Citation (CRITICAL)
+When proposing or implementing UI, architectural, or logic changes, you **MUST explicitly cite** the specific section of `docs/DESIGN_LANGUAGE.md`, `ARCHITECTURE.md`, or `AGENTS.md` that you are following in your response to the user. 
+- *Example*: *"Following the [Context Bar Protocol] in DESIGN_LANGUAGE.md, I am placing these actions in the top header rather than the scrollable view."*
+This provides the user with visibility into which constraints are guiding your code decisions.
+
 ---
 
 ## 🧭 Mandatory Session Start Protocol
@@ -30,6 +35,8 @@ When starting or resuming a conversation on this codebase, you **MUST** immediat
    - Understand the component boundaries, state schema, and pure math engine.
 4. 🛠️ **[docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)**:
    - Follow development commands, branching rules (`dev` $\rightarrow$ `main`), and touch-first workshop design rules.
+5. 🎨 **[docs/DESIGN_LANGUAGE.md](docs/DESIGN_LANGUAGE.md)**:
+   - **MUST READ**: Contains the strict UI constraints, Context Bar paradigms, and structural rules that govern all view and component implementations.
 
 ---
 

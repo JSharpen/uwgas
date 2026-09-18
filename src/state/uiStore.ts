@@ -26,8 +26,11 @@ export type TopBarConfirmation = {
 };
 
 export interface UIState {
-  view: 'calculator' | 'wheels' | 'presets' | 'settings';
-  settingsView: 'root' | 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction';
+  calibratingMachineId: string | null;
+  calibrationStep: 'intro' | 'measuring' | 'results';
+  view: 'calculator' | 'equipment' | 'presets' | 'settings';
+  settingsView: 'root' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction';
+  equipmentTab: 'machines' | 'wheels' | 'jigs' | 'usbs';
   isSetupPanelOpen: boolean;
   activeUsbTab: 'rear' | 'front';
   activeSheet: 'none' | 'jig' | 'usb' | 'preset' | 'machine';
@@ -43,14 +46,19 @@ export interface UIState {
   topBarConfirmation: TopBarConfirmation | null;
   focusWheelId: string | null;
   expandedPresetId: string | null;
+  expandedEquipmentId: string | null;
+  expandedStepId: string | null;
   exportSections: ImportSections;
   importSections: ImportSections;
   importModes: ImportModes;
 
   // Actions
-  setView: (view: 'calculator' | 'wheels' | 'presets' | 'settings') => void;
+  setView: (view: 'calculator' | 'equipment' | 'presets' | 'settings') => void;
+  setEquipmentTab: (tab: 'machines' | 'wheels' | 'jigs' | 'usbs') => void;
+  setCalibratingMachineId: (id: string | null) => void;
+  setCalibrationStep: (step: 'intro' | 'measuring' | 'results') => void;
   setSettingsView: (
-    view: 'root' | 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction'
+    view: 'root' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction'
   ) => void;
   setSetupPanelOpen: (isOpen: boolean) => void;
   setActiveUsbTab: (tab: 'rear' | 'front') => void;
@@ -58,6 +66,8 @@ export interface UIState {
   toggleSetupPanel: () => void;
   setSelectedPresetId: (id: string) => void;
   setExpandedPresetId: (id: string | null) => void;
+  setExpandedEquipmentId: (id: string | null) => void;
+  setExpandedStepId: (id: string | null) => void;
   setPresetMenuOpen: (isOpen: boolean) => void;
   setPresetDialogOpen: (isOpen: boolean) => void;
   setPresetDialogClosing: (isClosing: boolean) => void;
@@ -97,12 +107,17 @@ const DEFAULT_IMPORT_MODES: ImportModes = {
 
 export const useUIStore = create<UIState>((set) => ({
   view: 'calculator',
+  calibratingMachineId: null,
+  calibrationStep: 'intro',
+  equipmentTab: 'wheels',
   settingsView: 'root',
   isSetupPanelOpen: false,
   activeUsbTab: 'rear',
   activeSheet: 'none',
   selectedPresetId: '',
   expandedPresetId: null,
+  expandedEquipmentId: null,
+  expandedStepId: null,
   isPresetMenuOpen: false,
   isPresetDialogOpen: false,
   isPresetDialogClosing: false,
@@ -118,6 +133,9 @@ export const useUIStore = create<UIState>((set) => ({
   importModes: { ...DEFAULT_IMPORT_MODES },
 
   setView: (view) => set({ view }),
+  setCalibratingMachineId: (id) => set({ calibratingMachineId: id, calibrationStep: 'intro' }),
+  setCalibrationStep: (step) => set({ calibrationStep: step }),
+  setEquipmentTab: (equipmentTab) => set({ equipmentTab }),
   setSettingsView: (settingsView) => set({ settingsView }),
   setSetupPanelOpen: (isSetupPanelOpen) => set({ isSetupPanelOpen }),
   setActiveUsbTab: (activeUsbTab) => set({ activeUsbTab }),
@@ -125,6 +143,8 @@ export const useUIStore = create<UIState>((set) => ({
   toggleSetupPanel: () => set((state) => ({ isSetupPanelOpen: !state.isSetupPanelOpen })),
   setSelectedPresetId: (selectedPresetId) => set({ selectedPresetId }),
   setExpandedPresetId: (expandedPresetId) => set({ expandedPresetId }),
+  setExpandedEquipmentId: (expandedEquipmentId) => set({ expandedEquipmentId }),
+  setExpandedStepId: (expandedStepId) => set({ expandedStepId }),
   setPresetMenuOpen: (isPresetMenuOpen) => set({ isPresetMenuOpen }),
   setPresetDialogOpen: (isPresetDialogOpen) => set({ isPresetDialogOpen }),
   setPresetDialogClosing: (isPresetDialogClosing) => set({ isPresetDialogClosing }),

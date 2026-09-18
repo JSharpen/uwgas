@@ -234,7 +234,12 @@ export function GlobalSetupCard() {
         isOpen={activeSheet === 'jig'}
         onClose={() => setActiveSheet('none')}
         title="Select Sharpening Jig"
-        options={jigs.map(j => ({ value: j.id, label: j.name, meta: `Length: ${j.length || j.Dj}mm` }))}
+        options={jigs.map(j => ({ 
+          value: j.id, 
+          label: j.name, 
+          meta: `Length: ${j.length || j.Dj}mm`,
+          disabled: global.calcMode === 'projection' && !j.isAdjustableLength
+        }))}
         value={global.activeJigId || ''}
         onChange={val => setGlobal(g => ({ ...g, activeJigId: val }))}
       />

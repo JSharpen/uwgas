@@ -5,7 +5,7 @@ import { APP_VERSION, APP_VERSION_DISPLAY } from '../../version';
 import { useUIStore } from '../../state/uiStore';
 import { useStore } from '../../state/store';
 
-export type SettingsSection = 'machine' | 'hardware' | 'measurement' | 'import' | 'glossary';
+export type SettingsSection = 'measurement' | 'import' | 'glossary';
 
 export type SettingsRootViewProps = Record<string, never>;
 
@@ -91,8 +91,6 @@ Note: If your bug is highly specific to a tool or custom profile, please also at
   };
 
   const sections: { id: SettingsSection | 'dev' | 'bug_report'; label: string; desc: string; action?: () => void }[] = [
-    { id: 'machine', label: 'Machines', desc: 'Profiles, constants, and calibration' },
-    { id: 'hardware', label: 'Hardware', desc: 'Jigs and Universal Support Bars' },
     { id: 'measurement', label: 'Measurement', desc: 'Calculation & measurement modes' },
     { id: 'import', label: 'Import / Export', desc: 'Backup and restore data' },
     { id: 'glossary', label: 'Glossary', desc: 'Terminology and formulas' },

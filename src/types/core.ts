@@ -5,10 +5,13 @@ export type Wheel = {
   name: string;
   D: number; // effective diameter (numeric, used for math)
   DText?: string; // text version for editing
-  angleOffset: number; // β° at wheel level (default)
   baseForHn: BaseSide; // default base for this wheel
   isHoning: boolean;
   grit?: string; // optional grit or abrasive label
+  isWearable?: boolean;
+  measuredAt?: number; // timestamp in ms
+  remeasureInterval?: number;
+  remeasureIntervalUnit?: 'days' | 'weeks' | 'months';
 };
 
 export type SessionStep = {

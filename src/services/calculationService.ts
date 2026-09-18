@@ -93,7 +93,7 @@ export function computeWheelResults(
     const baseForHn: BaseSide = wheel.isHoning
       ? 'front'
       : (step?.base ?? wheel.baseForHn);
-    const angleOffset = _nz(step?.angleOffset ?? wheel.angleOffset);
+    const angleOffset = _nz(step?.angleOffset);
 
     const orientationLabel =
       baseForHn === 'rear'
@@ -237,7 +237,7 @@ export function computeWheelResults(
         fixedUsbMode
       );
       if (unadj != null) {
-        curr.unadjustedBetaDeg = unadj + _nz(curr.step?.angleOffset ?? curr.wheel.angleOffset);
+        curr.unadjustedBetaDeg = unadj + _nz(curr.step?.angleOffset);
       }
     } else {
       const unadj = solveBetaForFixedSetup(
@@ -251,7 +251,7 @@ export function computeWheelResults(
         fixedUsbMode
       );
       if (unadj != null) {
-        curr.unadjustedBetaDeg = unadj + _nz(curr.step?.angleOffset ?? curr.wheel.angleOffset);
+        curr.unadjustedBetaDeg = unadj + _nz(curr.step?.angleOffset);
       }
     }
   }

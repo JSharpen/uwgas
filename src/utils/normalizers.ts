@@ -22,12 +22,16 @@ export function normalizeWheel(raw: unknown): Wheel {
       : typeof obj.D === 'number' && !Number.isNaN(obj.D)
       ? String(obj.D)
       : '';
-  const angleOffset =
-    typeof obj.angleOffset === 'number' && Number.isFinite(obj.angleOffset)
-      ? obj.angleOffset
-      : 0;
   const isHoning = Boolean(obj.isHoning);
   const baseForHn = obj.baseForHn === 'front' ? 'front' : 'rear';
+
+  const isWearable = typeof obj.isWearable === 'boolean' ? obj.isWearable : false;
+  const measuredAt = typeof obj.measuredAt === 'number' ? obj.measuredAt : undefined;
+  const remeasureInterval = typeof obj.remeasureInterval === 'number' ? obj.remeasureInterval : undefined;
+  const remeasureIntervalUnit = 
+    obj.remeasureIntervalUnit === 'days' || obj.remeasureIntervalUnit === 'weeks' || obj.remeasureIntervalUnit === 'months' 
+      ? obj.remeasureIntervalUnit 
+      : undefined;
 
   return {
     id,
@@ -35,9 +39,12 @@ export function normalizeWheel(raw: unknown): Wheel {
     grit,
     D,
     DText,
-    angleOffset,
     isHoning,
     baseForHn,
+    isWearable,
+    measuredAt,
+    remeasureInterval,
+    remeasureIntervalUnit,
   };
 }
 

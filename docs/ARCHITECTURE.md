@@ -7,6 +7,8 @@
 
 ## 📐 Mathematical Model (Dutchman / Ton Trigonometry)
 
+**Strict Math Engine Isolation (`src/math/`)**: The `math/` directory is exclusively reserved for pure trigonometric, geometric, and calibration algorithms. There must be **ABSOLUTELY ZERO** React, Zustand, or UI domain model imports in this directory. It is a pure TypeScript mathematical layer.
+
 UWGAS implements the exact geometric model developed by Dutchman and Ton for Tormek-style wet sharpeners. For worked test vectors and verification tables, see [`docs/MATH_REFERENCE.md`](MATH_REFERENCE.md).
 
 ```
@@ -94,16 +96,28 @@ Residual diagnostics ($\varepsilon_i$) and maximum error bounds are presented to
 
 ## 💾 State Architecture & Persistence
 
-State is managed client-side using a **slice-based Zustand store** (`src/state/store.ts`). All global data is persisted to the browser's `localStorage` under the key `uwgas_app_state_v1` with a **300ms debounce** to prevent main-thread freezing during continuous UI interactions. Ephemeral UI state (like active tabs or open modals) is kept completely separate in an unpersisted `useUIStore`.
+State is managed client-side using a **strict separation of concerns across multiple Zustand stores**:
+
+- **`store.ts` (Domain State)**: Handles core, persistent user data. It utilizes a slice-based architecture (e.g., `calculatorSlice`, `progressionSlice`) combined with custom debounced `persist` middleware (300ms debounce to prevent main-thread freezing). It heavily relies on atomic selector hooks (e.g., `useProgressionState()`) wrapped in `useShallow()` to prevent catastrophic re-render storms.
+- **`uiStore.ts` (Ephemeral State)**: Manages transient interface states that should *not* survive a page refresh, such as active tabs, active sheets, modal visibility, and local draft strings.
+- **`devStore.ts` (Developer Settings)**: A standalone persisted store dedicated entirely to debug flags and developer UI configuration (e.g., `uiScale`, `debugLayoutMode`). Keeps production state unpolluted.
+
+### Prop Drilling vs. Direct Subscription
+- **Atomic Subscriptions Preferable**: Deeply nested UI components should subscribe directly to the specific slice of Zustand state they need using selectors or atomic hooks, rather than relying on heavy prop drilling.
+- **Prop Drilling for Lists**: Passing props is generally reserved only for mapping over collections (e.g., passing a specific `step` or `wheel` object down to a child `Card` component), keeping parent components clean and performant.
 
 ### The Zod Migration Bridge (`src/state/schema.ts`)
-
 To guarantee strict data safety and absolute backwards compatibility, UWGAS uses **Zod** as a runtime schema validator.
 
-When the application boots (or when a user imports a `.json` backup), the Zustand `merge` function intercepts the raw data from `localStorage` and passes it through the Zod schema.
-1. **Validation**: Zod strips out any corrupted or strictly invalid data (e.g., `NaN` resulting from a bad math calculation).
-2. **Seamless Additions**: If a user's data is from an older version of the app and is missing newly added features (e.g., a new "grit" property on wheels), Zod automatically injects safe default values (using `.optional()` or `.default()`).
-3. **Data Loss Warning (`.catch()`)**: Be extremely careful with `.catch()`. If you change a structural key (e.g., renaming `grindAngle` to `targetAngle`), Zod's `.catch()` will not migrate the data; it will discard the old data and insert the factory default. Use proper migration logic in `storage.ts` for structural changes.
+1. **Strict Parsing**: Rehydration of local storage is aggressively validated via Zod schemas (e.g., `AppPersistedStateSchema`).
+2. **Data Migrations**: Safe state evolution is handled using `z.preprocess()` to manually migrate object shapes between versions (e.g., migrating `SessionPresetSchema` v1 to v2) without losing user data.
+3. **Graceful Fallbacks**: Features like `z.catch()` are used to safely default corrupted arrays or nullable diagnostic fields rather than crashing the entire rehydration cycle. Legacy structural migrations occur in `storage.ts` *before* Zustand initializes.
+
+### Global UI Side-Effects & Event Systems
+- **Custom Events for Transient Actions**: Instead of cluttering the Zustand store with momentary action triggers, the app leverages lightweight native DOM events (`window.dispatchEvent(new CustomEvent(...))`) for cross-component signaling. Examples include `wizard-next`, `collapseAll`, and `beginRenamePreset`.
+- **Centralized DOM Side-Effect Hooks**: Localized DOM mutations are prohibited inside standard components. Global side-effects are managed via reference-counted hooks:
+  - `useBodyLock`: Uses a `lockCount` to safely manage `document.body.style.overflow` when multiple modals are stacked.
+  - `useModalLayout`: Centralizes calculations for virtual keyboards and safe-area insets without causing layout thrashing.
 
 ### Solver Architectural Flow
 1. **Height Solver Mode (`calcMode: 'height'`)**:

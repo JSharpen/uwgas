@@ -231,33 +231,34 @@ export function GlobalSetupInputs() {
       )}
 
       {/* Protrusion Addon in Projection Mode */}
-      {isProjectionMode && global.useProtrusionMode && (
-        <>
-          <div className="h-px bg-white/5 w-full" />
-          <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
-            <div className="text-center">
-              <label htmlFor="protrusionAddonInput" className="text-[10px] font-bold text-amber-400 tracking-widest uppercase">Blade Protrusion Pb</label>
+      <div className="grid transition-all duration-300 ease-in-out" style={{ gridTemplateRows: isProjectionMode && global.useProtrusionMode ? "1fr" : "0fr" }}>
+        <div className="overflow-hidden min-h-0">
+          <div className="flex flex-col gap-4 pt-4">
+            <div className="h-px bg-white/5 w-full" />
+            <div className="neu-concave border border-black/40 rounded-2xl p-4 flex flex-col gap-3">
+              <div className="text-center">
+                <label htmlFor="protrusionAddonInput" className="text-[10px] font-bold text-amber-400 tracking-widest uppercase">Blade Protrusion Pb</label>
+              </div>
+              <input
+                id="protrusionAddonInput"
+                type="number"
+                inputMode="decimal"
+                step="any"
+                className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center text-amber-400 focus:outline-none transition-colors"
+                value={global.protrusion}
+                onFocus={handleInputFocus}
+                onKeyDown={blurOnEnter}
+                onChange={e => setGlobal(g => ({ ...g, protrusion: e.target.valueAsNumber || _nz(e.target.value, g.protrusion) }))}
+              />
+              <StepperButtonGroup 
+                options={standardOptions} 
+                onStep={handleProjectionStep} 
+                className="bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20"
+              />
             </div>
-            <input
-              id="protrusionAddonInput"
-              type="number"
-              inputMode="decimal"
-              step="any"
-              className="touch-pan-y w-48 mx-auto bg-transparent text-4xl sm:text-5xl font-extrabold tabular-nums text-center text-amber-400 focus:outline-none transition-colors"
-              value={global.protrusion}
-              onFocus={handleInputFocus}
-              onKeyDown={blurOnEnter}
-              onChange={e => setGlobal(g => ({ ...g, protrusion: e.target.valueAsNumber || _nz(e.target.value, g.protrusion) }))}
-            />
-            <StepperButtonGroup 
-              options={standardOptions} 
-              onStep={handleProjectionStep} 
-              className="bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 border border-amber-400/20" 
-            />
           </div>
-        </>
-      )}
+        </div>
+      </div>
     </>
   );
 }
-

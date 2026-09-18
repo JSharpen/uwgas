@@ -1,3 +1,4 @@
+import { useUIStore } from "../state/uiStore";
 import * as React from 'react';
 import type { WheelResult } from '../types/core';
 import { IconEdgeLeading, IconEdgeTrailing } from '../icons';
@@ -21,7 +22,7 @@ type StepCardProps = {
 const StepCard = React.memo(function StepCard({
   r,
   index,
-  totalSteps,
+  
   prevR,
   isExpanded,
   onToggleExpand,
@@ -38,8 +39,6 @@ const StepCard = React.memo(function StepCard({
   const usbs = useStore(useShallow((s) => s.usbs));
   const jigs = useStore(useShallow((s) => s.jigs));
   const onUpdateStep = useStore((s) => s.updateStep);
-  const onDeleteStep = useStore((s) => s.deleteStep);
-  const onMoveStep = useStore((s) => s.moveStep);
   const onUpdateWheel = useStore((s) => s.updateWheel);
   const stepId = r.step?.id ?? r.wheel.id;
   const cardRef = React.useRef<HTMLDivElement>(null);
@@ -125,27 +124,6 @@ const StepCard = React.memo(function StepCard({
     }
   }
 
-  const handleMoveStep = (e: React.MouseEvent, idx: number, dir: 1 | -1) => {
-    e.stopPropagation();
-    if (!document.startViewTransition) {
-      onMoveStep?.(idx, dir);
-      return;
-    }
-    document.startViewTransition(() => {
-      onMoveStep?.(idx, dir);
-    });
-  };
-
-  const handleDeleteStep = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (!document.startViewTransition) {
-      onDeleteStep?.(id);
-      return;
-    }
-    document.startViewTransition(() => {
-      onDeleteStep?.(id);
-    });
-  };
 
   return (
     <div
@@ -327,28 +305,6 @@ const StepCard = React.memo(function StepCard({
                   </div>
                 </div>
               )}
-
-              {/* Actions Bar */}
-              <div className="flex justify-between items-center mt-3 pt-5 border-t border-black/40">
-                <div className="flex gap-3">
-                  <button 
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center transition ${index === 0 ? 'bg-black/20 opacity-30 cursor-not-allowed text-white/30' : 'neu-button text-white active:scale-95'}`}
-                    onClick={(e) => handleMoveStep(e, index, -1)}
-                    disabled={index === 0}
-                  >↑</button>
-                  <button 
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center transition ${index === totalSteps - 1 ? 'bg-black/20 opacity-30 cursor-not-allowed text-white/30' : 'neu-button text-white active:scale-95'}`}
-                    onClick={(e) => handleMoveStep(e, index, 1)}
-                    disabled={index === totalSteps - 1}
-                  >↓</button>
-                </div>
-                <button 
-                  className="px-5 h-12 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 font-bold text-xs transition active:scale-95 tracking-widest uppercase"
-                  onClick={(e) => handleDeleteStep(e, stepId)}
-                >
-                  Delete
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -364,11 +320,11 @@ export function ProgressionView() {
   const usbs = useStore(useShallow((s) => s.usbs));
   const onUpdateStep = useStore((s) => s.updateStep);
 
-  const [expandedStepId, setExpandedStepId] = React.useState<string | null>(null);
+  const expandedStepId = useUIStore(s => s.expandedStepId);
   const [sheetConfig, setSheetConfig] = React.useState<{ type: 'wheel' | 'machine' | 'usb' | 'base'; stepId: string } | null>(null);
 
   React.useEffect(() => {
-    const handleCollapseAll = () => setExpandedStepId(null);
+    const handleCollapseAll = () => useUIStore.getState().setExpandedStepId(null);
     window.addEventListener('collapseAll', handleCollapseAll);
     return () => window.removeEventListener('collapseAll', handleCollapseAll);
   }, []);
@@ -382,7 +338,7 @@ export function ProgressionView() {
       )}
       
       {wheelResults.map((r, index) => {
-        const stepId = r.step?.id ?? r.wheel.id;
+        const stepId = r.step?.id || `synthetic-${index}`;
         const isExpanded = expandedStepId === stepId;
         const prevR = index > 0 ? wheelResults[index - 1] : undefined;
 
@@ -394,7 +350,7 @@ export function ProgressionView() {
             totalSteps={wheelResults.length}
             prevR={prevR}
             isExpanded={isExpanded}
-            onToggleExpand={() => setExpandedStepId(isExpanded ? null : stepId)}
+            onToggleExpand={() => useUIStore.getState().setExpandedStepId(isExpanded ? null : stepId)}
             setSheetConfig={setSheetConfig}
           />
         );

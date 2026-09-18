@@ -9,6 +9,11 @@ export function ContextBar() {
   const confirmation = useUIStore(s => s.topBarConfirmation);
   const view = useUIStore(s => s.view);
   const settingsView = useUIStore(s => s.settingsView);
+  const equipmentTab = useUIStore(s => s.equipmentTab);
+  const calibratingMachineId = useUIStore(s => s.calibratingMachineId);
+  const calibrationStep = useUIStore(s => s.calibrationStep);
+  const expandedEquipmentId = useUIStore(s => s.expandedEquipmentId);
+  const expandedStepId = useUIStore(s => s.expandedStepId);
   
   const { sessionSteps, addStep, clearSessionSteps } = useProgressionState();
   
@@ -117,7 +122,148 @@ export function ContextBar() {
   let centerSlot = null;
   let rightSlot = <div className="flex-1 flex justify-end min-w-[80px]" />;
 
-  if (view === 'calculator') {
+  if (calibratingMachineId) {
+    if (calibrationStep === 'measuring') {
+      leftSlot = (
+        <div className="flex-1 flex justify-start min-w-[80px]">
+          <button
+            type="button"
+            className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
+            onClick={() => window.dispatchEvent(new CustomEvent('wizard-back'))}
+          >
+            Back
+          </button>
+        </div>
+      );
+      rightSlot = (
+        <div className="flex-1 flex justify-end min-w-[80px]">
+          <button
+            type="button"
+            className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
+            onClick={() => window.dispatchEvent(new CustomEvent('wizard-next'))}
+          >
+            Next
+          </button>
+        </div>
+      );
+    } else {
+      leftSlot = (
+        <div className="flex-1 flex justify-start min-w-[80px]">
+          <button
+            type="button"
+            className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
+            onClick={() => useUIStore.getState().setCalibratingMachineId(null)}
+          >
+            Cancel
+          </button>
+        </div>
+      );
+      if (calibrationStep === 'intro') {
+        rightSlot = (
+          <div className="flex-1 flex justify-end min-w-[80px]">
+            <button
+              type="button"
+              className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
+              onClick={() => window.dispatchEvent(new CustomEvent('wizard-start'))}
+            >
+              Begin
+            </button>
+          </div>
+        );
+      } else {
+        rightSlot = <div className="flex-1 flex justify-end min-w-[80px]" />;
+      }
+    }
+    
+    const calibratingMachine = useStore.getState().machines?.find(m => m.id === calibratingMachineId);
+    centerSlot = (
+      <div className="flex flex-col items-center justify-center mx-2 overflow-hidden">
+        <h2 className="text-xs font-bold tracking-widest uppercase truncate text-[var(--color-accent)] leading-tight">
+          Geometry Mapper
+        </h2>
+        {calibratingMachine && (
+          <span className="text-[10px] text-white/50 truncate font-mono">
+            {calibratingMachine.name}
+          </span>
+        )}
+      </div>
+    );
+  } else if (expandedEquipmentId) {
+    leftSlot = (
+      <div className="flex-1 flex justify-start min-w-[80px]">
+        <button
+          type="button"
+          className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
+          onClick={() => {
+            useUIStore.getState().setTopBarConfirmation({
+              message: `Delete ${equipmentTab === 'jigs' ? 'Jig' : equipmentTab === 'usbs' ? 'USB' : equipmentTab === 'machines' ? 'Machine' : 'Wheel'}?`,
+              confirmLabel: 'Delete',
+              cancelLabel: 'Cancel',
+              onConfirm: () => {
+                const id = expandedEquipmentId;
+                if (equipmentTab === 'jigs') useStore.getState().deleteJig(id);
+                else if (equipmentTab === 'usbs') useStore.getState().deleteUsb(id);
+                else if (equipmentTab === 'machines') useStore.getState().deleteMachine(id);
+                else if (equipmentTab === 'wheels') useStore.getState().deleteWheel(id);
+                useUIStore.getState().setExpandedEquipmentId(null);
+              }
+            });
+          }}
+        >
+          Delete
+        </button>
+      </div>
+    );
+
+    centerSlot = (
+      <h2 className="text-[10px] sm:text-xs font-bold tracking-widest uppercase truncate text-white/40 mx-2 text-center">
+        Edit {equipmentTab === 'jigs' ? 'Jig' : equipmentTab === 'usbs' ? 'USB' : equipmentTab === 'machines' ? 'Machine' : 'Wheel'}
+      </h2>
+    );
+
+    rightSlot = <div className="flex-1 flex justify-end min-w-[80px]" />;
+  } else if (expandedStepId) {
+    const stepIndex = sessionSteps.findIndex(s => s.id === expandedStepId);
+    
+    const handleDelete = () => {
+      const action = () => {
+        useStore.getState().deleteStep(expandedStepId);
+        useUIStore.getState().setExpandedStepId(null);
+      };
+      if (document.startViewTransition) document.startViewTransition(action);
+      else action();
+    };
+
+    leftSlot = (
+      <div className="flex-1 flex justify-start min-w-[80px]">
+        <button
+          type="button"
+          className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20 active:scale-95 transition flex items-center justify-center cursor-pointer"
+          onClick={handleDelete}
+        >
+          Delete
+        </button>
+      </div>
+    );
+
+    centerSlot = (
+      <h2 className="text-[10px] sm:text-xs font-bold tracking-widest uppercase truncate text-white/40 mx-2 text-center">
+        Edit Step {stepIndex + 1}
+      </h2>
+    );
+
+    rightSlot = (
+      <div className="flex-1 flex justify-end min-w-[80px]">
+        <button
+          type="button"
+          className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 border border-white/10 text-white hover:bg-white/10 active:scale-95 transition flex items-center justify-center cursor-pointer"
+          onClick={() => useUIStore.getState().setExpandedStepId(null)}
+        >
+          Done
+        </button>
+      </div>
+    );
+  } else if (view === 'calculator') {
     if (isPresetMenuOpen) {
       leftSlot = (
         <div className="flex-1 flex justify-start min-w-[80px]">
@@ -282,23 +428,6 @@ export function ContextBar() {
         </h2>
       );
     }
-  } else if (view === 'wheels') {
-    centerSlot = (
-      <h2 className="text-xs sm:text-sm font-bold tracking-widest uppercase truncate text-white/60 mx-2 text-center">
-        Wheels
-      </h2>
-    );
-    rightSlot = (
-      <div className="flex-1 flex justify-end min-w-[80px]">
-        <button
-          type="button"
-          className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
-          onClick={() => window.dispatchEvent(new CustomEvent('openAddWheelModal'))}
-        >
-          + Add Wheel
-        </button>
-      </div>
-    );
   } else if (view === 'settings') {
     if (settingsView === 'root') {
       leftSlot = (
@@ -326,8 +455,6 @@ export function ContextBar() {
       );
       
       const titleMap: Record<string, string> = {
-        'machine': 'Machines',
-        'hardware': 'Hardware',
         'measurement': 'Measurement',
         'import': 'Import / Export',
         'glossary': 'Glossary',
@@ -342,30 +469,6 @@ export function ContextBar() {
           {titleMap[settingsView] || 'Settings'}
         </h2>
       );
-      
-      if (settingsView === 'machine') {
-        rightSlot = (
-          <div className="flex-1 flex justify-end min-w-[80px]">
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('openAddMachineModal'))}
-              className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
-            >
-              + Add
-            </button>
-          </div>
-        );
-      } else if (settingsView === 'hardware') {
-        rightSlot = (
-          <div className="flex-1 flex justify-end min-w-[80px]">
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('openAddHardwareModal'))}
-              className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer shrink-0"
-            >
-              + Add
-            </button>
-          </div>
-        );
-      }
     }
   }
 

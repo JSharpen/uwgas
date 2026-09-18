@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { IconClose } from '../icons';
 
 export type ModalShellProps = {
   title: string;
@@ -22,34 +21,49 @@ export function ModalShell({
   dialogStyle,
   closing = false,
 }: ModalShellProps) {
+  const [isClosingLocal, setIsClosingLocal] = React.useState(false);
+  const isClosing = closing || isClosingLocal;
+  
+  const handleClose = React.useCallback(() => {
+    if (isClosingLocal) return;
+    setIsClosingLocal(true);
+    setTimeout(() => {
+      onClose();
+    }, 200);
+  }, [isClosingLocal, onClose]);
   const hasSubtitle = Boolean(subtitle);
   const dialogRef = React.useRef<HTMLDialogElement>(null);
 
   React.useEffect(() => {
     const dialog = dialogRef.current;
-    if (dialog && !dialog.open && !closing) {
+    if (dialog && !dialog.open && !isClosing) {
       dialog.showModal();
     }
-  }, [closing]);
+  }, [isClosing]);
 
-  // Handle native escape key
+    // Handle native escape key
   React.useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     const handleCancel = (e: Event) => {
       e.preventDefault();
-      onClose();
+      handleClose();
     };
     dialog.addEventListener('cancel', handleCancel);
     return () => dialog.removeEventListener('cancel', handleCancel);
-  }, [onClose]);
+  }, [handleClose]);
+
+  
 
   return (
     <dialog
       ref={dialogRef}
+      onClick={(e) => {
+        if (e.target === dialogRef.current) handleClose();
+      }}
       className={
         'z-50 m-auto overflow-y-auto bg-transparent p-4 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+16px)] motion-overlay ' +
-        (closing ? 'motion-overlay--closing ' : '') + 
+        (isClosing ? 'motion-overlay--closing ' : '') + 
         'backdrop:bg-black/75 backdrop:backdrop-blur-sm'
       }
       style={overlayStyle}
@@ -57,7 +71,7 @@ export function ModalShell({
       <div
         className={
           'relative w-full max-w-lg neu-convex rounded-3xl border border-black/40 shadow-2xl p-6 flex flex-col max-h-[90vh] overflow-y-auto motion-dialog mx-auto ' +
-          (closing ? 'motion-dialog--closing' : '')
+          (isClosing ? 'motion-dialog--closing' : '')
         }
         style={dialogStyle}
       >
@@ -65,19 +79,9 @@ export function ModalShell({
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
 
         {/* Header */}
-        <div className="relative z-10 flex items-start justify-between gap-4 pb-4 border-b border-white/5 mb-4">
-          <div className="flex flex-col gap-1 min-w-0 flex-1">
-            <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">{title}</h3>
-            {hasSubtitle ? <p className="text-xs sm:text-sm text-white/50 leading-relaxed font-normal">{subtitle}</p> : null}
-          </div>
-          <button
-            type="button"
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/5 hover:bg-white/10 active:bg-white/20 text-white/60 hover:text-white flex items-center justify-center transition-colors shrink-0"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <IconClose className="w-5 h-5" />
-          </button>
+        <div className="relative z-10 flex flex-col gap-1 pb-4 border-b border-white/5 mb-4">
+          <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">{title}</h3>
+          {hasSubtitle ? <p className="text-xs sm:text-sm text-white/50 leading-relaxed font-normal">{subtitle}</p> : null}
         </div>
 
         {/* Body */}

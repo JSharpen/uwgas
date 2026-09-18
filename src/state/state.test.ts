@@ -317,7 +317,6 @@ describe('State Persistence & Storage Migration Challenger Suite', () => {
       addWheel({
         name: 'CBN 400 Wheel',
         D: 248.5,
-        angleOffset: 0,
         baseForHn: 'rear',
         isHoning: false,
       });
@@ -341,7 +340,6 @@ describe('State Persistence & Storage Migration Challenger Suite', () => {
           id: 'batch-w1',
           name: 'Batch Wheel 1',
           D: 250,
-          angleOffset: 0,
           baseForHn: 'rear',
           isHoning: false,
         },
@@ -443,8 +441,8 @@ describe('State Persistence & Storage Migration Challenger Suite', () => {
       ui.setView('settings');
       assert.strictEqual(useUIStore.getState().view, 'settings');
 
-      ui.setSettingsView('hardware');
-      assert.strictEqual(useUIStore.getState().settingsView, 'hardware');
+      ui.setSettingsView('measurement');
+      assert.strictEqual(useUIStore.getState().settingsView, 'measurement');
 
       ui.toggleSetupPanel();
       assert.strictEqual(useUIStore.getState().isSetupPanelOpen, true);

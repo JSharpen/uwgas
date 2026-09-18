@@ -7,10 +7,13 @@ export const WheelSchema = z.object({
   name: z.string(),
   D: z.number(),
   DText: z.string().optional(),
-  angleOffset: z.number(),
   baseForHn: BaseSideSchema,
   isHoning: z.boolean(),
   grit: z.string().optional(),
+  isWearable: z.boolean().optional(),
+  measuredAt: z.number().optional(),
+  remeasureInterval: z.number().optional(),
+  remeasureIntervalUnit: z.enum(['days', 'weeks', 'months']).optional(),
 });
 
 export const SessionStepSchema = z.object({
@@ -101,7 +104,7 @@ export const CalibrationMeasurementSchema = z.object({
 });
 
 export const CalibrationDiagnosticsSchema = z.object({
-  residuals: z.array(z.number()),
+  residuals: z.array(z.number()).catch([]),
   maxAbsResidualMm: z.number(),
 });
 
@@ -116,15 +119,15 @@ export const CalibrationProfileSchema = z.object({
     hc: z.number(),
     o: z.number(),
     diagnostics: CalibrationDiagnosticsSchema,
-    angleErrorDeg: z.number().nullable(),
-    measurements: z.array(CalibrationMeasurementSchema),
+    angleErrorDeg: z.number().nullable().catch(null),
+    measurements: z.array(CalibrationMeasurementSchema).catch([]),
   }).optional(),
   front: z.object({
     hc: z.number(),
     o: z.number(),
     diagnostics: CalibrationDiagnosticsSchema,
-    angleErrorDeg: z.number().nullable(),
-    measurements: z.array(CalibrationMeasurementSchema),
+    angleErrorDeg: z.number().nullable().catch(null),
+    measurements: z.array(CalibrationMeasurementSchema).catch([]),
   }).optional(),
 });
 
@@ -158,7 +161,7 @@ export const GlobalStateSchema = z.object({
 });
 
 export const AppPersistedStateSchema = z.object({
-  version: z.number(),
+  version: z.number().optional(),
   global: GlobalStateSchema,
   machines: z.array(MachineConfigSchema).optional(),
   defaultMachineId: z.string().optional(),

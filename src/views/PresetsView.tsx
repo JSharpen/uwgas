@@ -8,6 +8,7 @@ export default function PresetsView() {
   const sessionPresets = presetState.sessionPresets;
   const machines = useStore((s) => s.machines);
   const usbs = useStore((s) => s.usbs);
+  const global = useStore((s) => s.global);
   const renamePreset = useStore((s) => s.renamePreset);
   
   const selectedPresetId = useUIStore(s => s.selectedPresetId);
@@ -79,12 +80,44 @@ export default function PresetsView() {
                 existing => existing.id !== p.id && existing.name.toLowerCase() === renameTrimmed.toLowerCase()
               );
             
-            const hwStep = p.includeHardware ? p.steps.find(s => s.machineId || s.usbId) : null;
-            const machineId = p.context?.machineId || hwStep?.machineId;
-            const usbId = p.context?.usbId || hwStep?.usbId;
-            const machine = machineId ? machines?.find(m => m.id === machineId) : null;
-            const usb = usbId ? usbs?.find(u => u.id === usbId) : null;
-            const hwStr = [machine?.name, usb?.name].filter(Boolean).join(' • ');
+            const isAngleBound = p.context?.targetAngle !== undefined;
+            const displayAngle = isAngleBound ? p.context!.targetAngle : global.targetAngle;
+
+            const machineIds = new Set<string>();
+            const usbIds = new Set<string>();
+            
+            let needsMachineFallback = p.steps.length === 0;
+            let needsUsbFallback = p.steps.length === 0;
+
+            p.steps.forEach(s => {
+              if (s.machineId) machineIds.add(s.machineId);
+              else needsMachineFallback = true;
+              
+              if (s.usbId) usbIds.add(s.usbId);
+              else needsUsbFallback = true;
+            });
+            
+            if (needsMachineFallback) {
+              if (p.context?.machineId) machineIds.add(p.context.machineId);
+              else machineIds.add(global.activeMachineId || machines[0]?.id || '');
+            }
+            
+            if (needsUsbFallback) {
+              if (p.context?.usbId) usbIds.add(p.context.usbId);
+              else usbIds.add(global.activeUsbId || usbs[0]?.id || '');
+            }
+            
+            const reqMachines = Array.from(machineIds).map(id => {
+              const isBound = p.context?.machineId === id || p.steps.some(s => s.machineId === id);
+              const found = machines?.find(m => m.id === id);
+              return { item: found || { id, name: 'Unknown Machine' }, isBound };
+            });
+            
+            const reqUsbs = Array.from(usbIds).map(id => {
+              const isBound = p.context?.usbId === id || p.steps.some(s => s.usbId === id);
+              const found = usbs?.find(u => u.id === id);
+              return { item: found || { id, name: 'Unknown USB' }, isBound };
+            });
 
             return (
               <div 
@@ -117,21 +150,9 @@ export default function PresetsView() {
                         autoFocus
                       />
                     ) : (
-                      <>
-                        <span className={`font-bold text-[15px] truncate ${isActive ? 'text-amber-400' : isExpanded ? 'text-amber-400/80' : 'text-white'}`}>
-                          {p.name}
-                        </span>
-                        {(p.context?.machineId || p.includeHardware) && (
-                          <span className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shrink-0">
-                            HW Bound
-                          </span>
-                        )}
-                        {p.context?.targetAngle !== undefined && (
-                          <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shrink-0">
-                            {p.context.targetAngle}°
-                          </span>
-                        )}
-                      </>
+                      <span className={`text-base font-medium tracking-wide truncate ${isActive ? 'text-amber-400' : isExpanded ? 'text-amber-400/80' : 'text-white'}`}>
+                        {p.name}
+                      </span>
                     )}
                   </div>
                   {isEditing && renameConflicts && (
@@ -139,25 +160,45 @@ export default function PresetsView() {
                       Name already exists.
                     </div>
                   )}
-                  <div className={`flex items-center gap-2 text-xs mt-1 truncate w-full text-left ${isActive ? 'text-amber-400/60' : 'text-white/40'}`}>
-                    <span className="shrink-0">{p.steps.length} step{p.steps.length === 1 ? '' : 's'}</span>
-                    {p.steps.length > 0 && (
-                      <>
-                        <span className="opacity-50 shrink-0">•</span>
-                        <span className="truncate">{p.steps.map(s => s.wheelName).join(' ➔ ')}</span>
-                      </>
-                    )}
+                  
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2.5 w-full">
+                    <span className="shrink-0 text-[10px] text-white/40 font-medium mr-1">{p.steps.length} step{p.steps.length === 1 ? '' : 's'}</span>
+                    <span className={`rounded px-2 py-0.5 text-[9px] font-mono truncate max-w-[100px] ${
+                      isAngleBound 
+                        ? 'bg-emerald-500/5 border border-emerald-500/30 text-emerald-400' 
+                        : 'neu-concave border border-white/5 text-white/40'
+                    }`}>
+                      {displayAngle}°
+                    </span>
+                    
+                    {reqMachines.map(({ item, isBound }) => item && (
+                      <span key={`m-${item.id}`} className={`rounded px-2 py-0.5 text-[9px] font-mono truncate flex-1 min-w-[60px] text-center ${
+                        isBound
+                          ? 'bg-cyan-500/5 border border-cyan-500/30 text-cyan-400' 
+                          : 'neu-concave border border-white/5 text-white/40'
+                      }`}>
+                        {item.name}
+                      </span>
+                    ))}
+                    
+                    {reqUsbs.map(({ item, isBound }) => item && (
+                      <span key={`u-${item.id}`} className={`rounded px-2 py-0.5 text-[9px] font-mono truncate flex-1 min-w-[60px] text-center ${
+                        isBound
+                          ? 'bg-cyan-500/5 border border-cyan-500/30 text-cyan-400' 
+                          : 'neu-concave border border-white/5 text-white/40'
+                      }`}>
+                        {item.name}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
                 {/* Expanded Details Pane */}
                 <div 
-                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-                    isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-                  }`}
+                  className="grid transition-all duration-300 ease-in-out" style={{ gridTemplateRows: isExpanded ? "1fr" : "0fr" }}
                 >
-                  <div className="overflow-hidden">
-                    <div className="p-5 pt-0 flex flex-col gap-4 border-t border-white/5 mt-2">
+                  <div className="overflow-hidden min-h-0">
+                    <div className="p-5 pt-0 flex flex-col gap-4 mt-2">
                       
                       {/* Properties Section */}
                       <div className="flex flex-col gap-2">
@@ -169,7 +210,9 @@ export default function PresetsView() {
                           </div>
                           <div className="flex justify-between">
                             <span>Hardware</span>
-                            <span className="text-white font-medium">{hwStr || 'Not saved (Uses Global)'}</span>
+                            <span className="text-white font-medium text-right max-w-[150px] leading-relaxed">
+                              {[...reqMachines, ...reqUsbs].map(h => h.item?.name).filter(Boolean).join(', ') || 'Not saved (Uses Global)'}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span>Steps</span>

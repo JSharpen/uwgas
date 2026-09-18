@@ -55,3 +55,7 @@ The project includes an interactive terminal console (`angle-dev-console.sh`) de
 ## 🤖 Instructions for AI Coding Assistants (Future Sessions)
 
 Please refer strictly to **`AGENTS.md`** in the root of the repository for all mandatory session start protocols, job tracking rules, state management, and UI verification gates. All AI rules have been centralized to prevent duplication.
+
+## 🎨 UI Design & Layout Constraints
+
+For detailed information on the visual language, the Context Bar, layout paradigms, and touch ergonomics, refer to **`docs/DESIGN_LANGUAGE.md`**. Any UI additions must abide by these principles.

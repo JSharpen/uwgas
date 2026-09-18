@@ -8,6 +8,9 @@ export function PresetMenuPopover() {
   const setOpen = useUIStore(s => s.setPresetMenuOpen);
   
   const sessionPresets = useStore(useShallow(s => s.sessionPresets));
+  const machines = useStore(useShallow(s => s.machines));
+  const usbs = useStore(useShallow(s => s.usbs));
+  const global = useStore(useShallow(s => s.global));
   const selectedPresetId = useUIStore(s => s.selectedPresetId);
   const setSelectedPresetId = useUIStore(s => s.setSelectedPresetId);
   
@@ -74,6 +77,45 @@ export function PresetMenuPopover() {
           
           {sessionPresets.map(p => {
             const isSelected = p.id === selectedPresetId;
+            const isAngleBound = p.context?.targetAngle !== undefined;
+            const displayAngle = isAngleBound ? p.context!.targetAngle : global.targetAngle;
+
+            const machineIds = new Set<string>();
+            const usbIds = new Set<string>();
+            
+            let needsMachineFallback = p.steps.length === 0;
+            let needsUsbFallback = p.steps.length === 0;
+
+            p.steps.forEach(s => {
+              if (s.machineId) machineIds.add(s.machineId);
+              else needsMachineFallback = true;
+              
+              if (s.usbId) usbIds.add(s.usbId);
+              else needsUsbFallback = true;
+            });
+            
+            if (needsMachineFallback) {
+              if (p.context?.machineId) machineIds.add(p.context.machineId);
+              else machineIds.add(global.activeMachineId || machines[0]?.id || '');
+            }
+            
+            if (needsUsbFallback) {
+              if (p.context?.usbId) usbIds.add(p.context.usbId);
+              else usbIds.add(global.activeUsbId || usbs[0]?.id || '');
+            }
+            
+            const reqMachines = Array.from(machineIds).map(id => {
+              const isBound = p.context?.machineId === id || p.steps.some(s => s.machineId === id);
+              const found = machines?.find(m => m.id === id);
+              return { item: found || { id, name: 'Unknown Machine' }, isBound };
+            });
+            
+            const reqUsbs = Array.from(usbIds).map(id => {
+              const isBound = p.context?.usbId === id || p.steps.some(s => s.usbId === id);
+              const found = usbs?.find(u => u.id === id);
+              return { item: found || { id, name: 'Unknown USB' }, isBound };
+            });
+
             return (
               <button
                 key={p.id}
@@ -87,25 +129,37 @@ export function PresetMenuPopover() {
                   <span className={`font-bold text-[13px] truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
                     {p.name}
                   </span>
-                  {p.includeHardware && (
-                    <span className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full shrink-0 leading-none flex items-center">
-                      HW Bound
-                    </span>
-                  )}
-                  {p.context?.targetAngle !== undefined && (
-                    <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full shrink-0 leading-none flex items-center">
-                      {p.context.targetAngle}°
-                    </span>
-                  )}
                 </div>
-                <div className={`flex items-center gap-2 text-[11px] mt-1.5 truncate w-full ${isSelected ? 'text-amber-400/60' : 'text-white/40'}`}>
-                  <span className="shrink-0">{p.steps.length} step{p.steps.length === 1 ? '' : 's'}</span>
-                  {p.steps.length > 0 && (
-                    <>
-                      <span className="opacity-50 shrink-0">•</span>
-                      <span className="truncate">{p.steps.map(s => s.wheelName).join(' ➔ ')}</span>
-                    </>
-                  )}
+                
+                <div className="flex flex-wrap items-center gap-1 mt-2 w-full">
+                  <span className="shrink-0 text-[10px] text-white/40 font-medium mr-1">{p.steps.length} step{p.steps.length === 1 ? '' : 's'}</span>
+                  <span className={`rounded px-1.5 py-0.5 text-[8.5px] font-mono truncate max-w-[80px] ${
+                    isAngleBound 
+                      ? 'bg-emerald-500/5 border border-emerald-500/30 text-emerald-400' 
+                      : 'neu-concave border border-white/5 text-white/40'
+                  }`}>
+                    {displayAngle}°
+                  </span>
+                  
+                  {reqMachines.map(({ item, isBound }) => item && (
+                    <span key={`m-${item.id}`} className={`rounded px-1.5 py-0.5 text-[8.5px] font-mono truncate flex-1 min-w-[50px] text-center ${
+                      isBound
+                        ? 'bg-cyan-500/5 border border-cyan-500/30 text-cyan-400' 
+                        : 'neu-concave border border-white/5 text-white/40'
+                    }`}>
+                      {item.name}
+                    </span>
+                  ))}
+                  
+                  {reqUsbs.map(({ item, isBound }) => item && (
+                    <span key={`u-${item.id}`} className={`rounded px-1.5 py-0.5 text-[8.5px] font-mono truncate flex-1 min-w-[50px] text-center ${
+                      isBound
+                        ? 'bg-cyan-500/5 border border-cyan-500/30 text-cyan-400' 
+                        : 'neu-concave border border-white/5 text-white/40'
+                    }`}>
+                      {item.name}
+                    </span>
+                  ))}
                 </div>
               </button>
             );

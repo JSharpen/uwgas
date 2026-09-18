@@ -7,13 +7,13 @@ type MiniSelectProps = {
   options: Option[];
   onChange: (value: string) => void;
   ariaLabel?: string;
-  align?: 'left' | 'right';
+  align?: 'left' | 'right'; // kept for api compatibility, unused in modal
   widthClass?: string;
   menuWidthClass?: string;
   emptyLabel?: string;
   renderOption?: (option: Option, isActive: boolean) => React.ReactNode;
   renderLabel?: (option: Option | undefined) => React.ReactNode;
-  liftOnOpen?: boolean;
+  liftOnOpen?: boolean; // kept for api compatibility, unused in modal
 };
 
 function MiniSelect({
@@ -21,46 +21,15 @@ function MiniSelect({
   options,
   onChange,
   ariaLabel,
-  align = 'left',
   widthClass,
-  menuWidthClass,
   emptyLabel = 'No options',
   renderOption,
   renderLabel,
-  liftOnOpen = true,
 }: MiniSelectProps) {
   const [isMenuVisible, setIsMenuVisible] = React.useState(false);
   const [isMenuClosing, setIsMenuClosing] = React.useState(false);
   const menuCloseTimerRef = React.useRef<number | null>(null);
-  const rootRef = React.useRef<HTMLDivElement | null>(null);
-  const cleanupRefs = React.useRef<(() => void)[]>([]);
-
-  // Lift the nearest card when the menu is open so the menu sits above neighboring cards.
-  React.useEffect(() => {
-    // We hoist overflow on both the card and its containing panel to allow menus to escape.
-    if (!liftOnOpen || !isMenuVisible) return;
-    const hostCard = rootRef.current?.closest<HTMLElement>('.card-elevated, .bg-\\[\\#262626\\]');
-    const hostPanel = rootRef.current?.closest<HTMLElement>('.neu-convex border border-black/40 rounded-3xl, .bg-\\[\\#262626\\]');
-    const cleanups: (() => void)[] = [];
-    const apply = (el: HTMLElement | null | undefined) => {
-      if (!el) return;
-      const prevZ = el.style.zIndex;
-      const prevOverflow = el.style.overflow;
-      el.style.zIndex = '3000';
-      el.style.overflow = 'visible';
-      cleanups.push(() => {
-        el.style.zIndex = prevZ;
-        el.style.overflow = prevOverflow;
-      });
-    };
-    apply(hostCard);
-    apply(hostPanel);
-    cleanupRefs.current = cleanups;
-    return () => {
-      cleanupRefs.current.forEach(fn => fn());
-      cleanupRefs.current = [];
-    };
-  }, [isMenuVisible, liftOnOpen]);
+  const dialogRef = React.useRef<HTMLDialogElement>(null);
 
   const selected = options.find(o => o.value === value) ?? options[0];
 
@@ -84,59 +53,25 @@ function MiniSelect({
       setIsMenuVisible(false);
       setIsMenuClosing(false);
       menuCloseTimerRef.current = null;
-    }, 160);
+    }, 200); // 200ms to match ModalShell out-animation
   }, [isMenuVisible]);
 
-  const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
-  const touchMovedRef = React.useRef(false);
+  React.useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open && isMenuVisible && !isMenuClosing) {
+      dialog.showModal();
+    }
+  }, [isMenuVisible, isMenuClosing]);
 
   React.useEffect(() => {
-    if (!isMenuVisible) return;
-
-    const handleMouseDown = (event: MouseEvent) => {
-      const el = rootRef.current;
-      if (!el) return;
-      if (!el.contains(event.target as Node)) {
-        closeMenu();
-      }
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const handleCancel = (e: Event) => {
+      e.preventDefault();
+      closeMenu();
     };
-
-    const handleTouchStart = (event: TouchEvent) => {
-      const t = event.touches[0];
-      touchStartRef.current = { x: t.clientX, y: t.clientY };
-      touchMovedRef.current = false;
-    };
-
-    const handleTouchMove = (event: TouchEvent) => {
-      if (!touchStartRef.current) return;
-      const t = event.touches[0];
-      const dx = Math.abs(t.clientX - touchStartRef.current.x);
-      const dy = Math.abs(t.clientY - touchStartRef.current.y);
-      if (dx > 8 || dy > 8) {
-        touchMovedRef.current = true; // treat as scroll/drag
-      }
-    };
-
-    const handleTouchEnd = (event: TouchEvent) => {
-      if (touchMovedRef.current) return;
-      const el = rootRef.current;
-      if (!el) return;
-      if (!el.contains(event.target as Node)) {
-        closeMenu();
-      }
-    };
-
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('touchstart', handleTouchStart, { passive: true });
-    document.addEventListener('touchmove', handleTouchMove, { passive: true });
-    document.addEventListener('touchend', handleTouchEnd);
-
-    return () => {
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
+    dialog.addEventListener('cancel', handleCancel);
+    return () => dialog.removeEventListener('cancel', handleCancel);
   }, [closeMenu, isMenuVisible]);
 
   React.useEffect(() => {
@@ -148,10 +83,7 @@ function MiniSelect({
   }, []);
 
   return (
-    <div
-      ref={rootRef}
-      className={`relative text-xs ${widthClass ?? 'flex-shrink-0'}`}
-    >
+    <div className={`relative text-xs ${widthClass ?? 'flex-shrink-0'}`}>
       <button
         type="button"
         className={`w-full min-h-[42px] bg-black/30 hover:bg-white/5 active:bg-white/10 border ${
@@ -189,55 +121,69 @@ function MiniSelect({
       </button>
 
       {isMenuVisible && (
-        <div
-          className={`absolute z-30 mt-1.5 ${
-            align === 'right' ? 'right-0' : 'left-0'
-          } ${menuWidthClass ?? 'w-48 sm:w-56 min-w-full'} neu-convex border border-black/40 rounded-2xl shadow-2xl p-1.5 backdrop-blur-md overflow-hidden ${
-            isMenuClosing ? 'dropdown-menu--closing' : 'dropdown-menu--opening'
-          }`}
+        <dialog
+          ref={dialogRef}
+          onClick={(e) => {
+            if (e.target === dialogRef.current) closeMenu();
+          }}
+          className={
+            'z-50 m-auto overflow-y-auto bg-transparent p-4 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+16px)] motion-overlay ' +
+            (isMenuClosing ? 'motion-overlay--closing ' : '') + 
+            'backdrop:bg-black/75 backdrop:backdrop-blur-sm'
+          }
         >
-          <div className="max-h-64 overflow-y-auto overflow-x-hidden flex flex-col gap-1">
-            {options.length === 0 ? (
-              <div className="p-3 text-center text-xs text-white/40">{emptyLabel}</div>
-            ) : (
-              options.map(opt => {
-                const isActive = opt.value === value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    className={`w-full min-h-[40px] px-3.5 py-2 rounded-xl text-xs transition-colors flex items-center justify-between gap-2 text-left disabled:opacity-40 disabled:hover:bg-transparent ${
-                      isActive
-                        ? 'bg-amber-400/10 border border-amber-400/30 text-amber-300 font-bold'
-                        : 'text-white/80 hover:bg-white/10 hover:text-white border border-transparent'
-                    }`}
-                    disabled={opt.disabled}
-                    onClick={() => {
-                      if (opt.disabled) return;
-                      onChange(opt.value);
-                      closeMenu();
-                    }}
-                  >
-                    {renderOption ? (
-                      renderOption(opt, isActive)
-                    ) : (
-                      <>
-                        <span className={`truncate flex-1 font-medium ${isActive ? 'text-amber-300 font-bold' : 'text-white'}`}>
-                          {opt.label}
-                        </span>
-                        {opt.meta ? (
-                          <span className={`text-[10px] font-mono shrink-0 ${isActive ? 'text-amber-300/80 font-bold' : 'text-white/40'}`}>
-                            {opt.meta}
+          <div
+            className={
+              'relative w-[85vw] max-w-[320px] neu-convex rounded-3xl border border-black/40 shadow-2xl p-2 flex flex-col mx-auto motion-dialog ' +
+              (isMenuClosing ? 'motion-dialog--closing' : '')
+            }
+          >
+            {/* Subtle Edge Highlight */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+            
+            <div className="relative z-10 max-h-[60vh] overflow-y-auto overflow-x-hidden flex flex-col gap-1 p-1">
+              {options.length === 0 ? (
+                <div className="p-4 text-center text-xs text-white/40">{emptyLabel}</div>
+              ) : (
+                options.map(opt => {
+                  const isActive = opt.value === value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className={`w-full min-h-[44px] px-4 py-2.5 rounded-2xl text-xs transition-colors flex items-center justify-between gap-2 text-left disabled:opacity-40 disabled:hover:bg-transparent ${
+                        isActive
+                          ? 'bg-amber-400/10 border border-amber-400/30 text-amber-300 font-bold shadow-sm'
+                          : 'text-white/80 hover:bg-white/10 hover:text-white border border-transparent'
+                      }`}
+                      disabled={opt.disabled}
+                      onClick={() => {
+                        if (opt.disabled) return;
+                        onChange(opt.value);
+                        closeMenu();
+                      }}
+                    >
+                      {renderOption ? (
+                        renderOption(opt, isActive)
+                      ) : (
+                        <>
+                          <span className={`truncate flex-1 ${isActive ? 'text-amber-300 font-bold' : 'text-white font-medium'}`}>
+                            {opt.label}
                           </span>
-                        ) : null}
-                      </>
-                    )}
-                  </button>
-                );
-              })
-            )}
+                          {opt.meta ? (
+                            <span className={`text-[10px] font-mono shrink-0 ${isActive ? 'text-amber-300/80 font-bold' : 'text-white/40'}`}>
+                              {opt.meta}
+                            </span>
+                          ) : null}
+                        </>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );
