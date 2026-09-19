@@ -109,6 +109,22 @@ export default function CalculatorView() {
             </div>
           </ContextBar.Slot>
         </>
+      ) : isSetupPanelOpen ? (
+        <>
+          <ContextBar.Slot name="left">
+            {/* Empty to maintain focus on setup inputs */}
+          </ContextBar.Slot>
+          <ContextBar.Slot name="center">
+            <ContextBar.AmbientInfo>
+              Global Setup
+            </ContextBar.AmbientInfo>
+          </ContextBar.Slot>
+          <ContextBar.Slot name="right">
+            <ContextBar.Button variant="primary" onClick={() => setIsSetupPanelOpen(false)}>
+              Done
+            </ContextBar.Button>
+          </ContextBar.Slot>
+        </>
       ) : (
         <>
           <ContextBar.Slot name="left">

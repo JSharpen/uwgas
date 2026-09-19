@@ -113,9 +113,6 @@ export function GlobalSetupCard() {
             {isSetupPanelOpen && (
               <motion.div 
                 className="absolute bottom-[calc(100%-24px)] left-0 right-0 overflow-hidden pointer-events-none rounded-t-3xl flex flex-col z-0 [transform:translateZ(0)]"
-                initial={{ maxHeight: '100px' }}
-                animate={{ maxHeight: drawerMaxHeight }}
-                exit={{ maxHeight: '100px' }}
                 style={{ maxHeight: drawerMaxHeight, height: drawerMaxHeight }}
               >
                 <motion.div 
