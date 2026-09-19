@@ -4,7 +4,13 @@
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased] (Session: Developer Mode & UI Scaling)
+## [Unreleased] (Session: Context Bar Refactor)
+
+### 🛠️ Architecture & UI Refactor: Context Bar (Inversion of Control)
+- **Decentralized Header Logic**: Refactored the monolithic, brittle `ContextBar.tsx` switchboard into a clean `ContextBarShell.tsx` using an Inversion of Control pattern. 
+- **React Portals API**: Views (`CalculatorView`, `EquipmentView`, `SettingsView`, etc.) now inject their own specific navigation controls directly into the global header using `<ContextBar.Slot>` React Portals, completely eliminating cross-feature logic tangles.
+- **Strict UI Components**: Built a locked-down component library (`<ContextBar.Button>`, `<ContextBar.Title>`, etc.) that strictly enforces `DESIGN_LANGUAGE.md` constraints (minimum 44px touch targets, active state physics, and Amber/Red contextual highlights).
+- **Global Destructive Overrides**: Retained the ability for the Context Bar shell to globally override any View's injected controls when a critical Destructive Confirmation (like deleting a preset) is triggered.
 
 ### 🛠️ Architecture & UI Refactor: Global Setup Drawer
 - **Decomposed the "God Component"**: Split the monolithic `GlobalSetupCard.tsx` into strict, single-responsibility files (`GlobalSetupCard.tsx`, `GlobalSetupSummaryPill.tsx`, `GlobalSetupInputs.tsx`, and `StepperButtonGroup.tsx`).

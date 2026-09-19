@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useStore, usePresetState } from '../state/store';
 import { useUIStore } from '../state/uiStore';
 import { IconFolder } from '../icons';
+import { ContextBar } from '../components/layout/ContextBar';
 
 export default function PresetsView() {
   const presetState = usePresetState();
@@ -56,6 +57,65 @@ export default function PresetsView() {
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-8">
+      {expandedPresetId ? (
+        <>
+          <ContextBar.Slot name="left">
+            <ContextBar.Button
+              variant="ghost-danger"
+              onClick={() => {
+                useUIStore.getState().setTopBarConfirmation({
+                  message: 'Delete Preset?',
+                  confirmLabel: 'Delete',
+                  cancelLabel: 'Cancel',
+                  onConfirm: () => {
+                    useStore.getState().deletePreset(expandedPresetId);
+                    useUIStore.getState().setExpandedPresetId(null);
+                  }
+                });
+              }}
+            >
+              Delete
+            </ContextBar.Button>
+          </ContextBar.Slot>
+          <ContextBar.Slot name="center">
+            <ContextBar.Button
+              variant="ghost"
+              onClick={() => window.dispatchEvent(new CustomEvent('beginRenamePreset', { detail: expandedPresetId }))}
+            >
+              Rename
+            </ContextBar.Button>
+          </ContextBar.Slot>
+          <ContextBar.Slot name="right">
+            <ContextBar.Button
+              variant="primary"
+              onClick={() => {
+                useUIStore.getState().setSelectedPresetId(expandedPresetId);
+                useStore.getState().loadPreset(expandedPresetId);
+                useUIStore.getState().setView('calculator');
+              }}
+            >
+              Load
+            </ContextBar.Button>
+          </ContextBar.Slot>
+        </>
+      ) : (
+        <>
+          <ContextBar.Slot name="center">
+            <ContextBar.AmbientInfo>
+              {sessionPresets.length} Saved {sessionPresets.length === 1 ? 'Setup' : 'Setups'}
+            </ContextBar.AmbientInfo>
+          </ContextBar.Slot>
+          <ContextBar.Slot name="right">
+            <ContextBar.Button
+              variant="primary"
+              onClick={() => useUIStore.getState().setPresetDialogOpen(true)}
+            >
+              + Add
+            </ContextBar.Button>
+          </ContextBar.Slot>
+        </>
+      )}
+
       {sessionPresets.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 bg-black/20 rounded-3xl border border-white/5 text-center mt-8">
           <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 text-white/20">

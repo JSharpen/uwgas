@@ -18,6 +18,8 @@
 | **JOB-029** | Refine Versioning Logic | `[PROPOSED]` | **HIGH** | Discuss and implement bumping the version at the time of merging `dev` to `main`, and updating the build number on commits based on diffs. |
 | **JOB-030** | JSON Import/Export & Alias Mapping Wizard | `[PROPOSED]` | **HIGH** | Build full JSON state import/export. When importing presets, batch-scan the JSON for missing hardware UUIDs and present a single 'Global Alias Mapping' modal to resolve all unknown hardware before atomically committing to the Zustand store. |
 | **JOB-031** | True Least-Squares Calibration Solver | `[READY]` | **MEDIUM** | Upgrade `calibrateBase` from the current anchored algebraic shortcut to a true least-squares optimization (distributing error evenly across all measured points) to maximize mathematical robustness against human measurement errors on Point 1. |
+| **JOB-032** | Add Step Configuration UI (Popover) | `[PROPOSED]` | **MEDIUM** | Change step creation from instantly appending a default step to opening a popover anchored to the context bar, where the user can pre-configure the step details (wheel, base, angle offset, hardware overrides) before creating it. |
+| **JOB-033** | Global Standardized Button Components | `[PROPOSED]` | **LOW** | Extract the strict variants from `ContextBar.Button` into a universal global `<Button>` component to standardize styling, touch targets (44px), and hover/active states across all menus, modals, and views. |
 
 
 ---

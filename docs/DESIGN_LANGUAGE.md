@@ -46,3 +46,9 @@ The UI heavily depends on runtime-injected CSS variables (`--ui-scale`, `--step-
 - **Inner Header Highlight:** The clickable header region of the card changes from `hover:bg-white/5 active:bg-white/10` to a flat `bg-white/5` when expanded.
 - **Title Accent Color:** The title text within the header transitions from `text-white` to `text-amber-400` (or `text-amber-400/80`) when selected, reinforcing the active state.
 - **Collapsible Details (Grid Trick):** The detail pane inside the card expands using CSS grid (`grid-template-rows: 1fr` vs `0fr`). To prevent layout clipping during the transition, the container applies `overflow-hidden` and houses the padding elements *inside* the child `div`.
+
+## 8. Segmented Pill Menus (Equipment Navigation)
+- **Top-Level Navigation**: When a primary view (like Equipment) requires switching between multiple equal-weight child managers (Wheels, Machines, Jigs, USBs), use a horizontal segmented pill control placed *inline* at the top of the scrollable view, rather than a vertical drill-down list (which is strictly reserved for Settings).
+- **Styling**: The segmented control uses a floating container with `neu-convex rounded-full border border-black/40 p-1 flex bg-neutral-950 shadow-lg relative z-20 shrink-0`.
+- **Segment Buttons**: Buttons within the control use `flex-1 h-11 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-all active:scale-95`.
+- **Active State**: The selected segment uses `bg-amber-400 text-black shadow-sm`, while inactive segments use `text-white/40 hover:text-white hover:bg-white/5`.

@@ -225,12 +225,36 @@ const StepCard = React.memo(function StepCard({
           <div className="overflow-hidden min-h-0">
             <div className="px-4 sm:px-6 pb-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
               
-              {/* Steppers */}
+              {/* Row 1: Wheel & Base Selection */}
+              <div className="flex items-center gap-4">
+                <div className="flex-1 flex flex-col gap-2 w-full">
+                  <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Wheel</label>
+                  <button 
+                    className="flex items-center justify-between w-full p-3.5 neu-button rounded-2xl text-[11px] sm:text-xs font-semibold text-white/90 transition active:scale-[0.98]"
+                    onClick={() => setSheetConfig({ type: 'wheel', stepId })}
+                  >
+                    <span className="truncate tracking-wide">Change Wheel</span>
+                    <span className="text-white/30 ml-2">▼</span>
+                  </button>
+                </div>
+
+                <div className="flex-1 flex flex-col gap-2 w-full">
+                  <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Sharpening Base</label>
+                  <button 
+                    className="flex items-center justify-between w-full p-3.5 neu-button rounded-2xl text-[11px] sm:text-xs font-semibold text-white/90 transition active:scale-[0.98]"
+                    onClick={() => setSheetConfig({ type: 'base', stepId })}
+                  >
+                    <span className="truncate tracking-wide">{r.step?.base === 'front' ? 'Front (Trailing)' : 'Rear (Leading)'}</span>
+                    <span className="text-white/30 ml-2">▼</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Row 2: Steppers */}
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <div className="flex-1 flex flex-col gap-2 w-full">
                   <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1 flex justify-between">
                     <span>Wheel Diameter</span>
-                    <span className="text-white/30 hover:text-white cursor-pointer" onClick={() => setSheetConfig({ type: 'wheel', stepId })}>Change</span>
                   </label>
                   <div className="neu-concave border border-black/40 rounded-2xl flex items-center justify-between p-1 shadow-inner">
                     <button 
@@ -262,18 +286,6 @@ const StepCard = React.memo(function StepCard({
                     >+</button>
                   </div>
                 </div>
-              </div>
-
-              {/* Base Override */}
-              <div className="flex flex-col gap-2 w-full">
-                <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Sharpening Base</label>
-                <button 
-                  className="flex items-center justify-between w-full p-3.5 neu-button rounded-2xl text-xs font-semibold text-white/90 transition active:scale-[0.98]"
-                  onClick={() => setSheetConfig({ type: 'base', stepId })}
-                >
-                  <span className="truncate tracking-wide">{r.step?.base === 'front' ? 'Front Base (Edge Trailing)' : 'Rear Base (Edge Leading)'}</span>
-                  <span className="text-white/30 ml-2">▼</span>
-                </button>
               </div>
 
               {/* Advanced Step Overrides */}

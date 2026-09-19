@@ -12,6 +12,7 @@ import { useUIStore } from '../state/uiStore';
 import { useStore } from '../state/store';
 import { calibrateBase, calibrateBaseTrueLeastSquares } from '../math/tormek';
 import { estimateMaxAngleErrorDeg } from '../services/calculationService';
+import { ContextBar } from './layout/ContextBar';
 
 type CalibrationWizardProps = {
   activeMachine: MachineConfig;
@@ -250,6 +251,36 @@ export default function CalibrationWizard({
 
   return (
     <section className="neu-convex rounded-3xl border border-black/40 shadow-2xl p-6 sm:p-8 flex flex-col gap-6 max-w-2xl mx-auto w-full relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <ContextBar.Slot name="center">
+        <ContextBar.Title title="Geometry Mapper" subtitle={activeMachine.name} />
+      </ContextBar.Slot>
+      <ContextBar.Slot name="left">
+        {step === 'measuring' ? (
+          <ContextBar.Button variant="nav" onClick={() => window.dispatchEvent(new CustomEvent('wizard-back'))}>Back</ContextBar.Button>
+        ) : (
+          <ContextBar.Button
+            variant="nav"
+            onClick={() => {
+              useUIStore.getState().setTopBarConfirmation({
+                message: 'Cancel Calibration?',
+                confirmLabel: 'Cancel',
+                cancelLabel: 'Keep',
+                onConfirm: () => useUIStore.getState().setCalibratingMachineId(null)
+              });
+            }}
+          >
+            Cancel
+          </ContextBar.Button>
+        )}
+      </ContextBar.Slot>
+      <ContextBar.Slot name="right">
+        {step === 'intro' ? (
+          <ContextBar.Button variant="primary" onClick={() => window.dispatchEvent(new CustomEvent('wizard-start'))}>Begin</ContextBar.Button>
+        ) : step === 'measuring' ? (
+          <ContextBar.Button variant="primary" onClick={() => window.dispatchEvent(new CustomEvent('wizard-next'))}>Next</ContextBar.Button>
+        ) : null}
+      </ContextBar.Slot>
+
       {/* Top Edge Highlight */}
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
 

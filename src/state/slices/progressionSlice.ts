@@ -5,7 +5,7 @@ import type { RootStoreState } from '../store';
 
 export interface ProgressionSlice {
   sessionSteps: SessionStep[];
-  addStep: (wheelId?: string) => void;
+  addStep: (wheelId?: string) => string;
   deleteStep: (id: string) => void;
   updateStep: (id: string, patch: Partial<SessionStep>) => void;
   moveStep: (index: number, direction: -1 | 1) => void;
@@ -21,20 +21,23 @@ export const createProgressionSlice: StateCreator<
   ProgressionSlice
 > = (set) => ({
   sessionSteps: [],
-  addStep: (wheelId) =>
+  addStep: (wheelId) => {
+    const id = generateId();
     set((state) => {
       const targetWheel = wheelId
         ? state.wheels.find((w) => w.id === wheelId)
         : state.wheels[0];
       const targetWheelId = targetWheel?.id ?? (wheelId || '');
       const newStep: SessionStep = {
-        id: generateId(),
+        id,
         wheelId: targetWheelId,
         base: targetWheel?.baseForHn || 'rear',
         angleOffset: 0,
       };
       return { sessionSteps: [...state.sessionSteps, newStep] };
-    }),
+    });
+    return id;
+  },
   deleteStep: (id) =>
     set((state) => ({
       sessionSteps: state.sessionSteps.filter((s) => s.id !== id),

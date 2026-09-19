@@ -28,6 +28,15 @@
 
 ---
 
+
+## 🤖 AI Agent Workflow
+
+AI Coding Assistants must operate with **Absolute Agency** on this repository. The user acts as the Product Owner and will not run terminal commands, copy-paste code, or resolve Git conflicts.
+
+1. **Terminal Execution:** The AI must run all `npm`, `git`, and file-system commands directly using its tools.
+2. **Feature Branching (Sandboxing):** For any non-trivial change, the AI must automatically create a feature branch (`git checkout -b feature/name`). Do not ask the user to create branches. If an experiment fails, the AI must reset or delete the branch.
+3. **Verification:** The AI must run `npm run typecheck` and `npm run lint` to verify its own work before presenting a completed feature to the user.
+
 ## 🚀 The Dev Console (`angle-dev-console.sh`)
 
 The project includes an interactive terminal console (`angle-dev-console.sh`) designed for Linux (Fedora / GNOME / KDE) and cross-platform terminal use.

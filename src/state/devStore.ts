@@ -48,6 +48,10 @@ export const useDevStore = create<DevState>()(
     }),
     {
       name: 'uwgas-dev-settings',
+      version: 1,
+      migrate: (persistedState: unknown) => {
+        return { ...initialState, ...(persistedState as Partial<DevState>) } as DevState;
+      },
     }
   )
 );

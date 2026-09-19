@@ -2,17 +2,26 @@ import * as React from 'react';
 import GlobalSetupCard from '../components/calculator/GlobalSetupCard';
 import ProgressionView from '../components/ProgressionView';
 import { EmptyProgressionState } from '../components/calculator/EmptyProgressionState';
-import { useProgressionState } from '../state/store';
+import { useProgressionState, useStore } from '../state/store';
 import { useUIStore } from '../state/uiStore';
+import { ContextBar } from '../components/layout/ContextBar';
+import ActionSheetPicker from '../components/calculator/ActionSheetPicker';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function CalculatorView() {
   const isSetupPanelOpen = useUIStore((s) => s.isSetupPanelOpen);
   const setIsSetupPanelOpen = useUIStore((s) => s.setSetupPanelOpen);
   
-  
+  const isPresetMenuOpen = useUIStore((s) => s.isPresetMenuOpen);
+  const setPresetMenuOpen = useUIStore((s) => s.setPresetMenuOpen);
+  const selectedPresetId = useUIStore((s) => s.selectedPresetId);
+  const sessionPresets = useStore(useShallow(s => s.sessionPresets));
+  const activePreset = sessionPresets.find(p => p.id === selectedPresetId);
+  const presetName = activePreset ? activePreset.name : 'Custom Setup';
+  const wheels = useStore(useShallow(s => s.wheels));
+  const [isAddStepPickerOpen, setAddStepPickerOpen] = React.useState(false);
 
-  const { sessionSteps } =
-    useProgressionState();
+  const { sessionSteps, addStep, clearSessionSteps } = useProgressionState();
 
   // Collapse open steps when setup panel opens
   React.useEffect(() => {
@@ -44,8 +53,138 @@ export default function CalculatorView() {
     return () => document.removeEventListener('pointerdown', handleGlobalPointerDown);
   }, [setIsSetupPanelOpen]);
 
+  const expandedStepId = useUIStore(s => s.expandedStepId);
+  const stepIndex = sessionSteps.findIndex(s => s.id === expandedStepId);
+
   return (
     <div className="flex flex-col gap-4">
+      {expandedStepId ? (
+        <>
+          <ContextBar.Slot name="left">
+            <ContextBar.Button
+              variant="ghost-danger"
+              onClick={() => {
+                const action = () => {
+                  useStore.getState().deleteStep(expandedStepId);
+                  useUIStore.getState().setExpandedStepId(null);
+                };
+                if (document.startViewTransition) document.startViewTransition(action);
+                else action();
+              }}
+            >
+              Delete
+            </ContextBar.Button>
+          </ContextBar.Slot>
+          <ContextBar.Slot name="center">
+            <ContextBar.AmbientInfo>
+              Edit Step {stepIndex + 1}
+            </ContextBar.AmbientInfo>
+          </ContextBar.Slot>
+          <ContextBar.Slot name="right">
+            <div className="h-11 flex items-center rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-sm">
+              <button
+                type="button"
+                disabled={stepIndex === 0}
+                className="h-full px-4 sm:px-5 font-bold text-lg text-white hover:bg-white/10 active:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition border-r border-white/10 flex items-center justify-center cursor-pointer"
+                onClick={() => {
+                  const action = () => useStore.getState().moveStep(stepIndex, -1);
+                  if (document.startViewTransition) document.startViewTransition(action);
+                  else action();
+                }}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                disabled={stepIndex === sessionSteps.length - 1}
+                className="h-full px-4 sm:px-5 font-bold text-lg text-white hover:bg-white/10 active:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition flex items-center justify-center cursor-pointer"
+                onClick={() => {
+                  const action = () => useStore.getState().moveStep(stepIndex, 1);
+                  if (document.startViewTransition) document.startViewTransition(action);
+                  else action();
+                }}
+              >
+                ↓
+              </button>
+            </div>
+          </ContextBar.Slot>
+        </>
+      ) : (
+        <>
+          <ContextBar.Slot name="left">
+            {isPresetMenuOpen ? (
+              <ContextBar.Button variant="ghost" onClick={() => useUIStore.setState({ isPresetMenuOpen: false, isPresetDialogOpen: true })}>Save</ContextBar.Button>
+            ) : (
+              <ContextBar.Button 
+                variant="ghost" 
+                disabled={sessionSteps.length === 0}
+                onClick={() => {
+                  if (sessionSteps.length > 0) {
+                    if (selectedPresetId === '') {
+                      useUIStore.getState().setTopBarConfirmation({
+                        confirmLabel: 'Clear',
+                        cancelLabel: 'Cancel',
+                        onConfirm: () => clearSessionSteps(),
+                        centerAction: {
+                          label: 'Save & Clear',
+                          onClick: () => {
+                            useUIStore.getState().setClearAfterSave(true);
+                            useUIStore.getState().setPresetDialogOpen(true);
+                          }
+                        }
+                      });
+                    } else {
+                      useUIStore.getState().setTopBarConfirmation({
+                        message: 'Clear Progression?',
+                        confirmLabel: 'Yes',
+                        cancelLabel: 'No',
+                        onConfirm: () => clearSessionSteps()
+                      });
+                    }
+                  }
+                }}
+              >
+                Clear All
+              </ContextBar.Button>
+            )}
+          </ContextBar.Slot>
+          
+          <ContextBar.Slot name="center">
+            <ContextBar.DropdownTitle 
+              title={presetName}
+              isOpen={isPresetMenuOpen}
+              isPrimary={!!activePreset}
+              onClick={() => setPresetMenuOpen(!isPresetMenuOpen)}
+            />
+          </ContextBar.Slot>
+
+          <ContextBar.Slot name="right">
+            {isPresetMenuOpen ? (
+              <ContextBar.Button variant="ghost" onClick={() => useUIStore.setState({ isPresetMenuOpen: false, isPresetManagerOpen: true })}>Manage</ContextBar.Button>
+            ) : (
+              <ContextBar.Button variant="primary" onClick={() => setAddStepPickerOpen(true)}>+ Add Step</ContextBar.Button>
+            )}
+          </ContextBar.Slot>
+        </>
+      )}
+
+      <ActionSheetPicker
+        isOpen={isAddStepPickerOpen}
+        onClose={() => setAddStepPickerOpen(false)}
+        title="Select Wheel for New Step"
+        options={[
+          ...wheels.map(w => ({ value: w.id, label: w.name, meta: `D:${w.D}mm` }))
+        ]}
+        value=""
+        onChange={val => {
+          if (val) {
+            const newId = addStep(val);
+            useUIStore.getState().setExpandedStepId(newId);
+          }
+          setAddStepPickerOpen(false);
+        }}
+      />
+
       {/* Global Setup Card */}
       <GlobalSetupCard />
       

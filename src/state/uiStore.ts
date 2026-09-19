@@ -73,7 +73,7 @@ export interface UIState {
   setPresetDialogClosing: (isClosing: boolean) => void;
   setPresetNameDraft: (name: string) => void;
   setClearAfterSave: (clearAfterSave: boolean) => void;
-  setPresetManagerOpen: (isOpen: boolean) => void;
+  setPresetManagerOpen: (isPresetManagerOpen: boolean) => void;
   setPresetManagerClosing: (isClosing: boolean) => void;
   setIsConfirmingClear: (confirming: boolean) => void;
   setTopBarConfirmation: (conf: TopBarConfirmation | null) => void;

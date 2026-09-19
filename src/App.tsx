@@ -8,7 +8,7 @@ import SettingsView from './views/SettingsView';
 import PresetsView from './views/PresetsView';
 import { PresetManagerModal } from './components/presets/PresetManagerModal';
 import { SavePresetDialog } from './components/presets/SavePresetDialog';
-import { ContextBar } from './components/layout/ContextBar';
+import { ContextBarShell } from './components/layout/ContextBar';
 import { BottomTabBar } from './components/layout/BottomTabBar';
 import { useHardwareBackButton } from './hooks/useHardwareBackButton';
 
@@ -63,7 +63,7 @@ export default function App() {
       <div className="fixed top-0 left-0 right-0 max-w-[576px] mx-auto h-12 bg-[#09090b] pointer-events-none z-[45]" />
 
       {/* Global Context Bar */}
-      <ContextBar />
+      <ContextBarShell />
 
       {/* Main Routed View */}
       <main className="flex-1 w-full">
