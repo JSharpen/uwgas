@@ -52,3 +52,8 @@ The UI heavily depends on runtime-injected CSS variables (`--ui-scale`, `--step-
 - **Styling**: The segmented control uses a floating container with `neu-convex rounded-full border border-black/40 p-1 flex bg-neutral-950 shadow-lg relative z-20 shrink-0`.
 - **Segment Buttons**: Buttons within the control use `flex-1 h-11 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-all active:scale-95`.
 - **Active State**: The selected segment uses `bg-amber-400 text-black shadow-sm`, while inactive segments use `text-white/40 hover:text-white hover:bg-white/5`.
+
+## 9. Shared Components (Component-Driven Design)
+- **Prevent Design Drift**: Never construct raw HTML buttons (`<button className="...">`) or reinvent layout wrappers for established design patterns if a strict shared component exists (e.g. `<ContextBar.Button>`).
+- **Context Bar Inversion of Control**: Individual views must inject their Context Bar controls via `<ContextBar.Slot>` and strictly use the `<ContextBar.Button>`, `<ContextBar.Title>`, and `<ContextBar.AmbientInfo>` components. Do not attempt to style context bar elements from scratch, and do not append global controls via `App.tsx` directly.
+- **Future Expansion Guideline**: As new generic UI patterns solidify (e.g. standard dialog buttons, generic expanding accordion cards with `neu-convex` backgrounds), extract them into a centralized global UI component library to permanently lock down the styling against accidental drift.
