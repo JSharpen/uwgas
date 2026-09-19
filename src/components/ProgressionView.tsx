@@ -8,6 +8,7 @@ import { useStore } from '../state/store';
 import { useWheelResults } from '../services/calculationService';
 import ExpandableCard from './ui/ExpandableCard';
 import { Tag } from './ui/Tag';
+import { isWheelOverdue } from '../utils/wheelWear';
 
 export type ProgressionViewProps = Record<string, never>;
 
@@ -145,6 +146,11 @@ const StepCard = React.memo(function StepCard({
               <span className={`text-base font-medium tracking-wide truncate transition-colors ${isExpanded ? 'text-amber-400' : 'text-white'}`}>
                 {r.wheel.name}
               </span>
+              {isWheelOverdue(r.wheel) && (
+                <Tag intent="warning" appearance="solid" className="shrink-0">
+                  Overdue
+                </Tag>
+              )}
             </div>
             
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
@@ -383,7 +389,16 @@ export function ProgressionView() {
                   <ActionSheet.Item 
                     key={w.id} 
                     selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.wheelId === w.id}
-                    meta={`D:${w.D}mm`}
+                    meta={
+                      <span className="flex items-center gap-2">
+                        {isWheelOverdue(w) && (
+                          <Tag intent="warning" appearance="solid" className="px-1.5 py-0 leading-none">
+                            Overdue
+                          </Tag>
+                        )}
+                        <span>D:{w.D}mm</span>
+                      </span>
+                    }
                     onClick={() => {
                       onUpdateStep(sheetConfig.stepId, { wheelId: w.id });
                       setSheetConfig(null);

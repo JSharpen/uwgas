@@ -24,8 +24,9 @@ type ActionSheetProps = {
 
 export function ActionSheet({ isOpen, onClose, children }: ActionSheetProps) {
   const dialogRef = React.useRef<HTMLDialogElement>(null);
+  const [isNativeOpen, setIsNativeOpen] = React.useState(false);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
 
@@ -33,6 +34,10 @@ export function ActionSheet({ isOpen, onClose, children }: ActionSheetProps) {
       if (!dialog.open) {
         dialog.showModal();
       }
+      // Force a second render so Framer Motion mounts INSIDE an already-open dialog
+      setIsNativeOpen(true);
+    } else {
+      setIsNativeOpen(false);
     }
   }, [isOpen]);
 
@@ -53,7 +58,7 @@ export function ActionSheet({ isOpen, onClose, children }: ActionSheetProps) {
     <ActionSheetContext.Provider value={{ isOpen, onClose }}>
       <dialog
         ref={dialogRef}
-        className="action-sheet fixed inset-0 m-0 h-full w-full max-h-none max-w-none bg-transparent backdrop:bg-transparent p-0 open:flex flex-col justify-end outline-none z-50 pointer-events-none"
+        className={`action-sheet fixed inset-0 m-0 h-full w-full max-h-none max-w-none bg-transparent backdrop:bg-transparent p-0 flex-col justify-end outline-none z-50 pointer-events-none ${isOpen || isNativeOpen ? 'flex' : 'hidden'}`}
       >
         <AnimatePresence 
           onExitComplete={() => {
@@ -62,7 +67,7 @@ export function ActionSheet({ isOpen, onClose, children }: ActionSheetProps) {
             }
           }}
         >
-          {isOpen && (
+          {isNativeOpen && (
             <>
               {/* Backdrop */}
               <motion.div

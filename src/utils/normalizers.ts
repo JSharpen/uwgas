@@ -26,7 +26,7 @@ export function normalizeWheel(raw: unknown): Wheel {
   const baseForHn = obj.baseForHn === 'front' ? 'front' : 'rear';
 
   const isWearable = typeof obj.isWearable === 'boolean' ? obj.isWearable : false;
-  const measuredAt = typeof obj.measuredAt === 'number' ? obj.measuredAt : undefined;
+  const measuredAt = typeof obj.measuredAt === 'number' ? obj.measuredAt : (isWearable ? Date.now() : undefined);
   const remeasureInterval = typeof obj.remeasureInterval === 'number' ? obj.remeasureInterval : undefined;
   const remeasureIntervalUnit = 
     obj.remeasureIntervalUnit === 'days' || obj.remeasureIntervalUnit === 'weeks' || obj.remeasureIntervalUnit === 'months' 

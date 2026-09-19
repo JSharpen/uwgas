@@ -138,6 +138,27 @@ export default function DevStateView() {
     }
   };
 
+  const handleSpoofReminder = () => {
+    const state = useStore.getState();
+    if (state.wheels.length === 0) {
+      alert('No wheels found. Please add a wheel first.');
+      return;
+    }
+    
+    useStore.setState(s => {
+      const newWheels = [...s.wheels];
+      const wheelToSpoof = { ...newWheels[0] };
+      wheelToSpoof.isWearable = true;
+      wheelToSpoof.remeasureInterval = 1;
+      wheelToSpoof.remeasureIntervalUnit = 'days';
+      // Set the measurement time to 2 days ago to force an overdue state
+      wheelToSpoof.measuredAt = Date.now() - (2 * 24 * 60 * 60 * 1000);
+      newWheels[0] = wheelToSpoof;
+      return { wheels: newWheels };
+    });
+    alert(`Spoofed reminder for wheel: ${state.wheels[0].name}. It should now appear as overdue!`);
+  };
+
   const handleNukeState = () => {
     if (confirm('Are you sure you want to NUKE all local state and reload? This is irreversible!')) {
       localStorage.clear();
@@ -197,6 +218,17 @@ export default function DevStateView() {
             Debug Zod Error
           </button>
           <p className="text-xs text-white/40 -mt-2">Checks your raw corrupted save data to tell us exactly which field is causing the crash.</p>
+        </div>
+
+        <div className="flex flex-col gap-4 border-t border-white/5 pt-6">
+          <button
+            type="button"
+            onClick={handleSpoofReminder}
+            className="flex items-center justify-center p-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 active:bg-emerald-500/30 text-emerald-400 font-semibold border border-emerald-500/20 transition-colors"
+          >
+            Spoof Overdue Wheel Reminder
+          </button>
+          <p className="text-xs text-white/40 -mt-2">Forces the first wheel in your library to become artificially overdue for measurement.</p>
         </div>
 
         <div className="flex flex-col gap-4 border-t border-white/5 pt-6">
