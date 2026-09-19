@@ -9,13 +9,14 @@ export interface SlotProps {
 }
 
 export function Slot({ name, children }: SlotProps) {
-  const [target, setTarget] = React.useState<HTMLElement | null>(null);
+  // We need to force a re-render after mount just in case the shell wasn't in the DOM 
+  // during the very first render pass.
+  const [, setTick] = React.useState(0);
+  React.useEffect(() => setTick(1), []);
 
-  React.useEffect(() => {
-    // We wait for mounting so the ContextBarShell has rendered the DOM nodes
-    const el = document.getElementById(`context-bar-${name}`);
-    setTarget(el);
-  }, [name]);
+  // Dynamically calculate the target on EVERY render.
+  // This fixes the bug where React re-uses the <Slot> component instance but changes the 'name' prop.
+  const target = document.getElementById(`context-bar-${name}`);
 
   if (!target) return null;
   return createPortal(children, target);

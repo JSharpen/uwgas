@@ -14,6 +14,13 @@ export default function EquipmentView() {
   const calibratingMachineId = useUIStore((s) => s.calibratingMachineId);
   const expandedEquipmentId = useUIStore(s => s.expandedEquipmentId);
 
+  // Clear expanded equipment state when navigating away from the equipment view
+  React.useEffect(() => {
+    return () => {
+      useUIStore.getState().setExpandedEquipmentId(null);
+    };
+  }, []);
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-200 max-w-[576px] mx-auto w-full">
       {!calibratingMachineId && expandedEquipmentId ? (
@@ -72,7 +79,10 @@ export default function EquipmentView() {
       {!calibratingMachineId && (
         <div className="neu-convex rounded-full border border-black/40 p-1 flex bg-neutral-950 shadow-lg relative z-20 shrink-0">
           <button
-            onClick={() => setEquipmentTab('wheels')}
+            onClick={() => {
+              setEquipmentTab('wheels');
+              useUIStore.getState().setExpandedEquipmentId(null);
+            }}
             className={`flex-1 h-11 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-all active:scale-95 ${
               equipmentTab === 'wheels'
                 ? 'bg-amber-400 text-black shadow-sm'
@@ -82,7 +92,10 @@ export default function EquipmentView() {
             Wheels
           </button>
           <button
-            onClick={() => setEquipmentTab('machines')}
+            onClick={() => {
+              setEquipmentTab('machines');
+              useUIStore.getState().setExpandedEquipmentId(null);
+            }}
             className={`flex-1 h-11 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-all active:scale-95 ${
               equipmentTab === 'machines'
                 ? 'bg-amber-400 text-black shadow-sm'
@@ -92,7 +105,10 @@ export default function EquipmentView() {
             Machines
           </button>
           <button
-            onClick={() => setEquipmentTab('jigs')}
+            onClick={() => {
+              setEquipmentTab('jigs');
+              useUIStore.getState().setExpandedEquipmentId(null);
+            }}
             className={`flex-1 h-11 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-all active:scale-95 ${
               equipmentTab === 'jigs'
                 ? 'bg-amber-400 text-black shadow-sm'
@@ -102,7 +118,10 @@ export default function EquipmentView() {
             Jigs
           </button>
           <button
-            onClick={() => setEquipmentTab('usbs')}
+            onClick={() => {
+              setEquipmentTab('usbs');
+              useUIStore.getState().setExpandedEquipmentId(null);
+            }}
             className={`flex-1 h-11 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-all active:scale-95 ${
               equipmentTab === 'usbs'
                 ? 'bg-amber-400 text-black shadow-sm'

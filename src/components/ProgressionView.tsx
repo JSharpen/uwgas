@@ -6,6 +6,7 @@ import ActionSheetPicker from './calculator/ActionSheetPicker';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../state/store';
 import { useWheelResults } from '../services/calculationService';
+import ExpandableCard from './ui/ExpandableCard';
 
 export type ProgressionViewProps = Record<string, never>;
 
@@ -126,104 +127,97 @@ const StepCard = React.memo(function StepCard({
 
 
   return (
-    <div
+    <ExpandableCard
       ref={cardRef}
-      className={`relative flex flex-col motion-list-item overflow-hidden transition-all duration-300 group scroll-m-[120px] sm:scroll-m-[160px] neu-convex rounded-3xl border shadow-lg ${isExpanded ? 'border-amber-400/30' : 'border-black/40'}`}
-      style={{ '--motion-order': index, viewTransitionName: `step-${stepId}` } as React.CSSProperties}
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
-
-      {/* ===== View State (Clickable to Expand) ===== */}
-      <div 
-        className={`flex justify-between items-center px-4 sm:px-6 relative z-10 cursor-pointer transition-colors ${isExpanded ? 'bg-white/5' : 'hover:bg-white/5 active:bg-white/10'}`}
-        style={{ minHeight: 'var(--step-card-height, 5.5rem)' }}
-        onClick={onToggleExpand}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className="flex flex-col gap-1 min-w-0 flex-1 pr-3 sm:pr-4 relative z-10">
-          <div className="flex items-center gap-2 w-full">
-            <span className={`text-base font-medium tracking-wide truncate transition-colors ${isExpanded ? 'text-amber-400' : 'text-white'}`}>
-              {r.wheel.name}
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-2 flex-wrap mt-0.5">
-            {r.step && (
-              <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center text-[10px] font-bold tabular-nums text-white border border-black/60 shadow-inner shrink-0">
-                {index + 1}
-              </div>
-            )}
-            {hasOffset && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 shadow-sm ${angleOffset > 0 ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'bg-danger/20 text-danger border border-danger/20'}`}>
-                {angleOffset > 0 ? '+' : ''}{angleOffset.toFixed(1)}°
+      isExpanded={isExpanded}
+      onToggle={onToggleExpand}
+      index={index}
+      className="relative motion-list-item scroll-m-[120px] sm:scroll-m-[160px]"
+      style={{ viewTransitionName: `step-${stepId}` } as React.CSSProperties}
+      headerClassName="flex justify-between items-center px-4 sm:px-6 relative z-10"
+      headerStyle={{ minHeight: 'var(--step-card-height, 5.5rem)' }}
+      headerTouchHandlers={{ onTouchStart: handleTouchStart, onTouchEnd: handleTouchEnd }}
+      header={
+        <>
+          <div className="flex flex-col gap-1 min-w-0 flex-1 pr-3 sm:pr-4 relative z-10">
+            <div className="flex items-center gap-2 w-full">
+              <span className={`text-base font-medium tracking-wide truncate transition-colors ${isExpanded ? 'text-amber-400' : 'text-white'}`}>
+                {r.wheel.name}
               </span>
-            )}
-            {r.step && (
-              <div className="flex items-center shrink-0 ml-1" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
-                {r.step.base === 'rear' ? <IconEdgeLeading className="w-3.5 h-3.5 text-[var(--color-accent)] opacity-80" /> : <IconEdgeTrailing className="w-3.5 h-3.5 text-sky-400 opacity-80" />}
-              </div>
-            )}
-            <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold truncate">
-              {formatDeg(r.betaEffDeg)}° / {r.step?.base === 'front' ? 'FRONT' : 'REAR'}
-            </span>
-          </div>
-
-          {/* Row 3: Hardware Pills */}
-          {(showAdvancedStepOverrides || r.step?.machineId || r.step?.usbId) && (
-            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-              {(showAdvancedStepOverrides || r.step?.machineId) && effectiveMachine && (
-                <span className={`rounded px-1.5 py-0.5 text-[9px] font-mono truncate text-center transition-all ${isMachineChanged ? 'bg-amber-400 text-black shadow-[0_0_8px_rgba(251,191,36,0.3)] font-bold' : 'neu-concave border border-white/5 text-white/40'}`}>
-                  {effectiveMachine.name}
-                </span>
-              )}
-              {(showAdvancedStepOverrides || r.step?.usbId) && effectiveUsb && (
-                <span className={`rounded px-1.5 py-0.5 text-[9px] font-mono truncate text-center transition-all ${isUsbChanged ? 'bg-amber-400 text-black shadow-[0_0_8px_rgba(251,191,36,0.3)] font-bold' : 'neu-concave border border-white/5 text-white/40'}`}>
-                  {effectiveUsb.name}
-                </span>
-              )}
             </div>
-          )}
-        </div>
-
-        {/* Massive USB/Projection Output */}
-        <div className="flex flex-col items-end shrink-0 relative z-10">
-          <span className="text-2xl sm:text-3xl font-bold text-amber-400 tracking-tight amber-glow tabular-nums">
-            {isProjectionMode ? (
-              r.isReachable !== false && r.requiredProjectionA != null ? (
-                <>{r.requiredProjectionA.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
-              ) : (
-                <span className="text-danger text-xl">OOR</span>
-              )
-            ) : heightMode === 'hn' ? (
-              <>{r.hnBase.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
-            ) : (
-              <>{r.hrWheel.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
-            )}
-          </span>
-          
-          <div className="flex flex-col items-end mt-1">
-            {deltaTurnsText ? (
-               <div className="flex flex-col items-end gap-1">
-                  <span className="text-[10px] px-1.5 py-0.5 rounded neu-concave border border-black/40 text-amber-400 font-bold tracking-wide">{deltaTurnsText}</span>
-                  <span className="text-[10px] text-white/30 font-bold uppercase tracking-wide">{deltaText}</span>
-               </div>
-            ) : deltaText ? (
-              <span className="text-[10px] text-amber-400 uppercase tracking-wide font-bold">
-                {deltaText}
+            
+            <div className="flex items-center gap-2 flex-wrap mt-0.5">
+              {r.step && (
+                <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center text-[10px] font-bold tabular-nums text-white border border-black/60 shadow-inner shrink-0">
+                  {index + 1}
+                </div>
+              )}
+              {hasOffset && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 shadow-sm ${angleOffset > 0 ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'bg-danger/20 text-danger border border-danger/20'}`}>
+                  {angleOffset > 0 ? '+' : ''}{angleOffset.toFixed(1)}°
+                </span>
+              )}
+              {r.step && (
+                <div className="flex items-center shrink-0 ml-1" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
+                  {r.step.base === 'rear' ? <IconEdgeLeading className="w-3.5 h-3.5 text-[var(--color-accent)] opacity-80" /> : <IconEdgeTrailing className="w-3.5 h-3.5 text-sky-400 opacity-80" />}
+                </div>
+              )}
+              <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold truncate">
+                {formatDeg(r.betaEffDeg)}° / {r.step?.base === 'front' ? 'FRONT' : 'REAR'}
               </span>
-            ) : null}
-          </div>
-        </div>
-      </div>
+            </div>
 
-      {/* ===== Edit State (Collapsible) ===== */}
+            {/* Row 3: Hardware Pills */}
+            {(showAdvancedStepOverrides || r.step?.machineId || r.step?.usbId) && (
+              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                {(showAdvancedStepOverrides || r.step?.machineId) && effectiveMachine && (
+                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-mono truncate text-center transition-all ${isMachineChanged ? 'bg-amber-400 text-black shadow-[0_0_8px_rgba(251,191,36,0.3)] font-bold' : 'neu-concave border border-white/5 text-white/40'}`}>
+                    {effectiveMachine.name}
+                  </span>
+                )}
+                {(showAdvancedStepOverrides || r.step?.usbId) && effectiveUsb && (
+                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-mono truncate text-center transition-all ${isUsbChanged ? 'bg-amber-400 text-black shadow-[0_0_8px_rgba(251,191,36,0.3)] font-bold' : 'neu-concave border border-white/5 text-white/40'}`}>
+                    {effectiveUsb.name}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Massive USB/Projection Output */}
+          <div className="flex flex-col items-end shrink-0 relative z-10">
+            <span className="text-2xl sm:text-3xl font-bold text-amber-400 tracking-tight amber-glow tabular-nums">
+              {isProjectionMode ? (
+                r.isReachable !== false && r.requiredProjectionA != null ? (
+                  <>{r.requiredProjectionA.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
+                ) : (
+                  <span className="text-danger text-xl">OOR</span>
+                )
+              ) : heightMode === 'hn' ? (
+                <>{r.hnBase.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
+              ) : (
+                <>{r.hrWheel.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
+              )}
+            </span>
+            
+            <div className="flex flex-col items-end mt-1">
+              {deltaTurnsText ? (
+                 <div className="flex flex-col items-end gap-1">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded neu-concave border border-black/40 text-amber-400 font-bold tracking-wide">{deltaTurnsText}</span>
+                    <span className="text-[10px] text-white/30 font-bold uppercase tracking-wide">{deltaText}</span>
+                 </div>
+              ) : deltaText ? (
+                <span className="text-[10px] text-amber-400 uppercase tracking-wide font-bold">
+                  {deltaText}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </>
+      }
+    >
       {r.step && onUpdateStep && (
-        <div 
-          className="grid transition-[grid-template-rows] duration-300 ease-in-out relative z-10" style={{ gridTemplateRows: isExpanded ? "1fr" : "0fr" }}
-        >
-          <div className="overflow-hidden min-h-0">
-            <div className="px-4 sm:px-6 pb-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
+        <div className="px-4 sm:px-6 pb-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
               
               {/* Row 1: Wheel & Base Selection */}
               <div className="flex items-center gap-4">
@@ -320,10 +314,8 @@ const StepCard = React.memo(function StepCard({
                 </div>
               )}
             </div>
-          </div>
-        </div>
       )}
-    </div>
+    </ExpandableCard>
   );
 });
 

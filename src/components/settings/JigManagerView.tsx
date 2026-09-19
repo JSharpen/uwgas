@@ -5,6 +5,7 @@ import type { JigConfig } from '../../types/core';
 import { generateId } from '../../utils/id';
 import ModalShell from '../ModalShell';
 import useModalLayout from '../../hooks/useModalLayout';
+import ExpandableCard from '../ui/ExpandableCard';
 
 export default function JigManagerView() {
   const { jigs, addJig: onAddJig, updateJig: onUpdateJig } = useStore();
@@ -55,18 +56,12 @@ export default function JigManagerView() {
         const isExpanded = expandedEquipmentId === item.id;
         
         return (
-          <div
+          <ExpandableCard
             key={item.id}
-            className={`neu-convex rounded-3xl border shadow-lg flex flex-col relative overflow-hidden group transition-all duration-300 ${isExpanded ? 'border-amber-400/30' : 'border-black/40'}`}
-            style={{ '--motion-order': idx } as React.CSSProperties}
-          >
-            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
-
-            {/* Header */}
-            <div
-              className={`w-full px-5 py-4 flex items-center justify-between cursor-pointer transition-colors relative z-10 ${isExpanded ? 'bg-white/5' : 'hover:bg-white/5 active:bg-white/10'}`}
-              onClick={() => setExpandedEquipmentId(isExpanded ? null : item.id)}
-            >
+            isExpanded={isExpanded}
+            onToggle={() => setExpandedEquipmentId(isExpanded ? null : item.id)}
+            index={idx}
+            header={
               <div className="flex items-center gap-2.5 min-w-0 flex-wrap w-full">
                 <div className="w-6 h-6 shrink-0 flex items-center justify-center bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-lg">
                   <span className="text-xs font-bold font-mono">J</span>
@@ -75,78 +70,74 @@ export default function JigManagerView() {
                   {item.name || 'Untitled Jig'}
                 </div>
               </div>
-            </div>
+            }
+          >
+            <div className="p-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Jig Name</span>
+                <input
+                  type="text"
+                  className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-semibold text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
+                  defaultValue={item.name}
+                  onBlur={e => onUpdateJig(item.id, { name: e.target.value.trim() })}
+                />
+              </label>
 
-            {/* Expanded Details Pane */}
-            <div 
-              className="grid transition-all duration-300 ease-in-out relative z-10" style={{ gridTemplateRows: isExpanded ? "1fr" : "0fr" }}
-            >
-              <div className="overflow-hidden min-h-0">
-                <div className="p-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
-                  <div className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-3">
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Jig Name</span>
-                      <input
-                        type="text"
-                        className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:border-[var(--color-accent)] outline-none transition w-full"
-                        defaultValue={item.name}
-                        onBlur={e => onUpdateJig(item.id, { name: e.target.value.trim() })}
-                      />
-                    </label>
-                  </div>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Diameter (Dj) in mm</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-bold font-mono text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
+                  defaultValue={item.Dj}
+                  onBlur={e => onUpdateJig(item.id, { Dj: Number(e.target.value) })}
+                />
+              </label>
+              
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Base Length (mm)</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-bold font-mono text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
+                  defaultValue={item.length || ''}
+                  onBlur={e => onUpdateJig(item.id, { length: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </label>
 
-                  <div className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col gap-3">
-                    <label className="flex flex-col gap-1.5">
-                      <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Diameter (Dj) in mm</span>
-                      <input
-                        type="number"
-                        step="0.1"
-                        className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-bold font-mono text-white focus:border-[var(--color-accent)] outline-none transition w-full"
-                        defaultValue={item.Dj}
-                        onBlur={e => onUpdateJig(item.id, { Dj: Number(e.target.value) })}
-                      />
-                    </label>
-                    
-                    <label className="flex flex-col gap-1.5 pt-2 border-t border-white/5">
-                      <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Base Length (mm)</span>
-                      <input
-                        type="number"
-                        step="0.1"
-                        className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-bold font-mono text-white focus:border-[var(--color-accent)] outline-none transition w-full"
-                        defaultValue={item.length || ''}
-                        onBlur={e => onUpdateJig(item.id, { length: e.target.value ? Number(e.target.value) : undefined })}
-                      />
-                    </label>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={!!item.isAdjustableLength}
+                className={`flex items-center justify-between w-full p-3.5 neu-button rounded-xl transition active:scale-[0.98] cursor-pointer ${item.isAdjustableLength ? 'border-[var(--color-accent)]/50' : ''}`}
+                onClick={() => onUpdateJig(item.id, { isAdjustableLength: !item.isAdjustableLength })}
+              >
+                <div className="flex flex-col items-start min-w-0">
+                  <span className={`text-sm font-bold ${item.isAdjustableLength ? 'text-amber-400' : 'text-white'}`}>Adjustable Collar</span>
+                </div>
+                {item.isAdjustableLength ? (
+                  <span className="text-amber-400 font-bold text-xs uppercase tracking-wider px-2 shrink-0">Yes</span>
+                ) : (
+                  <div className="w-5 h-5 rounded-full border-2 border-white/20 shrink-0 ml-4"></div>
+                )}
+              </button>
 
-                    <label className="flex items-center justify-between gap-3 pt-2 border-t border-white/5 cursor-pointer">
-                      <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Adjustable Collar?</span>
-                      <input
-                        type="checkbox"
-                        className="rounded border-white/5 bg-black/40 text-[var(--color-accent)] focus:ring-[var(--color-accent)] w-5 h-5 cursor-pointer accent-[var(--color-accent)]"
-                        checked={!!item.isAdjustableLength}
-                        onChange={e => onUpdateJig(item.id, { isAdjustableLength: e.target.checked })}
-                      />
-                    </label>
-
-                    <div className="grid transition-all duration-300 ease-in-out" style={{ gridTemplateRows: item.isAdjustableLength ? "1fr" : "0fr" }}>
-                      <div className="overflow-hidden min-h-0">
-                        <label className="flex flex-col gap-1.5 pt-2 border-t border-white/5 mt-2">
-                          <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Thread Pitch (Optional, mm)</span>
-                          <input
-                            type="number"
-                            step="0.1"
-                            className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-bold font-mono text-white focus:border-[var(--color-accent)] outline-none transition w-full"
-                            defaultValue={item.threadPitch || ''}
-                            onBlur={e => onUpdateJig(item.id, { threadPitch: e.target.value ? Number(e.target.value) : undefined })}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
+              <div className="grid transition-all duration-300 ease-in-out" style={{ gridTemplateRows: item.isAdjustableLength ? "1fr" : "0fr" }}>
+                <div className="overflow-hidden min-h-0">
+                  <label className="flex flex-col gap-1.5 pt-1 mt-2">
+                    <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Thread Pitch (Optional, mm)</span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-bold font-mono text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
+                      defaultValue={item.threadPitch || ''}
+                      onBlur={e => onUpdateJig(item.id, { threadPitch: e.target.value ? Number(e.target.value) : undefined })}
+                    />
+                  </label>
                 </div>
               </div>
             </div>
-          </div>
+          </ExpandableCard>
         );
       })}
 
@@ -159,65 +150,68 @@ export default function JigManagerView() {
           dialogStyle={getDialogStyle({ liftByKeyboard: true })}
         >
           <div className="flex flex-col gap-4">
-            <div className="bg-black/30 border border-white/5 rounded-2xl p-4 flex flex-col gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-white">Jig Name</span>
-                <input
-                  type="text"
-                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:border-[var(--color-accent)] outline-none transition w-full"
-                  value={draftJig.name || ''}
-                  onChange={e => setDraftJig({ ...draftJig, name: e.target.value })}
-                  autoFocus
-                />
-              </label>
-            </div>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest pl-1">Jig Name</span>
+              <input
+                type="text"
+                className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-semibold text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
+                value={draftJig.name || ''}
+                onChange={e => setDraftJig({ ...draftJig, name: e.target.value })}
+                autoFocus
+              />
+            </label>
 
-            <div className="bg-black/30 border border-white/5 rounded-2xl p-4 flex flex-col gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-white">Diameter (Dj) in mm</span>
-                <input
-                  type="number"
-                  step="0.1"
-                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-bold font-mono text-white focus:border-[var(--color-accent)] outline-none transition w-full"
-                  value={draftJig.Dj || ''}
-                  onChange={e => setDraftJig({ ...draftJig, Dj: Number(e.target.value) })}
-                />
-              </label>
-              
-              <label className="flex flex-col gap-1.5 pt-2 border-t border-white/5">
-                <span className="text-sm font-semibold text-white">Base Length (mm)</span>
-                <input
-                  type="number"
-                  step="0.1"
-                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-bold font-mono text-white focus:border-[var(--color-accent)] outline-none transition w-full"
-                  value={draftJig.length || ''}
-                  onChange={e => setDraftJig({ ...draftJig, length: e.target.value ? Number(e.target.value) : undefined })}
-                />
-              </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest pl-1">Diameter (Dj) in mm</span>
+              <input
+                type="number"
+                step="0.1"
+                className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-bold font-mono text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
+                value={draftJig.Dj || ''}
+                onChange={e => setDraftJig({ ...draftJig, Dj: Number(e.target.value) })}
+              />
+            </label>
+            
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest pl-1">Base Length (mm)</span>
+              <input
+                type="number"
+                step="0.1"
+                className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-bold font-mono text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
+                value={draftJig.length || ''}
+                onChange={e => setDraftJig({ ...draftJig, length: e.target.value ? Number(e.target.value) : undefined })}
+              />
+            </label>
 
-              <label className="flex items-center justify-between gap-3 pt-2 border-t border-white/5 cursor-pointer">
-                <span className="text-sm font-semibold text-white">Adjustable Collar?</span>
-                <input
-                  type="checkbox"
-                  className="rounded border-white/5 bg-black/40 text-[var(--color-accent)] focus:ring-[var(--color-accent)] w-5 h-5 cursor-pointer accent-[var(--color-accent)]"
-                  checked={!!draftJig.isAdjustableLength}
-                  onChange={e => setDraftJig({ ...draftJig, isAdjustableLength: e.target.checked })}
-                />
-              </label>
-
-              {draftJig.isAdjustableLength && (
-                <label className="flex flex-col gap-1.5 pt-2 border-t border-white/5">
-                  <span className="text-sm font-semibold text-white">Thread Pitch (Optional, mm)</span>
-                  <input
-                    type="number"
-                    step="0.1"
-                    className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-bold font-mono text-white focus:border-[var(--color-accent)] outline-none transition w-full"
-                    value={draftJig.threadPitch || ''}
-                    onChange={e => setDraftJig({ ...draftJig, threadPitch: e.target.value ? Number(e.target.value) : undefined })}
-                  />
-                </label>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={!!draftJig.isAdjustableLength}
+              className={`flex items-center justify-between w-full p-3.5 neu-button rounded-xl transition active:scale-[0.98] cursor-pointer ${draftJig.isAdjustableLength ? 'border-[var(--color-accent)]/50' : ''}`}
+              onClick={() => setDraftJig({ ...draftJig, isAdjustableLength: !draftJig.isAdjustableLength })}
+            >
+              <div className="flex flex-col items-start min-w-0">
+                <span className={`text-sm font-bold ${draftJig.isAdjustableLength ? 'text-amber-400' : 'text-white'}`}>Adjustable Collar</span>
+              </div>
+              {draftJig.isAdjustableLength ? (
+                <span className="text-amber-400 font-bold text-xs uppercase tracking-wider px-2 shrink-0">Yes</span>
+              ) : (
+                <div className="w-5 h-5 rounded-full border-2 border-white/20 shrink-0 ml-4"></div>
               )}
-            </div>
+            </button>
+
+            {draftJig.isAdjustableLength && (
+              <label className="flex flex-col gap-1.5 pt-1">
+                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest pl-1">Thread Pitch (Optional, mm)</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-bold font-mono text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
+                  value={draftJig.threadPitch || ''}
+                  onChange={e => setDraftJig({ ...draftJig, threadPitch: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </label>
+            )}
 
             <div className="flex justify-end gap-2 mt-2">
               <button

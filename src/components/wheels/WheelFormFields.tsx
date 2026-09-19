@@ -15,14 +15,12 @@ export function WheelFormFields({
   autoFocusName = false,
 }: WheelFormFieldsProps) {
   return (
-    <div className="flex flex-col gap-4">
-      {/* Identity Card */}
-      <div className="bg-black/30 border border-white/5 rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
-        <h4 className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Identity</h4>
+    <div className="flex flex-col gap-4 w-full">
+      <div className="flex flex-col gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-white">Wheel Name</span>
+          <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Wheel Name</span>
           <input
-            className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:border-[var(--color-accent)] outline-none transition w-full"
+            className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-semibold text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
             value={value.name}
             autoFocus={autoFocusName}
             onChange={e => onChange({ name: e.target.value })}
@@ -31,158 +29,145 @@ export function WheelFormFields({
             placeholder="e.g. SG-250 Original"
           />
         </label>
-      </div>
 
-      {/* Geometry Card */}
-      <div className="bg-black/30 border border-white/5 rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
-        <h4 className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Geometry</h4>
-        <div className="flex flex-col">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-white">Diameter (mm)</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-base font-mono font-bold text-white focus:border-[var(--color-accent)] outline-none transition w-full appearance-none"
-              value={
-                value.DText !== undefined
-                  ? value.DText
-                  : Number.isNaN(value.D)
-                  ? ''
-                  : String(value.D)
-              }
-              onKeyDown={blurOnEnter}
-              onFocus={e => e.target.select()}
-              onChange={e => {
-                const text = e.target.value;
-                const patch: Partial<WheelFormValue> = { DText: text };
-
-                const trimmed = text.trim();
-                if (trimmed === '') {
-                  patch.D = NaN;
-                  onChange(patch);
-                  return;
-                }
-
-                const val = Number(trimmed.replace(',', '.'));
-                if (!Number.isNaN(val)) {
-                  patch.D = Math.round(val * 100) / 100;
-                }
-                onChange(patch);
-              }}
-            />
-          </label>
-        </div>
-      </div>
-
-      {/* Hardware Card */}
-      <div className="bg-black/30 border border-white/5 rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
-        <h4 className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Hardware</h4>
-        
-        <label className="flex items-center gap-3 p-3 bg-black/20 hover:bg-black/40 border border-white/5 rounded-xl transition-colors cursor-pointer select-none">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Diameter (mm)</span>
           <input
-            type="checkbox"
-            className="w-4 h-4 rounded border-white/5 bg-black/40 accent-[var(--color-accent)] focus:ring-[var(--color-accent)]"
-            checked={value.isHoning}
+            type="text"
+            inputMode="decimal"
+            className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-base font-mono font-bold text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full appearance-none"
+            value={
+              value.DText !== undefined
+                ? value.DText
+                : Number.isNaN(value.D)
+                ? ''
+                : String(value.D)
+            }
+            onKeyDown={blurOnEnter}
+            onFocus={e => e.target.select()}
             onChange={e => {
-              const isHoning = e.target.checked;
-              onChange({
-                isHoning,
-                baseForHn: isHoning ? 'front' : value.baseForHn,
-                ...(isHoning && { isWearable: false, remeasureInterval: undefined, remeasureIntervalUnit: undefined }),
-              });
+              const text = e.target.value;
+              const patch: Partial<WheelFormValue> = { DText: text };
+
+              const trimmed = text.trim();
+              if (trimmed === '') {
+                patch.D = NaN;
+                onChange(patch);
+                return;
+              }
+
+              const val = Number(trimmed.replace(',', '.'));
+              if (!Number.isNaN(val)) {
+                patch.D = Math.round(val * 100) / 100;
+              }
+              onChange(patch);
             }}
           />
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-white">Honing wheel?</span>
-            <span className="text-xs text-white/40">Locks default base to Front Base</span>
-          </div>
         </label>
+
+        <button
+          type="button"
+          role="switch"
+          aria-checked={value.isHoning}
+          className={`flex items-center justify-between w-full p-3.5 neu-button rounded-xl transition active:scale-[0.98] cursor-pointer ${value.isHoning ? 'border-[var(--color-accent)]/50' : ''}`}
+          onClick={() => {
+            const isHoning = !value.isHoning;
+            onChange({
+              isHoning,
+              baseForHn: isHoning ? 'front' : value.baseForHn,
+              ...(isHoning && { isWearable: false, remeasureInterval: undefined, remeasureIntervalUnit: undefined }),
+            });
+          }}
+        >
+          <div className="flex flex-col items-start min-w-0">
+            <span className={`text-sm font-bold ${value.isHoning ? 'text-amber-400' : 'text-white'}`}>Honing Wheel</span>
+            <span className="text-[10px] text-white/40 font-mono mt-0.5 truncate max-w-[200px] sm:max-w-none">
+              {value.isHoning ? 'Locks default base to Front' : 'Standard sharpening wheel'}
+            </span>
+          </div>
+          {value.isHoning ? (
+            <span className="text-amber-400 font-bold text-xs uppercase tracking-wider px-2 shrink-0">Yes</span>
+          ) : (
+            <div className="w-5 h-5 rounded-full border-2 border-white/20 shrink-0 ml-4"></div>
+          )}
+        </button>
 
         <div className="grid transition-all duration-300 ease-in-out" style={{ gridTemplateRows: !value.isHoning ? "1fr" : "0fr" }}>
           <div className="overflow-hidden min-h-0">
-            <div className="flex flex-col gap-2 pt-3">
+            <div className="flex flex-col gap-2 pt-1">
               <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Default Base</span>
-              <div className="grid grid-cols-2 gap-2">
-                <label
-                  className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={`flex-1 p-3 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 ${
                     value.baseForHn === 'rear'
-                      ? 'bg-[color-mix(in_srgb,var(--color-accent)_20%,transparent)] border-[var(--color-accent)]/50 text-white font-bold'
-                      : 'bg-black/20 border-white/5 text-white/60 hover:bg-white/5'
+                      ? 'neu-button bg-[color-mix(in_srgb,var(--color-accent)_20%,transparent)] border-[var(--color-accent)]/50 text-white font-bold'
+                      : 'neu-button text-white/60'
                   }`}
+                  onClick={() => onChange({ baseForHn: 'rear' })}
                 >
-                  <input
-                    type="radio"
-                    name="defaultBaseForHn"
-                    className="w-4 h-4 accent-[var(--color-accent)]"
-                    checked={value.baseForHn === 'rear'}
-                    onChange={() => onChange({ baseForHn: 'rear' })}
-                  />
                   <span className="text-sm">Rear <span className="text-[10px] opacity-60">(Leading)</span></span>
-                </label>
+                </button>
 
-                <label
-                  className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
+                <button
+                  type="button"
+                  className={`flex-1 p-3 rounded-xl flex items-center justify-center gap-2 transition active:scale-95 ${
                     value.baseForHn === 'front'
-                      ? 'bg-sky-500/20 border-sky-500/50 text-white font-bold'
-                      : 'bg-black/20 border-white/5 text-white/60 hover:bg-white/5'
+                      ? 'neu-button bg-sky-500/20 border-sky-500/50 text-white font-bold'
+                      : 'neu-button text-white/60'
                   }`}
+                  onClick={() => onChange({ baseForHn: 'front' })}
                 >
-                  <input
-                    type="radio"
-                    name="defaultBaseForHn"
-                    className="w-4 h-4 accent-sky-400"
-                    checked={value.baseForHn === 'front'}
-                    onChange={() => onChange({ baseForHn: 'front' })}
-                  />
                   <span className="text-sm">Front <span className="text-[10px] opacity-60">(Trailing)</span></span>
-                </label>
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Measurement & Wear Card */}
-      <div className={`bg-black/30 border border-white/5 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 transition-opacity ${value.isHoning ? 'opacity-50 pointer-events-none' : ''}`}>
-        <h4 className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Measurement & Wear</h4>
-        
-        <label className="flex items-center gap-3 p-3 bg-black/20 hover:bg-black/40 border border-white/5 rounded-xl transition-colors cursor-pointer select-none">
-          <input
-            type="checkbox"
-            className="w-4 h-4 rounded border-white/5 bg-black/40 accent-[var(--color-accent)] focus:ring-[var(--color-accent)]"
-            checked={value.isWearable || false}
-            disabled={value.isHoning}
-            onChange={e => {
-              const isWearable = e.target.checked;
-              onChange({
-                isWearable,
-                remeasureInterval: isWearable ? (value.remeasureInterval || 30) : undefined,
-                remeasureIntervalUnit: isWearable ? (value.remeasureIntervalUnit || 'days') : undefined,
-              });
-            }}
-          />
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-white">Wheel wears down over time?</span>
-            <span className="text-xs text-white/40">
-              {value.isHoning ? 'Honing wheels do not wear down.' : 'Enables reminders to re-measure diameter'}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={value.isWearable || false}
+          disabled={value.isHoning}
+          className={`flex items-center justify-between w-full p-3.5 neu-button rounded-xl transition active:scale-[0.98] cursor-pointer ${value.isHoning ? 'opacity-50' : ''} ${value.isWearable && !value.isHoning ? 'border-[var(--color-accent)]/50' : ''}`}
+          onClick={() => {
+            if (value.isHoning) return;
+            const isWearable = !value.isWearable;
+            onChange({
+              isWearable,
+              remeasureInterval: isWearable ? (value.remeasureInterval || 30) : undefined,
+              remeasureIntervalUnit: isWearable ? (value.remeasureIntervalUnit || 'days') : undefined,
+            });
+          }}
+        >
+          <div className="flex flex-col items-start min-w-0">
+            <span className={`text-sm font-bold ${value.isWearable && !value.isHoning ? 'text-amber-400' : 'text-white'}`}>Wears down over time</span>
+            <span className="text-[10px] text-white/40 font-mono mt-0.5 truncate max-w-[200px] sm:max-w-none">
+              {value.isHoning ? 'Honing wheels do not wear' : 'Track diameter changes'}
             </span>
           </div>
-        </label>
+          {value.isWearable && !value.isHoning ? (
+             <span className="text-amber-400 font-bold text-xs uppercase tracking-wider px-2 shrink-0">Yes</span>
+          ) : (
+            <div className="w-5 h-5 rounded-full border-2 border-white/20 shrink-0 ml-4"></div>
+          )}
+        </button>
 
         <div className="grid transition-all duration-300 ease-in-out" style={{ gridTemplateRows: value.isWearable && !value.isHoning ? "1fr" : "0fr" }}>
           <div className="overflow-hidden min-h-0">
-            <div className="flex flex-col gap-2 pt-3">
-              <span className="text-sm font-semibold text-white pl-1">Remind me to re-measure every:</span>
+            <div className="flex flex-col gap-2 pt-1">
+              <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Remind me to re-measure every:</span>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   min="1"
-                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-base font-mono font-bold text-white focus:border-[var(--color-accent)] outline-none transition w-24 text-center"
+                  className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-base font-mono font-bold text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-24 text-center"
                   value={value.remeasureInterval || 30}
                   onChange={e => onChange({ remeasureInterval: parseInt(e.target.value, 10) || undefined })}
                 />
                 <select
-                  className="bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:border-[var(--color-accent)] outline-none transition flex-1 appearance-none"
+                  className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-semibold text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition flex-1 appearance-none"
                   value={value.remeasureIntervalUnit || 'days'}
                   onChange={e => onChange({ remeasureIntervalUnit: e.target.value as 'days' | 'weeks' | 'months' })}
                 >
@@ -200,4 +185,3 @@ export function WheelFormFields({
 }
 
 export default WheelFormFields;
-

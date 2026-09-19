@@ -99,6 +99,7 @@ flowchart LR
 
 | Date | Topic / Change | Rationale / Notes |
 | :--- | :--- | :--- |
+| **2026-09-19** | Abstracted ExpandableCard shared component | Refactored duplicated accordion logic from ProgressionView and Equipment views into a unified `<ExpandableCard>` component to ensure zero design drift. |
 | **2026-09-06** | Defined Viewport Targets (`JOB-011`) | Standardized minimum supported viewport at 360px (base Android) with guidelines to minimize overlap/wrapping, and 390px as the comfortable target (iPhone 13+/Pixel). |
 | **2026-09-03** | Completed Modern Sleek Dark Theme UI Refactor (`JOB-022`) | System-wide visual overhaul across all modals, dialogs, managers, settings views, calibration wizard, glossary, and setup drawer to establish 100% aesthetic consistency with `ProgressionView.tsx` dark zinc/amber design tokens (`bg-[#262626]`, `border-white/10`, `rounded-3xl`, responsive scaling). Pass all typecheck, lint, and build verification gates with 0 errors. |
 | **2026-09-01** | Completed Built-in Jig Catalog & Projection Calc (`JOB-007`) | Added Protrusion ($P_b$) mode to the Global Setup card. Expanded Hardware Settings to include Jig Base Length, Adjustable Collar toggle, and Thread Pitch. Included automated projection-to-protrusion solver output indicating exact Jig collar mm and turns to hit a target angle in Projection Solver mode. Relocated Reference Base toggle to App Settings. |

@@ -6,6 +6,10 @@
 
 ## [Unreleased] (Session: Context Bar Refactor)
 
+### Refactored
+- Abstracted expanding accordion cards (`ProgressionView`, `MachineManagerView`, etc.) into a unified `ExpandableCard` shared component, enforcing design language rules.
+
+
 ### 🛠️ Architecture & UI Refactor: Context Bar (Inversion of Control)
 - **Decentralized Header Logic**: Refactored the monolithic, brittle `ContextBar.tsx` switchboard into a clean `ContextBarShell.tsx` using an Inversion of Control pattern. 
 - **React Portals API**: Views (`CalculatorView`, `EquipmentView`, `SettingsView`, etc.) now inject their own specific navigation controls directly into the global header using `<ContextBar.Slot>` React Portals, completely eliminating cross-feature logic tangles.
@@ -142,6 +146,15 @@
 - Refined `GlobalSetupCard` grid geometries to optimally adapt between Projection and Height modes.
 - Merged Front and Rear USB fixed inputs into a unified tabbed card in Projection Mode to restore the clean 2x2 grid.
 - Dynamically reflowed the Hardware Selection block to display side-by-side on desktop when spanning full-width.
+
+## [Unreleased]
+
+### 🎨 Styling & Theming
+- **Equipment Forms Neumorphic Overhaul**: 
+  - Condense layouts and remove nested background wrappers in Wheels, Machines, Jigs, and USBs forms.
+  - Convert text/number inputs to `neu-concave` styling matching the Progression View.
+  - Transform boolean checkboxes to compact `neu-button` toggles with amber active highlights.
+  - Ensure uniform theming across inline editable cards and "Add" modal dialogs.
 
 ## [0.9.5] — 2026-08-31 (Session: Hardware Manager & Jigs/USB Profiles)
 
