@@ -101,8 +101,10 @@ export function migrateLegacyStorageIfNeeded(): boolean {
 
     // Backfill standard USB pitch/marks
     usbs = usbs.map((u) => {
-      if ((u.id === 'usb-tormek' || u.id === 'usb-fvb') && u.threadPitch === undefined) {
-        return { ...u, threadPitch: 1.5, microAdjustMarks: 6 };
+      if (u.id === 'usb-tormek' || u.id === 'usb-fvb') {
+        if (u.threadPitch === undefined || u.microAdjustMarks === undefined) {
+          return { ...u, threadPitch: u.threadPitch ?? 1.5, microAdjustMarks: u.microAdjustMarks ?? 6 };
+        }
       }
       return u;
     });

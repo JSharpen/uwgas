@@ -101,8 +101,12 @@ const StepCard = React.memo(function StepCard({
         if (effectiveUsb?.threadPitch) {
           const turns = Math.abs(diff) / effectiveUsb.threadPitch;
           if (effectiveUsb.microAdjustMarks) {
-            const fullTurns = Math.floor(turns);
-            const marks = Math.round((turns - fullTurns) * effectiveUsb.microAdjustMarks);
+            let fullTurns = Math.floor(turns);
+            let marks = Math.round((turns - fullTurns) * effectiveUsb.microAdjustMarks * 2) / 2;
+            if (marks === effectiveUsb.microAdjustMarks) {
+              fullTurns += 1;
+              marks = 0;
+            }
             if (fullTurns > 0) {
                 deltaTurnsText = `${diff > 0 ? 'UP' : 'DOWN'} ${fullTurns}T ${marks}M`;
             } else {

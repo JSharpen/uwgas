@@ -68,8 +68,10 @@ export function readPersistedState(): AppPersistedState {
   let jigs = _load<JigConfig[]>('t_jigs', DEFAULT_JIGS);
   let usbs = _load<UsbConfig[]>('t_usbs', DEFAULT_USBS);
   usbs = usbs.map(u => {
-    if ((u.id === 'usb-tormek' || u.id === 'usb-fvb') && u.threadPitch === undefined) {
-      return { ...u, threadPitch: 1.5, microAdjustMarks: 6 };
+    if (u.id === 'usb-tormek' || u.id === 'usb-fvb') {
+      if (u.threadPitch === undefined || u.microAdjustMarks === undefined) {
+        return { ...u, threadPitch: u.threadPitch ?? 1.5, microAdjustMarks: u.microAdjustMarks ?? 6 };
+      }
     }
     return u;
   });
@@ -189,8 +191,10 @@ export function parsePersistedState(raw: string): AppPersistedState | null {
     let jigs = Array.isArray(jigsRaw) ? (jigsRaw as JigConfig[]) : DEFAULT_JIGS;
     let usbs = Array.isArray(usbsRaw) ? (usbsRaw as UsbConfig[]) : DEFAULT_USBS;
     usbs = usbs.map(u => {
-      if ((u.id === 'usb-tormek' || u.id === 'usb-fvb') && u.threadPitch === undefined) {
-        return { ...u, threadPitch: 1.5, microAdjustMarks: 6 };
+      if (u.id === 'usb-tormek' || u.id === 'usb-fvb') {
+        if (u.threadPitch === undefined || u.microAdjustMarks === undefined) {
+          return { ...u, threadPitch: u.threadPitch ?? 1.5, microAdjustMarks: u.microAdjustMarks ?? 6 };
+        }
       }
       return u;
     });
