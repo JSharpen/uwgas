@@ -5,7 +5,7 @@ import { useStore } from '../../state/store';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../state/uiStore';
 import { useBodyLock } from '../../hooks/useBodyLock';
-import ActionSheetPicker from './ActionSheetPicker';
+import { ActionSheet } from '../ui/ActionSheet';
 import { GlobalSetupSummaryPill } from './GlobalSetupSummaryPill';
 import { GlobalSetupInputs } from './GlobalSetupInputs';
 
@@ -210,61 +210,94 @@ export function GlobalSetupCard() {
       </div>
 
       {/* Action Sheets for Hardware */}
-      <ActionSheetPicker
-        isOpen={activeSheet === 'machine'}
-        onClose={() => setActiveSheet('none')}
-        title="Select Machine"
-        options={machines.map(m => ({ value: m.id, label: m.name }))}
-        value={defaultMachineId || ''}
-        onChange={val => {
-          if (val) setDefaultMachineId(val);
-        }}
-      />
+      <ActionSheet isOpen={activeSheet === 'machine'} onClose={() => setActiveSheet('none')}>
+        <ActionSheet.Content title="Select Machine">
+          <ActionSheet.Scrollable>
+            {machines.map(m => (
+              <ActionSheet.Item 
+                key={m.id} 
+                selected={m.id === defaultMachineId}
+                onClick={() => {
+                  setDefaultMachineId(m.id);
+                  setActiveSheet('none');
+                }}
+              >
+                {m.name}
+              </ActionSheet.Item>
+            ))}
+          </ActionSheet.Scrollable>
+        </ActionSheet.Content>
+      </ActionSheet>
 
-      <ActionSheetPicker
-        isOpen={activeSheet === 'usb'}
-        onClose={() => setActiveSheet('none')}
-        title="Select Support Bar (USB)"
-        options={usbs.map(u => ({ value: u.id, label: u.name, meta: `Ds: ${u.Ds}mm` }))}
-        value={global.activeUsbId || ''}
-        onChange={val => setGlobal(g => ({ ...g, activeUsbId: val }))}
-      />
+      <ActionSheet isOpen={activeSheet === 'usb'} onClose={() => setActiveSheet('none')}>
+        <ActionSheet.Content title="Select Support Bar (USB)">
+          <ActionSheet.Scrollable>
+            {usbs.map(u => (
+              <ActionSheet.Item 
+                key={u.id} 
+                selected={u.id === global.activeUsbId}
+                meta={`Ds: ${u.Ds}mm`}
+                onClick={() => {
+                  setGlobal(g => ({ ...g, activeUsbId: u.id }));
+                  setActiveSheet('none');
+                }}
+              >
+                {u.name}
+              </ActionSheet.Item>
+            ))}
+          </ActionSheet.Scrollable>
+        </ActionSheet.Content>
+      </ActionSheet>
 
-      <ActionSheetPicker
-        isOpen={activeSheet === 'jig'}
-        onClose={() => setActiveSheet('none')}
-        title="Select Sharpening Jig"
-        options={jigs.map(j => ({ 
-          value: j.id, 
-          label: j.name, 
-          meta: `Length: ${j.length || j.Dj}mm`,
-          disabled: global.calcMode === 'projection' && !j.isAdjustableLength
-        }))}
-        value={global.activeJigId || ''}
-        onChange={val => setGlobal(g => ({ ...g, activeJigId: val }))}
-      />
+      <ActionSheet isOpen={activeSheet === 'jig'} onClose={() => setActiveSheet('none')}>
+        <ActionSheet.Content title="Select Sharpening Jig">
+          <ActionSheet.Scrollable>
+            {jigs.map(j => (
+              <ActionSheet.Item 
+                key={j.id} 
+                selected={j.id === global.activeJigId}
+                meta={`Length: ${j.length || j.Dj}mm`}
+                disabled={global.calcMode === 'projection' && !j.isAdjustableLength}
+                onClick={() => {
+                  setGlobal(g => ({ ...g, activeJigId: j.id }));
+                  setActiveSheet('none');
+                }}
+              >
+                {j.name}
+              </ActionSheet.Item>
+            ))}
+          </ActionSheet.Scrollable>
+        </ActionSheet.Content>
+      </ActionSheet>
 
-      <ActionSheetPicker
-        isOpen={activeSheet === 'preset'}
-        onClose={() => setActiveSheet('none')}
-        title="Select Preset"
-        options={[
-          { value: '', label: 'None (Clear selection)' },
-          ...sessionPresets.map(p => ({
-            value: p.id,
-            label: p.name,
-            meta: `${p.steps.length} step${p.steps.length === 1 ? '' : 's'}`,
-          }))
-        ]}
-        value={selectedPresetId || ''}
-        onChange={val => {
-          if (val) {
-            onLoadPreset(val);
-          } else {
-            onLoadPreset('');
-          }
-        }}
-      />
+      <ActionSheet isOpen={activeSheet === 'preset'} onClose={() => setActiveSheet('none')}>
+        <ActionSheet.Content title="Select Preset">
+          <ActionSheet.Scrollable>
+            <ActionSheet.Item 
+              selected={selectedPresetId === ''}
+              onClick={() => {
+                onLoadPreset('');
+                setActiveSheet('none');
+              }}
+            >
+              None (Clear selection)
+            </ActionSheet.Item>
+            {sessionPresets.map(p => (
+              <ActionSheet.Item 
+                key={p.id} 
+                selected={p.id === selectedPresetId}
+                meta={`${p.steps.length} step${p.steps.length === 1 ? '' : 's'}`}
+                onClick={() => {
+                  onLoadPreset(p.id);
+                  setActiveSheet('none');
+                }}
+              >
+                {p.name}
+              </ActionSheet.Item>
+            ))}
+          </ActionSheet.Scrollable>
+        </ActionSheet.Content>
+      </ActionSheet>
     </>
   );
 }

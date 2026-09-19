@@ -6,6 +6,7 @@ import { IconGrinder } from '../../icons';
 import useModalLayout from '../../hooks/useModalLayout';
 import CalibrationWizard from '../CalibrationWizard';
 import ExpandableCard from '../ui/ExpandableCard';
+import { Tag } from '../ui/Tag';
 
 import { useMachineState } from '../../state/store';
 
@@ -121,14 +122,14 @@ export default function MachineManagerView() {
                   <IconGrinder className="w-6 h-6 text-[var(--color-accent)] shrink-0" />
                   <span className={`text-base font-medium tracking-wide truncate ${isExpanded ? 'text-amber-400/80' : 'text-white'}`}>{m.name}</span>
                   {m.id === defaultMachineId && (
-                    <span className="rounded px-2 py-0.5 text-[9px] font-mono truncate text-center bg-[color-mix(in_srgb,var(--color-accent)_5%,transparent)] text-[var(--color-accent)] border border-[var(--color-accent)]/30 ml-auto sm:ml-0 shrink-0">
+                    <Tag intent="accent" appearance="outline" className="ml-auto sm:ml-0">
                       Default
-                    </span>
+                    </Tag>
                   )}
                   {(!m.calibrationProfiles || m.calibrationProfiles.length === 0) && (
-                    <span className="rounded px-2 py-0.5 text-[9px] font-mono truncate text-center bg-amber-500/5 text-amber-400 border border-amber-500/30 shrink-0">
+                    <Tag intent="warning" appearance="outline">
                       Unmapped
-                    </span>
+                    </Tag>
                   )}
                 </div>
               }
@@ -191,9 +192,9 @@ export default function MachineManagerView() {
                                     {activeProfile ? activeProfile.name : "None selected"}
                                   </span>
                                   {isBest && (
-                                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] uppercase font-bold shrink-0">
+                                    <Tag intent="success" appearance="outline" shape="pill">
                                       Best
-                                    </span>
+                                    </Tag>
                                   )}
                                 </div>
                                 {activeProfile && (
@@ -273,9 +274,9 @@ export default function MachineManagerView() {
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-white truncate">{p.name}</span>
                           {isBest && (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] uppercase font-bold shrink-0">
+                            <Tag intent="success" appearance="outline" shape="pill">
                               Best
-                            </span>
+                            </Tag>
                           )}
                         </div>
                         <span className="text-xs text-white/40 font-mono">

@@ -4,6 +4,7 @@ import { IconDisc } from '../../icons';
 import ModalShell from '../ModalShell';
 import WheelFormFields from './WheelFormFields';
 import ExpandableCard from '../ui/ExpandableCard';
+import { Tag } from '../ui/Tag';
 import useModalLayout from '../../hooks/useModalLayout';
 
 import { useWheelState } from '../../state/store';
@@ -150,13 +151,13 @@ export function WheelManagerView() {
                           {w.name || 'Untitled wheel'}
                         </div>
                         {isWheelOverdue(w) && (
-                          <span className="rounded px-2 py-0.5 text-[9px] font-bold text-black bg-amber-400 shrink-0 uppercase tracking-widest shadow-[0_0_8px_rgba(251,191,36,0.5)]">
+                          <Tag intent="warning" appearance="solid">
                             Overdue
-                          </span>
+                          </Tag>
                         )}
-                        <span className="rounded px-2 py-0.5 text-[9px] font-mono truncate text-center neu-concave border border-white/5 text-white/40 ml-auto sm:ml-0 shrink-0">
+                        <Tag intent="default" appearance="ghost" className="ml-auto sm:ml-0">
                           {baseLabel}
-                        </span>
+                        </Tag>
                       </div>
                     }
                   >

@@ -7,6 +7,7 @@ import { useDevStore } from '../../state/devStore';
 import { computeSuggestedFrontUsbHeight } from '../../math/tormek';
 import { _nz } from '../../utils/numbers';
 import { DEFAULT_CONSTANTS } from '../../state/defaults';
+import { Tag } from '../ui/Tag';
 
 export function GlobalSetupSummaryPill() {
   const maskBottomFade = useDevStore((s) => s.maskBottomFade);
@@ -108,15 +109,9 @@ export function GlobalSetupSummaryPill() {
           {/* Top Row: Hardware Pill Chips */}
           <div className="relative z-10 flex flex-col items-start w-full gap-2 mb-3">
             <div className="grid grid-cols-3 gap-1.5 w-full">
-              <span className="rounded px-2 py-0.5 neu-concave border border-white/5 text-[9px] text-white/70 font-mono truncate text-center">
-                {machines.find(m => m.id === defaultMachineId)?.name || 'Default'}
-              </span>
-              <span className="rounded px-2 py-0.5 neu-concave border border-white/5 text-[9px] text-white/70 font-mono truncate text-center">
-                {activeUsb?.name || 'USB'}
-              </span>
-              <span className="rounded px-2 py-0.5 neu-concave border border-white/5 text-[9px] text-white/70 font-mono truncate text-center">
-                {activeJig?.name || 'Jig'}
-              </span>
+              <Tag>{machines.find(m => m.id === defaultMachineId)?.name || 'Default'}</Tag>
+              <Tag>{activeUsb?.name || 'USB'}</Tag>
+              <Tag>{activeJig?.name || 'Jig'}</Tag>
             </div>
           </div>
           

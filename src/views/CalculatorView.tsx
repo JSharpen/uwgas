@@ -5,7 +5,7 @@ import { EmptyProgressionState } from '../components/calculator/EmptyProgression
 import { useProgressionState, useStore } from '../state/store';
 import { useUIStore } from '../state/uiStore';
 import { ContextBar } from '../components/layout/ContextBar';
-import ActionSheetPicker from '../components/calculator/ActionSheetPicker';
+import { ActionSheet } from '../components/ui/ActionSheet';
 import { useShallow } from 'zustand/react/shallow';
 
 export default function CalculatorView() {
@@ -168,22 +168,25 @@ export default function CalculatorView() {
         </>
       )}
 
-      <ActionSheetPicker
-        isOpen={isAddStepPickerOpen}
-        onClose={() => setAddStepPickerOpen(false)}
-        title="Select Wheel for New Step"
-        options={[
-          ...wheels.map(w => ({ value: w.id, label: w.name, meta: `D:${w.D}mm` }))
-        ]}
-        value=""
-        onChange={val => {
-          if (val) {
-            const newId = addStep(val);
-            useUIStore.getState().setExpandedStepId(newId);
-          }
-          setAddStepPickerOpen(false);
-        }}
-      />
+      <ActionSheet isOpen={isAddStepPickerOpen} onClose={() => setAddStepPickerOpen(false)}>
+        <ActionSheet.Content title="Select Wheel for New Step">
+          <ActionSheet.Scrollable>
+            {wheels.map(w => (
+              <ActionSheet.Item 
+                key={w.id} 
+                meta={`D:${w.D}mm`}
+                onClick={() => {
+                  const newId = addStep(w.id);
+                  useUIStore.getState().setExpandedStepId(newId);
+                  setAddStepPickerOpen(false);
+                }}
+              >
+                {w.name}
+              </ActionSheet.Item>
+            ))}
+          </ActionSheet.Scrollable>
+        </ActionSheet.Content>
+      </ActionSheet>
 
       {/* Global Setup Card */}
       <GlobalSetupCard />

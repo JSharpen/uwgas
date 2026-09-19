@@ -6,6 +6,11 @@
 
 ## [Unreleased] (Session: Context Bar Refactor)
 
+### Added
+- **Global Standardized Tag Component**:
+  - Abstracted hardcoded `<span>` tags across the app (`GlobalSetupSummaryPill`, `MachineManagerView`, `WheelManagerView`, `ProgressionView`, and `CalibrationWizard`) into a strictly typed `<Tag>` component (`src/components/ui/Tag.tsx`).
+  - Standardized the visual design language using explicit `intent` (warning, success, info, accent, default) and `appearance` (solid, outline, ghost) props with smart typography defaults (monospaced vs uppercase) and baseline spacing (`px-2 py-0.5`).
+
 ### Refactored
 - Abstracted expanding accordion cards (`ProgressionView`, `MachineManagerView`, etc.) into a unified `ExpandableCard` shared component, enforcing design language rules.
 

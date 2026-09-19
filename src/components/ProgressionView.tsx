@@ -2,11 +2,12 @@ import { useUIStore } from "../state/uiStore";
 import * as React from 'react';
 import type { WheelResult } from '../types/core';
 import { IconEdgeLeading, IconEdgeTrailing } from '../icons';
-import ActionSheetPicker from './calculator/ActionSheetPicker';
+import { ActionSheet } from './ui/ActionSheet';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../state/store';
 import { useWheelResults } from '../services/calculationService';
 import ExpandableCard from './ui/ExpandableCard';
+import { Tag } from './ui/Tag';
 
 export type ProgressionViewProps = Record<string, never>;
 
@@ -171,14 +172,24 @@ const StepCard = React.memo(function StepCard({
             {(showAdvancedStepOverrides || r.step?.machineId || r.step?.usbId) && (
               <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                 {(showAdvancedStepOverrides || r.step?.machineId) && effectiveMachine && (
-                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-mono truncate text-center transition-all ${isMachineChanged ? 'bg-amber-400 text-black shadow-[0_0_8px_rgba(251,191,36,0.3)] font-bold' : 'neu-concave border border-white/5 text-white/40'}`}>
+                  <Tag 
+                    intent={isMachineChanged ? 'warning' : 'default'} 
+                    appearance={isMachineChanged ? 'solid' : 'ghost'}
+                    mono={!isMachineChanged} 
+                    uppercase={false}
+                  >
                     {effectiveMachine.name}
-                  </span>
+                  </Tag>
                 )}
                 {(showAdvancedStepOverrides || r.step?.usbId) && effectiveUsb && (
-                  <span className={`rounded px-1.5 py-0.5 text-[9px] font-mono truncate text-center transition-all ${isUsbChanged ? 'bg-amber-400 text-black shadow-[0_0_8px_rgba(251,191,36,0.3)] font-bold' : 'neu-concave border border-white/5 text-white/40'}`}>
+                  <Tag 
+                    intent={isUsbChanged ? 'warning' : 'default'} 
+                    appearance={isUsbChanged ? 'solid' : 'ghost'}
+                    mono={!isUsbChanged} 
+                    uppercase={false}
+                  >
                     {effectiveUsb.name}
-                  </span>
+                  </Tag>
                 )}
               </div>
             )}
@@ -365,61 +376,106 @@ export function ProgressionView() {
       {/* Action Sheets for Inline Editing */}
       {sheetConfig && onUpdateStep && (
         <>
-          <ActionSheetPicker
-            isOpen={sheetConfig.type === 'wheel'}
-            onClose={() => setSheetConfig(null)}
-            title="Select Wheel"
-            options={[
-              ...wheels.map(w => ({ value: w.id, label: w.name, meta: `D:${w.D}mm` }))
-            ]}
-            value={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.wheelId || ''}
-            onChange={val => {
-              onUpdateStep(sheetConfig.stepId, { wheelId: val });
-              setSheetConfig(null);
-            }}
-          />
-          <ActionSheetPicker
-            isOpen={sheetConfig.type === 'machine'}
-            onClose={() => setSheetConfig(null)}
-            title="Override Machine"
-            options={[
-              { value: '', label: 'Default Machine' },
-              ...machines.map(m => ({ value: m.id, label: m.name }))
-            ]}
-            value={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.machineId || ''}
-            onChange={val => {
-              onUpdateStep(sheetConfig.stepId, { machineId: val || undefined });
-              setSheetConfig(null);
-            }}
-          />
-          <ActionSheetPicker
-            isOpen={sheetConfig.type === 'usb'}
-            onClose={() => setSheetConfig(null)}
-            title="Override Support Bar"
-            options={[
-              { value: '', label: 'Default USB' },
-              ...usbs.map(u => ({ value: u.id, label: u.name }))
-            ]}
-            value={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.usbId || ''}
-            onChange={val => {
-              onUpdateStep(sheetConfig.stepId, { usbId: val || undefined });
-              setSheetConfig(null);
-            }}
-          />
-          <ActionSheetPicker
-            isOpen={sheetConfig.type === 'base'}
-            onClose={() => setSheetConfig(null)}
-            title="Sharpening Base"
-            options={[
-              { value: 'front', label: 'Front Base (Edge Trailing)' },
-              { value: 'rear', label: 'Rear Base (Edge Leading)' }
-            ]}
-            value={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.base || 'front'}
-            onChange={val => {
-              onUpdateStep(sheetConfig.stepId, { base: val as 'front' | 'rear' });
-              setSheetConfig(null);
-            }}
-          />
+          <ActionSheet isOpen={sheetConfig.type === 'wheel'} onClose={() => setSheetConfig(null)}>
+            <ActionSheet.Content title="Select Wheel">
+              <ActionSheet.Scrollable>
+                {wheels.map(w => (
+                  <ActionSheet.Item 
+                    key={w.id} 
+                    selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.wheelId === w.id}
+                    meta={`D:${w.D}mm`}
+                    onClick={() => {
+                      onUpdateStep(sheetConfig.stepId, { wheelId: w.id });
+                      setSheetConfig(null);
+                    }}
+                  >
+                    {w.name}
+                  </ActionSheet.Item>
+                ))}
+              </ActionSheet.Scrollable>
+            </ActionSheet.Content>
+          </ActionSheet>
+          
+          <ActionSheet isOpen={sheetConfig.type === 'machine'} onClose={() => setSheetConfig(null)}>
+            <ActionSheet.Content title="Override Machine">
+              <ActionSheet.Scrollable>
+                <ActionSheet.Item 
+                  selected={!wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.machineId}
+                  onClick={() => {
+                    onUpdateStep(sheetConfig.stepId, { machineId: undefined });
+                    setSheetConfig(null);
+                  }}
+                >
+                  Default Machine
+                </ActionSheet.Item>
+                {machines.map(m => (
+                  <ActionSheet.Item 
+                    key={m.id} 
+                    selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.machineId === m.id}
+                    onClick={() => {
+                      onUpdateStep(sheetConfig.stepId, { machineId: m.id });
+                      setSheetConfig(null);
+                    }}
+                  >
+                    {m.name}
+                  </ActionSheet.Item>
+                ))}
+              </ActionSheet.Scrollable>
+            </ActionSheet.Content>
+          </ActionSheet>
+
+          <ActionSheet isOpen={sheetConfig.type === 'usb'} onClose={() => setSheetConfig(null)}>
+            <ActionSheet.Content title="Override Support Bar">
+              <ActionSheet.Scrollable>
+                <ActionSheet.Item 
+                  selected={!wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.usbId}
+                  onClick={() => {
+                    onUpdateStep(sheetConfig.stepId, { usbId: undefined });
+                    setSheetConfig(null);
+                  }}
+                >
+                  Default USB
+                </ActionSheet.Item>
+                {usbs.map(u => (
+                  <ActionSheet.Item 
+                    key={u.id} 
+                    selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.usbId === u.id}
+                    onClick={() => {
+                      onUpdateStep(sheetConfig.stepId, { usbId: u.id });
+                      setSheetConfig(null);
+                    }}
+                  >
+                    {u.name}
+                  </ActionSheet.Item>
+                ))}
+              </ActionSheet.Scrollable>
+            </ActionSheet.Content>
+          </ActionSheet>
+
+          <ActionSheet isOpen={sheetConfig.type === 'base'} onClose={() => setSheetConfig(null)}>
+            <ActionSheet.Content title="Sharpening Base">
+              <ActionSheet.Scrollable>
+                <ActionSheet.Item 
+                  selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.base !== 'rear'}
+                  onClick={() => {
+                    onUpdateStep(sheetConfig.stepId, { base: 'front' });
+                    setSheetConfig(null);
+                  }}
+                >
+                  Front Base (Edge Trailing)
+                </ActionSheet.Item>
+                <ActionSheet.Item 
+                  selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.base === 'rear'}
+                  onClick={() => {
+                    onUpdateStep(sheetConfig.stepId, { base: 'rear' });
+                    setSheetConfig(null);
+                  }}
+                >
+                  Rear Base (Edge Leading)
+                </ActionSheet.Item>
+              </ActionSheet.Scrollable>
+            </ActionSheet.Content>
+          </ActionSheet>
         </>
       )}
     </div>

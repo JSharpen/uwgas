@@ -13,6 +13,7 @@ import { useStore } from '../state/store';
 import { calibrateBase, calibrateBaseTrueLeastSquares } from '../math/tormek';
 import { estimateMaxAngleErrorDeg } from '../services/calculationService';
 import { ContextBar } from './layout/ContextBar';
+import { Tag } from './ui/Tag';
 
 type CalibrationWizardProps = {
   activeMachine: MachineConfig;
@@ -522,9 +523,9 @@ export default function CalibrationWizard({
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-blue-400 tracking-wide flex items-center gap-2">
                   <span>Rear Base</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 font-semibold uppercase">
+                  <Tag intent="info" appearance="outline">
                     Edge Leading
-                  </span>
+                  </Tag>
                 </h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -574,9 +575,9 @@ export default function CalibrationWizard({
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-emerald-400 tracking-wide flex items-center gap-2">
                   <span>Front Base</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-semibold uppercase">
+                  <Tag intent="success" appearance="outline">
                     Edge Trailing
-                  </span>
+                  </Tag>
                 </h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
