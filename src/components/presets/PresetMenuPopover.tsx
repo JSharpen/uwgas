@@ -61,7 +61,7 @@ export function PresetMenuPopover() {
       
       {/* The Popover itself, absolutely positioned below the ContextBar */}
       <div 
-        className={`absolute top-[calc(100%+12px)] left-0 right-0 z-10 bg-[#18181b]/95 backdrop-blur-xl border border-amber-400/50 rounded-3xl shadow-[0_0_30px_rgba(251,191,36,0.2)] transition-all duration-200 origin-top flex flex-col max-h-[70vh] overflow-hidden ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-95 pointer-events-none'}`}
+        className={`absolute top-[calc(100%+12px)] left-0 right-0 z-10 bg-[#18181b]/95 backdrop-blur-xl border border-amber-400/50 rounded-[var(--ui-radius-mid)] shadow-[0_0_30px_rgba(251,191,36,0.2)] transition-all duration-200 origin-top flex flex-col max-h-[70vh] overflow-hidden ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-95 pointer-events-none'}`}
       >
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
           <button

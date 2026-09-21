@@ -62,7 +62,7 @@ export function ModalShell({
         if (e.target === dialogRef.current) handleClose();
       }}
       className={
-        'z-50 m-auto overflow-y-auto bg-transparent p-4 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+16px)] motion-overlay ' +
+        'z-50 m-auto overflow-y-auto bg-transparent p-[var(--ui-gap)] pb-[calc(env(safe-area-inset-bottom)+var(--ui-gap))] motion-overlay ' +
         (isClosing ? 'motion-overlay--closing ' : '') + 
         'backdrop:bg-black/75 backdrop:backdrop-blur-sm'
       }
@@ -70,13 +70,13 @@ export function ModalShell({
     >
       <div
         className={
-          'relative w-full max-w-lg neu-convex rounded-3xl border border-black/40 shadow-2xl p-6 flex flex-col max-h-[90vh] overflow-y-auto motion-dialog mx-auto ' +
+          'relative w-full max-w-lg neu-convex rounded-[var(--ui-radius-mid)] border border-black/40 shadow-2xl p-[var(--ui-gap)] flex flex-col max-h-[90vh] overflow-y-auto motion-dialog mx-auto ' +
           (isClosing ? 'motion-dialog--closing' : '')
         }
         style={dialogStyle}
       >
         {/* Subtle Edge Highlight */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
         {/* Header */}
         <div className="relative z-10 flex flex-col gap-1 pb-4 border-b border-white/5 mb-4">

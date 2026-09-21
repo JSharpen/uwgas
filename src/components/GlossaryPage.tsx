@@ -126,11 +126,11 @@ function GlossaryPage(): React.ReactElement {
   }, [searchQuery, selectedCategory]);
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full motion-panel">
+    <div className="flex flex-col gap-[var(--ui-gap)] max-w-4xl mx-auto w-full motion-panel">
       {/* Root Container */}
-      <section className="neu-convex rounded-3xl border border-black/40 shadow-2xl p-6 sm:p-8 flex flex-col gap-6 relative overflow-hidden">
+      <section className="neu-convex rounded-[var(--ui-radius-mid)] border border-black/40 shadow-2xl p-[var(--ui-gap)] flex flex-col gap-[var(--ui-gap)] relative overflow-hidden">
         {/* Top Edge Highlight */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
         {/* Header */}
         <div className="relative z-10 flex flex-col gap-1 border-b border-white/5 pb-5">
@@ -189,7 +189,7 @@ function GlossaryPage(): React.ReactElement {
           {filteredTerms.length > 0 ? (
             <GlossaryCard items={filteredTerms} title={selectedCategory === 'All' ? 'All Terminology' : selectedCategory} />
           ) : (
-            <div className="bg-black/20 border border-dashed border-white/5 rounded-2xl p-8 text-center flex flex-col items-center gap-2">
+            <div className="bg-black/20 border border-dashed border-white/5 rounded-2xl p-[var(--ui-gap)] text-center flex flex-col items-center gap-2">
               <span className="text-2xl">🔍</span>
               <p className="text-sm font-semibold text-white">No matching terms found</p>
               <p className="text-xs text-white/40">Try searching for a different symbol or clear your filter.</p>
@@ -208,7 +208,7 @@ function GlossaryPage(): React.ReactElement {
         </div>
 
         {/* Schematic Technical Diagram Callout */}
-        <div className="relative z-10 bg-black/30 rounded-3xl border border-white/5 p-6 flex flex-col gap-4">
+        <div className="relative z-10 bg-black/30 rounded-[var(--ui-radius-mid)] border border-white/5 p-[var(--ui-gap)] flex flex-col gap-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
               <span>📐 Machine Geometry Schematic</span>

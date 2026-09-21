@@ -88,7 +88,7 @@ function MiniSelect({
         type="button"
         className={`w-full min-h-[42px] bg-black/30 hover:bg-white/5 active:bg-white/10 border ${
           isMenuVisible ? 'border-amber-400/60 ring-2 ring-amber-400/20' : 'border-white/5 hover:border-white/20'
-        } rounded-xl px-3.5 py-2 text-xs font-semibold text-white flex items-center justify-between gap-2 min-w-0 transition-all`}
+        } rounded-xl px-3.5 py-2 text-xs font-semibold text-white flex items-center justify-between gap-[var(--ui-gap)] min-w-0 transition-all`}
         aria-label={ariaLabel}
         onClick={() => {
           if (isMenuVisible && !isMenuClosing) {
@@ -134,12 +134,12 @@ function MiniSelect({
         >
           <div
             className={
-              'relative w-[85vw] max-w-[320px] neu-convex rounded-3xl border border-black/40 shadow-2xl p-2 flex flex-col mx-auto motion-dialog ' +
+              'relative w-[85vw] max-w-[320px] neu-convex rounded-[var(--ui-radius-mid)] border border-black/40 shadow-2xl p-[var(--ui-gap)] flex flex-col mx-auto motion-dialog ' +
               (isMenuClosing ? 'motion-dialog--closing' : '')
             }
           >
             {/* Subtle Edge Highlight */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
             
             <div className="relative z-10 max-h-[60vh] overflow-y-auto overflow-x-hidden flex flex-col gap-1 p-1">
               {options.length === 0 ? (
@@ -151,7 +151,7 @@ function MiniSelect({
                     <button
                       key={opt.value}
                       type="button"
-                      className={`w-full min-h-[44px] px-4 py-2.5 rounded-2xl text-xs transition-colors flex items-center justify-between gap-2 text-left disabled:opacity-40 disabled:hover:bg-transparent ${
+                      className={`w-full min-h-[44px] px-4 py-2.5 rounded-2xl text-xs transition-colors flex items-center justify-between gap-[var(--ui-gap)] text-left disabled:opacity-40 disabled:hover:bg-transparent ${
                         isActive
                           ? 'bg-amber-400/10 border border-amber-400/30 text-amber-300 font-bold shadow-sm'
                           : 'text-white/80 hover:bg-white/10 hover:text-white border border-transparent'

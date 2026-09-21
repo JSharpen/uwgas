@@ -9,7 +9,7 @@ import useModalLayout from '../../hooks/useModalLayout';
 
 import { useWheelState } from '../../state/store';
 import { useUIStore } from '../../state/uiStore';
-import { isWheelOverdue } from '../../utils/wheelWear';
+import { isWheelOverdue, getMeasurementCountdownText } from '../../utils/wheelWear';
 
 export type WheelManagerViewProps = Record<string, never>;
 
@@ -89,11 +89,11 @@ export function WheelManagerView() {
   const isAddWheelSaveDisabled = !newWheelNameTrimmed || !isNewWheelDiameterValid;
 
   return (
-    <section className="flex flex-col gap-6 max-w-3xl mx-auto pb-20 w-full">
+    <section className="flex flex-col gap-[var(--ui-gap)] max-w-3xl mx-auto pb-20 w-full">
 
       <div className="flex flex-col gap-4">
         {wheels.length === 0 ? (
-          <div className="neu-convex rounded-3xl border border-dashed border-black/40 p-8 text-center text-xs text-white/50 flex flex-col gap-2">
+          <div className="neu-convex rounded-[var(--ui-radius-mid)] border border-dashed border-black/40 p-[var(--ui-gap)] text-center text-xs text-white/50 flex flex-col gap-2">
             No wheels saved yet. Click <span className="font-bold text-white">Add Wheel</span> to create your first wheel.
           </div>
         ) : (
@@ -101,33 +101,35 @@ export function WheelManagerView() {
             {sortedWheels.map((w, idx) => {
               const isExpanded = expandedEquipmentId === w.id;
               const baseLabel = w.isHoning
-                ? 'Honing (front base)'
+                ? 'Honing'
                 : w.baseForHn === 'rear'
                 ? 'Rear base'
                 : 'Front base';
+
+              const countdownText = getMeasurementCountdownText(w);
 
                 if (deletingWheelId === w.id) {
                   return (
                     <div
                       key={w.id}
-                      className="neu-convex rounded-3xl border border-black/40 shadow-lg flex flex-col relative overflow-hidden group transition-all duration-300"
+                      className="neu-convex rounded-[var(--ui-radius-mid)] border border-black/40 shadow-lg flex flex-col relative overflow-hidden group transition-all duration-300"
                       style={{ '--motion-order': idx } as React.CSSProperties}
                     >
                       {/* Subtle Top Edge Highlight */}
-                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
-                      <div className="flex flex-col gap-3 p-4 items-center justify-center bg-red-500/10 border border-red-500/20 rounded-2xl text-center relative z-10 m-4">
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
+                      <div className="flex flex-col gap-3 p-4 items-center justify-center bg-red-500/10 border border-red-500/20 rounded-[var(--ui-radius-core)] text-center relative z-10 m-4">
                         <span className="text-sm font-bold text-red-400">Delete this wheel?</span>
                         <div className="flex gap-3 w-full max-w-xs mt-2">
                           <button
                             type="button"
-                            className="flex-1 h-10 rounded-xl neu-button text-white/70 font-semibold text-xs uppercase tracking-wide transition active:scale-95 flex items-center justify-center cursor-pointer"
+                            className="flex-1 h-10 rounded-[var(--ui-radius-core)] neu-button text-white/70 font-semibold text-xs uppercase tracking-wide transition active:scale-95 flex items-center justify-center cursor-pointer"
                             onClick={() => setDeletingWheelId(null)}
                           >
                             Cancel
                           </button>
                           <button
                             type="button"
-                            className="flex-1 h-10 rounded-xl bg-red-500/80 text-white font-bold text-xs uppercase tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center cursor-pointer neu-button"
+                            className="flex-1 h-10 rounded-[var(--ui-radius-core)] bg-red-500/80 text-white font-bold text-xs uppercase tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center cursor-pointer neu-button"
                             onClick={() => { onDeleteWheel(w.id); setDeletingWheelId(null); }}
                           >
                             Delete
@@ -145,23 +147,30 @@ export function WheelManagerView() {
                     onToggle={() => setExpandedEquipmentId(isExpanded ? null : w.id)}
                     index={idx}
                     header={
-                      <div className="flex items-center gap-2.5 min-w-0 flex-wrap w-full">
-                        <IconDisc className="w-6 h-6 text-[var(--color-accent)] shrink-0" />
-                        <div className={`text-base font-medium tracking-wide truncate ${isExpanded ? 'text-amber-400/80' : 'text-white'}`}>
-                          {w.name || 'Untitled wheel'}
+                      <div className="flex flex-col min-w-0 w-full gap-2">
+                        <div className="flex items-center gap-2.5 w-full">
+                          <IconDisc className="w-6 h-6 text-[var(--color-accent)] shrink-0" />
+                          <div className={`text-base font-medium tracking-wide truncate ${isExpanded ? 'text-amber-400/80' : 'text-white'}`}>
+                            {w.name || 'Untitled wheel'}
+                          </div>
                         </div>
-                        {isWheelOverdue(w) && (
-                          <Tag intent="warning" appearance="solid">
-                            Overdue
+                        <div className="flex items-center gap-2 min-h-[24px]">
+                          <Tag intent="default" appearance="ghost">
+                            {baseLabel}
                           </Tag>
-                        )}
-                        <Tag intent="default" appearance="ghost" className="ml-auto sm:ml-0">
-                          {baseLabel}
-                        </Tag>
+                          <Tag 
+                            intent="default" 
+                            appearance="ghost"
+                            badge={countdownText}
+                            badgeIntent={isWheelOverdue(w) ? 'warning' : 'accent'}
+                          >
+                            Ø {w.D}mm
+                          </Tag>
+                        </div>
                       </div>
                     }
                   >
-                    <div className="p-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
+                    <div className="p-[var(--ui-gap)] pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
                       <WheelFormFields
                         value={w}
                         onChange={patch => onUpdateWheel(w.id, patch as Partial<import('../../types/core').Wheel>)}
@@ -193,7 +202,7 @@ export function WheelManagerView() {
           <div className="mt-4 flex justify-end gap-2">
             <button
               type="button"
-              className="px-4 h-11 rounded-xl neu-button text-white/70 font-semibold text-xs uppercase tracking-wide transition active:scale-95 cursor-pointer flex items-center justify-center"
+              className="px-4 h-11 rounded-[var(--ui-radius-core)] neu-button text-white/70 font-semibold text-xs uppercase tracking-wide transition active:scale-95 cursor-pointer flex items-center justify-center"
               onClick={closeAddWheelModal}
             >
               Cancel
@@ -201,7 +210,7 @@ export function WheelManagerView() {
 
             <button
               type="button"
-              className="px-6 h-11 rounded-xl bg-[var(--color-accent)] text-neutral-950 font-bold text-xs uppercase tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed border border-[var(--color-accent)]"
+              className="px-6 h-11 rounded-[var(--ui-radius-core)] bg-[var(--color-accent)] text-neutral-950 font-bold text-xs uppercase tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed border border-[var(--color-accent)]"
               disabled={isAddWheelSaveDisabled}
               onClick={handleSaveNewWheel}
             >

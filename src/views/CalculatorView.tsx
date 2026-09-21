@@ -5,7 +5,7 @@ import { EmptyProgressionState } from '../components/calculator/EmptyProgression
 import { useProgressionState, useStore } from '../state/store';
 import { useUIStore } from '../state/uiStore';
 import { ContextBar } from '../components/layout/ContextBar';
-import { ActionSheet } from '../components/ui/ActionSheet';
+import { ModalSelector } from '../components/ui/ModalSelector';
 import { useShallow } from 'zustand/react/shallow';
 
 export default function CalculatorView() {
@@ -42,16 +42,16 @@ export default function CalculatorView() {
     const handleGlobalPointerDown = (e: PointerEvent | MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement;
       const isInteractive = target.closest(
-        '#global-setup-card, .motion-list-item, .bg-\\[\\#262626\\], .bg-neutral-900, .action-sheet, button, input, select, [role="dialog"]'
+        '#global-setup-card, .motion-list-item, .bg-\\[\\#262626\\], .bg-neutral-900, .action-sheet, button, input, select, header, dialog, [role="dialog"]'
       );
-      if (!isInteractive) {
+      if (!isInteractive && useUIStore.getState().activeSheet === 'none' && !isAddStepPickerOpen) {
         setIsSetupPanelOpen(false);
       }
     };
 
     document.addEventListener('pointerdown', handleGlobalPointerDown);
     return () => document.removeEventListener('pointerdown', handleGlobalPointerDown);
-  }, [setIsSetupPanelOpen]);
+  }, [setIsSetupPanelOpen, isAddStepPickerOpen]);
 
   const expandedStepId = useUIStore(s => s.expandedStepId);
   const stepIndex = sessionSteps.findIndex(s => s.id === expandedStepId);
@@ -82,7 +82,7 @@ export default function CalculatorView() {
               </ContextBar.AmbientInfo>
             </ContextBar.Slot>
             <ContextBar.Slot name="right">
-              <div className="h-11 flex items-center rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-sm">
+              <div className="h-11 flex items-center rounded-[var(--ui-radius-core)] bg-white/5 border border-white/10 overflow-hidden shadow-sm">
                 <button
                   type="button"
                   disabled={stepIndex === 0}
@@ -212,11 +212,9 @@ export default function CalculatorView() {
         <div className="h-px shrink-0 w-full" />
       </div>
 
-      <ActionSheet isOpen={isAddStepPickerOpen} onClose={() => setAddStepPickerOpen(false)}>
-        <ActionSheet.Content title="Select Wheel for New Step">
-          <ActionSheet.Scrollable>
+      <ModalSelector isOpen={isAddStepPickerOpen} onClose={() => setAddStepPickerOpen(false)} title="Select Wheel for New Step">
             {wheels.map(w => (
-              <ActionSheet.Item 
+              <ModalSelector.Item 
                 key={w.id} 
                 meta={`D:${w.D}mm`}
                 onClick={() => {
@@ -226,11 +224,9 @@ export default function CalculatorView() {
                 }}
               >
                 {w.name}
-              </ActionSheet.Item>
+              </ModalSelector.Item>
             ))}
-          </ActionSheet.Scrollable>
-        </ActionSheet.Content>
-      </ActionSheet>
+      </ModalSelector>
     </>
   );
 }

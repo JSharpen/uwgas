@@ -5,7 +5,7 @@ export default function DevUIThemeView() {
   const state = useDevStore();
 
   return (
-    <div className="w-full flex flex-col gap-6 p-4 pb-24">
+    <div className="w-full flex flex-col gap-6 p-[var(--ui-gap)] pb-24">
       <div className="flex flex-col gap-3">
         <h2 className="text-xl font-black uppercase tracking-widest text-white/90">
           UI Theme Lab
@@ -44,7 +44,7 @@ export default function DevUIThemeView() {
       </div>
 
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-4 border border-white/10 rounded-3xl p-4 bg-white/5">
+        <div className="flex flex-col gap-[var(--ui-gap)] border border-white/10 rounded-[var(--ui-radius-mid)] p-[var(--ui-gap)] bg-white/5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-white/50">Debugging Modes</h3>
           
           <div className="flex flex-col gap-3">
@@ -65,7 +65,7 @@ export default function DevUIThemeView() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border border-white/10 rounded-3xl p-4 bg-white/5">
+        <div className="flex flex-col gap-[var(--ui-gap)] border border-white/10 rounded-[var(--ui-radius-mid)] p-[var(--ui-gap)] bg-white/5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-white/50">Global Dimensions</h3>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between">
@@ -83,7 +83,7 @@ export default function DevUIThemeView() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border border-white/10 rounded-3xl p-4 bg-white/5">
+        <div className="flex flex-col gap-[var(--ui-gap)] border border-white/10 rounded-[var(--ui-radius-mid)] p-[var(--ui-gap)] bg-white/5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-white/50">Progression Cards</h3>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between">
@@ -101,7 +101,7 @@ export default function DevUIThemeView() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border border-white/10 rounded-3xl p-4 bg-white/5">
+        <div className="flex flex-col gap-[var(--ui-gap)] border border-white/10 rounded-[var(--ui-radius-mid)] p-[var(--ui-gap)] bg-white/5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-white/50">Context Bar</h3>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between">
@@ -119,7 +119,7 @@ export default function DevUIThemeView() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border border-white/10 rounded-3xl p-4 bg-white/5">
+        <div className="flex flex-col gap-[var(--ui-gap)] border border-white/10 rounded-[var(--ui-radius-mid)] p-[var(--ui-gap)] bg-white/5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-white/50">Bottom Summary</h3>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between">

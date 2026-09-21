@@ -1,7 +1,24 @@
+
 @import "tailwindcss";
 @import "./theme.css";
 @import "./primitives.css";
 @import "./neumorphic.css";
+
+:root {
+  /* Concentric Design System (Single Source of Truth) */
+  /* 1. Master Container Curve (The Anchor) */
+  --ui-radius-mid: 24px; /* Apply to Cards, Modals, Menus */
+
+  /* 2. Global Padding (Set by User) */
+  --ui-gap: 8px;
+
+  /* 3. Auto-Calculated Inner Curve (Follows constraints) */
+  --ui-radius-core: calc(var(--ui-radius-mid) - var(--ui-gap)); /* Apply to Inputs, Buttons */
+
+  /* Reserve outer scale just in case */
+  --ui-radius-outer: calc(var(--ui-radius-mid) + var(--ui-gap));
+
+}
 
 @theme {
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;

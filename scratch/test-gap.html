@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { background: #333; color: white; margin: 50px; }
+  .flex-col { display: flex; flex-direction: column; gap: 16px; }
+  .grid { display: grid; transition: grid-template-rows 0.3s; }
+  .box { background: red; height: 50px; }
+  .hidden { grid-template-rows: 0fr; }
+  .visible { grid-template-rows: 1fr; }
+  .child { overflow: hidden; min-height: 0; padding-bottom: 16px; margin-bottom: -16px; background: rgba(0,255,0,0.2); }
+</style>
+</head>
+<body>
+  <div class="flex-col">
+    <div class="box">Item 1</div>
+    <div class="grid hidden" id="grid">
+      <div class="child">
+        <div style="background: blue; height: 40px; margin-top: 4px;">Inner</div>
+      </div>
+    </div>
+    <div class="box">Item 2</div>
+  </div>
+  <button onclick="document.getElementById('grid').className = 'grid visible'">Open</button>
+  <button onclick="document.getElementById('grid').className = 'grid hidden'">Close</button>
+</body>
+</html>

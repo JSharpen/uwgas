@@ -18,9 +18,9 @@ export default function DevRootView() {
         <p className="text-sm text-white/50 mt-1">Advanced Diagnostics & Prototyping</p>
       </div>
 
-      <div className="neu-convex rounded-3xl border border-amber-400/20 shadow-lg relative flex flex-col overflow-hidden">
+      <div className="neu-convex rounded-[var(--ui-radius-mid)] border border-amber-400/20 shadow-lg relative flex flex-col overflow-hidden">
         {/* Subtle Top Edge Highlight */}
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-400/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+        <div className="absolute inset-0 bg-gradient-to-b from-amber-400/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
         {sections.map((sec, i) => (
           <button

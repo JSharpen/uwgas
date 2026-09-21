@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { TextInput } from "../ui/TextInput";
+import { NumberInput } from "../ui/NumberInput";
 import { generateId } from "../../utils/id";
 import type { MachineConfig, CalibrationProfile } from '../../types/core';
 import ModalShell from '../ModalShell';
@@ -118,56 +120,51 @@ export default function MachineManagerView() {
               onToggle={() => setExpandedEquipmentId(isExpanded ? null : m.id)}
               index={idx}
               header={
-                <div className="flex items-center gap-2.5 min-w-0 flex-wrap w-full">
-                  <IconGrinder className="w-6 h-6 text-[var(--color-accent)] shrink-0" />
-                  <span className={`text-base font-medium tracking-wide truncate ${isExpanded ? 'text-amber-400/80' : 'text-white'}`}>{m.name}</span>
-                  {m.id === defaultMachineId && (
-                    <Tag intent="accent" appearance="outline" className="ml-auto sm:ml-0">
-                      Default
-                    </Tag>
-                  )}
-                  {(!m.calibrationProfiles || m.calibrationProfiles.length === 0) && (
-                    <Tag intent="warning" appearance="outline">
-                      Unmapped
-                    </Tag>
-                  )}
+                <div className="flex flex-col min-w-0 w-full gap-2">
+                  <div className="flex items-center gap-2.5 w-full">
+                    <IconGrinder className="w-6 h-6 text-[var(--color-accent)] shrink-0" />
+                    <span className={`text-base font-medium tracking-wide truncate ${isExpanded ? 'text-amber-400/80' : 'text-white'}`}>{m.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 min-h-[24px]">
+                    {m.id === defaultMachineId && (
+                      <Tag intent="accent" appearance="outline">
+                        Default
+                      </Tag>
+                    )}
+                    {(!m.calibrationProfiles || m.calibrationProfiles.length === 0) && (
+                      <Tag intent="warning" appearance="outline">
+                        Unmapped
+                      </Tag>
+                    )}
+                  </div>
                 </div>
               }
             >
-              <div className="p-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
+              <div className="p-[var(--ui-gap)] pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
                     
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Machine Name</span>
-                  <input
-                    type="text"
-                    className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-semibold text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
-                    defaultValue={m.name}
+                <TextInput
+  label="Machine Name"
+  defaultValue={m.name}
                     onBlur={e => onUpdateMachine(m.id, { name: e.target.value.trim() })}
-                  />
-                </label>
+/>
                 
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Axle Diameter (mm)</span>
-                  <input
-                    type="number"
-                    step="0.1"
-                    className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-bold font-mono text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
-                    defaultValue={m.axleDiameter ?? 12}
+                <NumberInput
+  label="Axle Diameter (mm)"
+  defaultValue={m.axleDiameter ?? 12}
                     onBlur={e => onUpdateMachine(m.id, { axleDiameter: Number(e.target.value) })}
-                  />
-                </label>
+/>
 
                 <div className="flex flex-col gap-3 mt-2">
                   <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Geometry Mapping</span>
                   
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="neu-concave border border-black/40 shadow-inner rounded-xl p-3 flex flex-col gap-1">
+                    <div className="neu-concave border border-black/40 shadow-inner rounded-[var(--ui-radius-core)] p-3 flex flex-col gap-1">
                       <span className="text-[10px] text-[var(--color-accent)] uppercase tracking-widest font-bold">Rear Base</span>
                       <span className="font-mono text-xs text-white/80">
                         hc: <b className="text-white font-bold">{m.constants.rear.hc.toFixed(1)}</b>, o: <b className="text-white font-bold">{m.constants.rear.o.toFixed(1)}</b>
                       </span>
                     </div>
-                    <div className="neu-concave border border-black/40 shadow-inner rounded-xl p-3 flex flex-col gap-1">
+                    <div className="neu-concave border border-black/40 shadow-inner rounded-[var(--ui-radius-core)] p-3 flex flex-col gap-1">
                       <span className="text-[10px] text-[var(--color-focus)] uppercase tracking-widest font-bold">Front Base</span>
                       <span className="font-mono text-xs text-white/80">
                         hc: <b className="text-white font-bold">{m.constants.front.hc.toFixed(1)}</b>, o: <b className="text-white font-bold">{m.constants.front.o.toFixed(1)}</b>
@@ -183,7 +180,7 @@ export default function MachineManagerView() {
                             <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Active Mapping</span>
                             <button
                               type="button"
-                              className="w-full flex items-center justify-between p-3.5 neu-button rounded-2xl transition active:scale-[0.98] cursor-pointer"
+                              className="w-full flex items-center justify-between p-3.5 neu-button rounded-[var(--ui-radius-core)] transition active:scale-[0.98] cursor-pointer"
                               onClick={(e) => { e.stopPropagation(); setMappingSelectionMachineId(m.id); }}
                             >
                               <div className="flex flex-col items-start gap-1 min-w-0">
@@ -210,7 +207,7 @@ export default function MachineManagerView() {
                       })() : (
                         <button
                           type="button"
-                          className="mt-2 w-full flex flex-col items-center justify-center p-4 neu-button border border-[var(--color-accent)]/30 border-dashed rounded-2xl transition active:scale-[0.98] cursor-pointer"
+                          className="mt-2 w-full flex flex-col items-center justify-center p-4 neu-button border border-[var(--color-accent)]/30 border-dashed rounded-[var(--ui-radius-core)] transition active:scale-[0.98] cursor-pointer"
                           onClick={(e) => { e.stopPropagation(); setCalibratingMachineId(m.id); }}
                         >
                           <span className="font-bold text-[var(--color-accent)] text-sm mb-1">No mappings found</span>
@@ -223,7 +220,7 @@ export default function MachineManagerView() {
                       <div className="flex justify-end">
                         <button
                           type="button"
-                          className="px-4 py-2 rounded-xl neu-button text-xs font-bold text-white/80 uppercase tracking-wider transition active:scale-95 cursor-pointer"
+                          className="px-4 py-2 rounded-[var(--ui-radius-core)] neu-button text-xs font-bold text-white/80 uppercase tracking-wider transition active:scale-95 cursor-pointer"
                           onClick={(e) => { e.stopPropagation(); onSetDefaultMachine(m.id); }}
                         >
                           Set as Default
@@ -258,7 +255,7 @@ export default function MachineManagerView() {
                     <button
                       key={p.id}
                       type="button"
-                      className={`flex items-center justify-between p-4 text-left rounded-2xl transition-all cursor-pointer neu-button active:scale-[0.98] ${isActive ? 'border border-[var(--color-accent)]/50 bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]' : 'border border-transparent'}`}
+                      className={`flex items-center justify-between p-4 text-left rounded-[var(--ui-radius-core)] transition-all cursor-pointer neu-button active:scale-[0.98] ${isActive ? 'border border-[var(--color-accent)]/50 bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]' : 'border border-transparent'}`}
                       onClick={() => {
                         const newConstants = { ...selectedMachine.constants };
                         if (p.rear) newConstants.rear = { hc: p.rear.hc, o: p.rear.o };
@@ -294,7 +291,7 @@ export default function MachineManagerView() {
                 })}
                 <button
                   type="button"
-                  className="mt-2 w-full p-4 rounded-2xl neu-button border border-[var(--color-accent)]/30 text-[var(--color-accent)] transition active:scale-[0.98] flex items-center justify-center gap-2 font-bold text-sm cursor-pointer"
+                  className="mt-2 w-full p-4 rounded-[var(--ui-radius-core)] neu-button border border-[var(--color-accent)]/30 text-[var(--color-accent)] transition active:scale-[0.98] flex items-center justify-center gap-2 font-bold text-sm cursor-pointer"
                   onClick={() => {
                      setMappingSelectionMachineId(null);
                      setCalibratingMachineId(selectedMachine.id);
@@ -320,40 +317,31 @@ export default function MachineManagerView() {
           dialogStyle={getDialogStyle({ liftByKeyboard: true })}
         >
           <div className="flex flex-col gap-4">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest pl-1">Machine Name</span>
-              <input
-                type="text"
-                className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-semibold text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
-                placeholder="e.g. Tormek T-8"
+            <TextInput
+  label="Machine Name"
+  placeholder="e.g. Tormek T-8"
                 value={draftName}
                 onChange={e => setDraftName(e.target.value)}
                 autoFocus
-              />
-            </label>
+/>
 
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest pl-1">Axle Diameter (mm)</span>
-              <input
-                type="number"
-                step="0.1"
-                className="neu-concave border border-black/40 shadow-inner rounded-xl px-4 py-3 text-sm font-bold font-mono text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-full"
-                value={draftAxleDiameter}
+            <NumberInput
+  label="Axle Diameter (mm)"
+  value={draftAxleDiameter}
                 onChange={e => setDraftAxleDiameter(Number(e.target.value))}
-              />
-            </label>
+/>
 
             <div className="flex justify-end gap-2 mt-2">
               <button
                 type="button"
-                className="px-4 h-11 rounded-xl neu-button text-white/70 font-semibold text-xs uppercase tracking-wide transition active:scale-95 cursor-pointer flex items-center justify-center"
+                className="px-4 h-11 rounded-[var(--ui-radius-core)] neu-button text-white/70 font-semibold text-xs uppercase tracking-wide transition active:scale-95 cursor-pointer flex items-center justify-center"
                 onClick={closeAdd}
               >
                 Cancel
               </button>
               <button 
                 type="button" 
-                className="px-6 h-11 rounded-xl bg-[var(--color-accent)] text-neutral-950 font-bold text-xs uppercase tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed border border-[var(--color-accent)]" 
+                className="px-6 h-11 rounded-[var(--ui-radius-core)] bg-[var(--color-accent)] text-neutral-950 font-bold text-xs uppercase tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed border border-[var(--color-accent)]" 
                 disabled={!draftName.trim()}
                 onClick={() => {
                   onAddMachine({

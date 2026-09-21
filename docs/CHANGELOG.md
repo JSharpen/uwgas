@@ -6,7 +6,16 @@
 
 ## [Unreleased] (Session: Context Bar Refactor)
 
+### Changed / Reverted
+- **LCD Tag Bar Experiment**: Explored replacing the individual data pill `<Tag>` elements on Wheel cards with a single unified, hardware-styled `<LcdBar>` component. After implementing and refining several variations (including pneumatic neu-concave cutouts and flat LCD aesthetics), the design was reverted back to the minimal ghost tags to preserve UI cleanliness and reduce visual bulk.
+
 ### Added
+- **Shared Modal Selector Component (`JOB-033`)**:
+  - Replaced the custom generic `ActionSheet` app-wide with a unified `ModalSelector` component built on top of the shared `ModalShell`.
+  - Simplifies component API, enforces consistent `z-50` backdrop stacking, ensures standard safe-area-inset padding, and eliminates arbitrary CSS physics drifting.
+- **Global Standardized Input Components**:
+  - Abstracted text, number, and switch toggle inputs into reusable shared components (`TextInput.tsx`, `NumberInput.tsx`, `SwitchButton.tsx`) inside `src/components/ui/`.
+  - Refactored `MachineManagerView`, `JigManagerView`, `UsbManagerView`, and `WheelFormFields` to use these standardized components, adhering to the anti-drift design principle.
 - **Global Standardized Tag Component**:
   - Abstracted hardcoded `<span>` tags across the app (`GlobalSetupSummaryPill`, `MachineManagerView`, `WheelManagerView`, `ProgressionView`, and `CalibrationWizard`) into a strictly typed `<Tag>` component (`src/components/ui/Tag.tsx`).
   - Standardized the visual design language using explicit `intent` (warning, success, info, accent, default) and `appearance` (solid, outline, ghost) props with smart typography defaults (monospaced vs uppercase) and baseline spacing (`px-2 py-0.5`).
@@ -72,6 +81,11 @@
 - **Safari Scroll Padding Fix**: Resolved layout issues in the Global Setup Card drawer where content was abruptly cut off by the Summary Pill overlapping the scroll area.
 - **Flex Gap Math Alignment**: Implemented a dynamic `h-px` spacer at the precise bottom of the `Inputs Area` flex container to perfectly balance the 16px `gap-4` padding requirement, providing pixel-perfect bottom clearance without relying on unreliable CSS padding that mobile Safari ignores.
 - **Drawer Overlap Geometry**: Verified DOM tree geometry to ensure the `Drawer Body` successfully wraps the inner scroll area and gracefully slides behind the overlapping `Summary Pill` without structural leakage.
+
+## [Unreleased]
+- **Shared Modal Selector Component (`JOB-033`)**:
+  - Replaced the custom generic `ActionSheet` app-wide with a unified `ModalSelector` component built on top of the shared `ModalShell`.
+  - Simplifies component API, enforces consistent `z-50` backdrop stacking, ensures standard safe-area-inset padding, and eliminates arbitrary CSS physics drifting.
 
 ## [0.9.9] — 2026-09-05 (Session: Progression View Neumorphic Polish)
 

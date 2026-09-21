@@ -167,13 +167,13 @@ export default function DevStateView() {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-20 w-full animate-in fade-in slide-in-from-right-4 duration-200">
+    <div className="flex flex-col gap-[var(--ui-gap)] max-w-3xl mx-auto pb-20 w-full animate-in fade-in slide-in-from-right-4 duration-200">
       <div className="flex flex-col items-center py-4 mb-2">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-amber-400 tracking-tight">State & Storage Tools</h1>
         <p className="text-sm text-white/50 mt-1">Data Injection & Reset Lab</p>
       </div>
 
-      <div className="neu-convex border border-black/40 rounded-3xl p-4 sm:p-5 flex flex-col gap-6">
+      <div className="neu-convex border border-black/40 rounded-[var(--ui-radius-mid)] p-[var(--ui-gap)] flex flex-col gap-[var(--ui-gap)]">
         <h2 className="text-lg font-bold text-white mb-2">State Actions</h2>
         
         <div className="flex flex-col gap-4">

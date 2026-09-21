@@ -45,7 +45,7 @@ export function ContextBarShell() {
       
       <header 
         ref={headerRef} 
-        className={`touch-none fixed top-3 sm:top-4 left-3 right-3 sm:left-auto sm:right-auto sm:w-[576px] z-50 bg-[#09090b] rounded-3xl transition-all duration-300 mx-auto p-2 ${
+        className={`touch-none fixed top-3 sm:top-4 left-3 right-3 sm:left-auto sm:right-auto sm:w-[576px] z-50 bg-[#09090b] rounded-[var(--ui-radius-mid)] transition-all duration-300 mx-auto p-[var(--ui-gap)] ${
           confirmation 
             ? 'border border-red-500/30 ring-1 ring-red-500/20 shadow-[0_4px_12px_rgba(239,68,68,0.15)]' 
             : 'border border-amber-500/30 ring-1 ring-amber-500/20 shadow-[0_4px_12px_rgba(245,158,11,0.15)]'
@@ -68,7 +68,7 @@ export function ContextBarShell() {
             <div className="flex-1 flex justify-start">
               <button
                 type="button"
-                className="h-11 px-3 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 text-white/60 hover:bg-white/10 active:bg-white/15 border border-white/10 transition flex items-center justify-center active:scale-95 cursor-pointer"
+                className="h-11 px-3 rounded-[var(--ui-radius-core)] font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-white/5 text-white/60 hover:bg-white/10 active:bg-white/15 border border-white/10 transition flex items-center justify-center active:scale-95 cursor-pointer"
                 onClick={() => {
                   if (confirmation.onCancel) confirmation.onCancel();
                   useUIStore.getState().setTopBarConfirmation(null);
@@ -82,7 +82,7 @@ export function ContextBarShell() {
               <div className="flex-shrink px-2 flex justify-center">
                 <button
                   type="button"
-                  className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer"
+                  className="h-11 px-3 sm:px-4 rounded-[var(--ui-radius-core)] font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-amber-400 text-black hover:bg-amber-300 active:bg-amber-500 transition shadow-[0_0_15px_rgba(251,191,36,0.15)] flex items-center justify-center active:scale-95 cursor-pointer"
                   onClick={() => {
                     confirmation.centerAction!.onClick();
                     useUIStore.getState().setTopBarConfirmation(null);
@@ -100,7 +100,7 @@ export function ContextBarShell() {
             <div className="flex-1 flex justify-end">
               <button
                 type="button"
-                className="h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500 text-white hover:bg-red-400 active:bg-red-600 transition shadow-[0_0_15px_rgba(239,68,68,0.2)] flex items-center justify-center active:scale-95 cursor-pointer"
+                className="h-11 px-3 sm:px-4 rounded-[var(--ui-radius-core)] font-bold text-[10px] sm:text-xs uppercase tracking-wider bg-red-500 text-white hover:bg-red-400 active:bg-red-600 transition shadow-[0_0_15px_rgba(239,68,68,0.2)] flex items-center justify-center active:scale-95 cursor-pointer"
                 onClick={() => {
                   confirmation.onConfirm();
                   useUIStore.getState().setTopBarConfirmation(null);

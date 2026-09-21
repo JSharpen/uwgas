@@ -114,9 +114,9 @@ Note: If your bug is highly specific to a tool or custom profile, please also at
         </div>
       </div>
 
-      <div className="neu-convex rounded-3xl border border-black/40 shadow-lg relative flex flex-col overflow-hidden">
+      <div className="neu-convex rounded-[var(--ui-radius-mid)] border border-black/40 shadow-lg relative flex flex-col overflow-hidden">
         {/* Subtle Top Edge Highlight */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
         {sections.map((sec, i) => (
           <button

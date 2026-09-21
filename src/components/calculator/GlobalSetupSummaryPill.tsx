@@ -86,10 +86,10 @@ export function GlobalSetupSummaryPill() {
   };
 
   return (
-    <div className="relative w-full shrink-0 rounded-3xl">
+    <div className="relative w-full shrink-0 rounded-[var(--ui-radius-mid)]">
       {/* Shadow Caster */}
       <div 
-        className="absolute inset-0 rounded-3xl z-[-1]" 
+        className="absolute inset-0 rounded-[var(--ui-radius-mid)] z-[-1]" 
         style={{ boxShadow: maskBottomFade > 0 ? `0 -8px 32px rgba(0,0,0,0.4), 0 0px ${maskBottomFade}px ${maskBottomFade / 2}px #09090b` : '0 -8px 32px rgba(0,0,0,0.4)' }}
       />
       
@@ -97,14 +97,14 @@ export function GlobalSetupSummaryPill() {
       <div className="relative z-20">
         <button 
           type="button"
-          className={`relative z-10 pointer-events-auto w-full ${isSetupPanelOpen ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} shrink-0 border border-amber-500/30 ring-1 ring-amber-500/20 rounded-3xl flex flex-col items-center justify-center p-4 sm:p-5 touch-none group overflow-hidden`}
+          className={`relative z-10 pointer-events-auto w-full ${isSetupPanelOpen ? 'neu-convex-pressed' : 'neu-convex neu-convex-active'} shrink-0 border border-amber-500/30 ring-1 ring-amber-500/20 rounded-[var(--ui-radius-mid)] flex flex-col items-center justify-center p-[var(--ui-gap)] touch-none group overflow-hidden`}
           onClick={() => setIsSetupPanelOpen(!isSetupPanelOpen)}
           onTouchStart={handlePillTouchStart}
           onTouchEnd={handlePillTouchEnd}
           onMouseDown={handlePillTouchStart}
           onMouseUp={handlePillTouchEnd}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none rounded-3xl z-0" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
           {/* Top Row: Hardware Pill Chips */}
           <div className="relative z-10 flex flex-col items-start w-full gap-2 mb-3">

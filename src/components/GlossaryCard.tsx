@@ -17,12 +17,12 @@ function GlossaryCard({ title = 'Glossary', items, className }: GlossaryCardProp
   return (
     <div
       className={
-        'neu-convex rounded-3xl border border-black/40 shadow-lg p-6 relative overflow-hidden flex flex-col gap-4 ' +
+        'neu-convex rounded-[var(--ui-radius-mid)] border border-black/40 shadow-lg p-[var(--ui-gap)] relative overflow-hidden flex flex-col gap-4 ' +
         (className || '')
       }
     >
       {/* Top Edge Highlight */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
       {title && (
         <div className="text-base sm:text-lg font-bold text-white tracking-wide relative z-10 flex items-center justify-between">

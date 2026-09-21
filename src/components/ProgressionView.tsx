@@ -1,8 +1,9 @@
+import { StepperControl } from "./ui/StepperControl";
 import { useUIStore } from "../state/uiStore";
 import * as React from 'react';
 import type { WheelResult } from '../types/core';
 import { IconEdgeLeading, IconEdgeTrailing } from '../icons';
-import { ActionSheet } from './ui/ActionSheet';
+import { ModalSelector } from './ui/ModalSelector';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../state/store';
 import { useWheelResults } from '../services/calculationService';
@@ -224,7 +225,7 @@ const StepCard = React.memo(function StepCard({
             <div className="flex flex-col items-end mt-1">
               {deltaTurnsText ? (
                  <div className="flex flex-col items-end gap-1">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded neu-concave border border-black/40 text-amber-400 font-bold tracking-wide">{deltaTurnsText}</span>
+                    <Tag intent="warning" appearance="concave" className="text-[10px] px-1.5 tracking-wide">{deltaTurnsText}</Tag>
                     <span className="text-[10px] text-white/30 font-bold uppercase tracking-wide">{deltaText}</span>
                  </div>
               ) : deltaText ? (
@@ -267,40 +268,28 @@ const StepCard = React.memo(function StepCard({
 
               {/* Row 2: Steppers */}
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex-1 flex flex-col gap-2 w-full">
-                  <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1 flex justify-between">
-                    <span>Wheel Diameter</span>
-                  </label>
-                  <div className="neu-concave border border-black/40 rounded-2xl flex items-center justify-between p-1 shadow-inner">
-                    <button 
-                      className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
-                      onClick={() => onUpdateWheel?.(r.wheel.id, { D: Math.max(100, (r.wheel.D || 250) - 1) })}
-                    >-</button>
-                    <span className="text-sm tabular-nums font-bold text-white tracking-wider">{r.wheel.D?.toFixed(1) || 250} mm</span>
-                    <button 
-                      className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
-                      onClick={() => onUpdateWheel?.(r.wheel.id, { D: Math.min(300, (r.wheel.D || 250) + 1) })}
-                    >+</button>
-                  </div>
-                </div>
+                <StepperControl
+                  label="Wheel Diameter"
+                  value={r.wheel.D || 250}
+                  min={100}
+                  max={300}
+                  step={1}
+                  onChange={(val) => onUpdateWheel?.(r.wheel.id, { D: val })}
+                  unit="mm"
+                  displayDecimals={1}
+                />
 
-                <div className="flex-1 flex flex-col gap-2 w-full">
-                  <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1 flex justify-between">
-                    <span>Micro-bevel (Δ°)</span>
-                    <span className="text-white/30 hover:text-white cursor-pointer" onClick={() => onUpdateStep(stepId, { angleOffset: 0 })}>Reset</span>
-                  </label>
-                  <div className="neu-concave border border-black/40 rounded-2xl flex items-center justify-between p-1 shadow-inner">
-                    <button 
-                      className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
-                      onClick={() => onUpdateStep(stepId, { angleOffset: Math.max(-5, (r.step!.angleOffset || 0) - 0.5) })}
-                    >-</button>
-                    <span className="text-sm tabular-nums font-bold text-white tracking-wider">{(r.step!.angleOffset || 0) > 0 ? '+' : ''}{(r.step!.angleOffset || 0).toFixed(1)}°</span>
-                    <button 
-                      className="w-12 h-10 rounded-xl neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95"
-                      onClick={() => onUpdateStep(stepId, { angleOffset: Math.min(5, (r.step!.angleOffset || 0) + 0.5) })}
-                    >+</button>
-                  </div>
-                </div>
+                <StepperControl
+                  label="Micro-bevel (Δ°)"
+                  value={r.step!.angleOffset || 0}
+                  min={-5}
+                  max={5}
+                  step={0.5}
+                  onChange={(val) => onUpdateStep(stepId, { angleOffset: val })}
+                  onReset={() => onUpdateStep(stepId, { angleOffset: 0 })}
+                  unit="°"
+                  displayDecimals={1}
+                />
               </div>
 
               {/* Advanced Step Overrides */}
@@ -359,7 +348,7 @@ export function ProgressionView() {
   return (
     <div className="flex flex-col text-xs pb-10 w-full" style={{ gap: 'var(--card-stack-gap, 1.25rem)' }}>
       {wheelResults.length === 0 && (
-        <div className="text-xs text-white/60 border border-dashed border-white/5 rounded-3xl p-6 flex flex-col gap-3 items-center text-center neu-concave shadow-inner">
+        <div className="text-xs text-white/60 border border-dashed border-white/5 rounded-[var(--ui-radius-mid)] p-[var(--ui-gap)] flex flex-col gap-3 items-center text-center neu-concave shadow-inner">
           <p>No sharpening steps defined yet.</p>
         </div>
       )}
@@ -386,11 +375,10 @@ export function ProgressionView() {
       {/* Action Sheets for Inline Editing */}
       {sheetConfig && onUpdateStep && (
         <>
-          <ActionSheet isOpen={sheetConfig.type === 'wheel'} onClose={() => setSheetConfig(null)}>
-            <ActionSheet.Content title="Select Wheel">
-              <ActionSheet.Scrollable>
+          <ModalSelector isOpen={sheetConfig.type === 'wheel'} onClose={() => setSheetConfig(null)} title="Select Wheel">
+            
                 {wheels.map(w => (
-                  <ActionSheet.Item 
+                  <ModalSelector.Item 
                     key={w.id} 
                     selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.wheelId === w.id}
                     meta={
@@ -409,16 +397,13 @@ export function ProgressionView() {
                     }}
                   >
                     {w.name}
-                  </ActionSheet.Item>
+                  </ModalSelector.Item>
                 ))}
-              </ActionSheet.Scrollable>
-            </ActionSheet.Content>
-          </ActionSheet>
+              </ModalSelector>
           
-          <ActionSheet isOpen={sheetConfig.type === 'machine'} onClose={() => setSheetConfig(null)}>
-            <ActionSheet.Content title="Override Machine">
-              <ActionSheet.Scrollable>
-                <ActionSheet.Item 
+          <ModalSelector isOpen={sheetConfig.type === 'machine'} onClose={() => setSheetConfig(null)} title="Override Machine">
+            
+                <ModalSelector.Item 
                   selected={!wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.machineId}
                   onClick={() => {
                     onUpdateStep(sheetConfig.stepId, { machineId: undefined });
@@ -426,9 +411,9 @@ export function ProgressionView() {
                   }}
                 >
                   Default Machine
-                </ActionSheet.Item>
+                </ModalSelector.Item>
                 {machines.map(m => (
-                  <ActionSheet.Item 
+                  <ModalSelector.Item 
                     key={m.id} 
                     selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.machineId === m.id}
                     onClick={() => {
@@ -437,16 +422,13 @@ export function ProgressionView() {
                     }}
                   >
                     {m.name}
-                  </ActionSheet.Item>
+                  </ModalSelector.Item>
                 ))}
-              </ActionSheet.Scrollable>
-            </ActionSheet.Content>
-          </ActionSheet>
+              </ModalSelector>
 
-          <ActionSheet isOpen={sheetConfig.type === 'usb'} onClose={() => setSheetConfig(null)}>
-            <ActionSheet.Content title="Override Support Bar">
-              <ActionSheet.Scrollable>
-                <ActionSheet.Item 
+          <ModalSelector isOpen={sheetConfig.type === 'usb'} onClose={() => setSheetConfig(null)} title="Override Support Bar">
+            
+                <ModalSelector.Item 
                   selected={!wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.usbId}
                   onClick={() => {
                     onUpdateStep(sheetConfig.stepId, { usbId: undefined });
@@ -454,9 +436,9 @@ export function ProgressionView() {
                   }}
                 >
                   Default USB
-                </ActionSheet.Item>
+                </ModalSelector.Item>
                 {usbs.map(u => (
-                  <ActionSheet.Item 
+                  <ModalSelector.Item 
                     key={u.id} 
                     selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.usbId === u.id}
                     onClick={() => {
@@ -465,16 +447,13 @@ export function ProgressionView() {
                     }}
                   >
                     {u.name}
-                  </ActionSheet.Item>
+                  </ModalSelector.Item>
                 ))}
-              </ActionSheet.Scrollable>
-            </ActionSheet.Content>
-          </ActionSheet>
+              </ModalSelector>
 
-          <ActionSheet isOpen={sheetConfig.type === 'base'} onClose={() => setSheetConfig(null)}>
-            <ActionSheet.Content title="Sharpening Base">
-              <ActionSheet.Scrollable>
-                <ActionSheet.Item 
+          <ModalSelector isOpen={sheetConfig.type === 'base'} onClose={() => setSheetConfig(null)} title="Sharpening Base">
+            
+                <ModalSelector.Item 
                   selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.base !== 'rear'}
                   onClick={() => {
                     onUpdateStep(sheetConfig.stepId, { base: 'front' });
@@ -482,8 +461,8 @@ export function ProgressionView() {
                   }}
                 >
                   Front Base (Edge Trailing)
-                </ActionSheet.Item>
-                <ActionSheet.Item 
+                </ModalSelector.Item>
+                <ModalSelector.Item 
                   selected={wheelResults.find(r => (r.step?.id ?? r.wheel.id) === sheetConfig.stepId)?.step?.base === 'rear'}
                   onClick={() => {
                     onUpdateStep(sheetConfig.stepId, { base: 'rear' });
@@ -491,10 +470,8 @@ export function ProgressionView() {
                   }}
                 >
                   Rear Base (Edge Leading)
-                </ActionSheet.Item>
-              </ActionSheet.Scrollable>
-            </ActionSheet.Content>
-          </ActionSheet>
+                </ModalSelector.Item>
+              </ModalSelector>
         </>
       )}
     </div>

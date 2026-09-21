@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { background: #333; padding: 50px; }
+  .parent { width: 300px; display: flex; flex-direction: column; gap: 16px; }
+  .btn { width: 100%; height: 50px; background: #444; box-shadow: 10px 10px 10px red, -10px 0 10px blue; border-radius: 16px; }
+  
+  .clipped { overflow: hidden; }
+  .unclipped { overflow: hidden; margin: -20px; padding: 20px; }
+</style>
+</head>
+<body>
+  <div class="parent">
+    <div class="btn"></div>
+    <div class="clipped">
+       <div class="btn"></div>
+    </div>
+    <div class="unclipped">
+       <div class="btn"></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -28,7 +28,7 @@ export function EmptyProgressionState() {
                 <button
                   key={p.id}
                   type="button"
-                  className="w-full neu-convex border border-black/40 hover:border-amber-500/30 active:bg-white/5 text-white h-[72px] px-5 rounded-3xl transition flex flex-col justify-center items-start shadow-lg cursor-pointer"
+                  className="w-full neu-convex border border-black/40 hover:border-amber-500/30 active:bg-white/5 text-white h-[72px] px-[var(--ui-gap)] rounded-[var(--ui-radius-mid)] transition flex flex-col justify-center items-start shadow-lg cursor-pointer"
                   onClick={() => handleLoadPreset(p.id)}
                 >
                   <div className="flex items-center gap-2 w-full min-w-0">
@@ -61,7 +61,7 @@ export function EmptyProgressionState() {
       )}
 
       {recentPresets.length === 0 && (
-        <div className="flex flex-col items-center justify-center h-48 border border-white/5 bg-white/[0.02] rounded-3xl text-center px-6">
+        <div className="flex flex-col items-center justify-center h-48 border border-white/5 bg-white/[0.02] rounded-[var(--ui-radius-mid)] text-center px-[var(--ui-gap)]">
           <span className="text-white/40 text-sm font-medium">No presets saved yet.</span>
           <span className="text-white/30 text-xs mt-1">Tap <strong className="text-white/50">+ Add Step</strong> in the top bar to begin.</span>
         </div>

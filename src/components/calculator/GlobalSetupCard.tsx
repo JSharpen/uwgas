@@ -5,7 +5,7 @@ import { useStore } from '../../state/store';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../state/uiStore';
 import { useBodyLock } from '../../hooks/useBodyLock';
-import { ActionSheet } from '../ui/ActionSheet';
+import { ModalSelector } from '../ui/ModalSelector';
 import { GlobalSetupSummaryPill } from './GlobalSetupSummaryPill';
 import { GlobalSetupInputs } from './GlobalSetupInputs';
 
@@ -101,7 +101,7 @@ export function GlobalSetupCard() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 z-20"
-            onClick={() => setIsSetupPanelOpen(false)}
+            onClick={() => { if (activeSheet === 'none') setIsSetupPanelOpen(false); }}
           />
         )}
       </AnimatePresence>
@@ -207,11 +207,10 @@ export function GlobalSetupCard() {
       </div>
 
       {/* Action Sheets for Hardware */}
-      <ActionSheet isOpen={activeSheet === 'machine'} onClose={() => setActiveSheet('none')}>
-        <ActionSheet.Content title="Select Machine">
-          <ActionSheet.Scrollable>
+      <ModalSelector isOpen={activeSheet === 'machine'} onClose={() => setActiveSheet('none')} title="Select Machine">
+        
             {machines.map(m => (
-              <ActionSheet.Item 
+              <ModalSelector.Item 
                 key={m.id} 
                 selected={m.id === defaultMachineId}
                 onClick={() => {
@@ -220,17 +219,14 @@ export function GlobalSetupCard() {
                 }}
               >
                 {m.name}
-              </ActionSheet.Item>
+              </ModalSelector.Item>
             ))}
-          </ActionSheet.Scrollable>
-        </ActionSheet.Content>
-      </ActionSheet>
+          </ModalSelector>
 
-      <ActionSheet isOpen={activeSheet === 'usb'} onClose={() => setActiveSheet('none')}>
-        <ActionSheet.Content title="Select Support Bar (USB)">
-          <ActionSheet.Scrollable>
+      <ModalSelector isOpen={activeSheet === 'usb'} onClose={() => setActiveSheet('none')} title="Select Support Bar (USB)">
+        
             {usbs.map(u => (
-              <ActionSheet.Item 
+              <ModalSelector.Item 
                 key={u.id} 
                 selected={u.id === global.activeUsbId}
                 meta={`Ds: ${u.Ds}mm`}
@@ -240,17 +236,14 @@ export function GlobalSetupCard() {
                 }}
               >
                 {u.name}
-              </ActionSheet.Item>
+              </ModalSelector.Item>
             ))}
-          </ActionSheet.Scrollable>
-        </ActionSheet.Content>
-      </ActionSheet>
+          </ModalSelector>
 
-      <ActionSheet isOpen={activeSheet === 'jig'} onClose={() => setActiveSheet('none')}>
-        <ActionSheet.Content title="Select Sharpening Jig">
-          <ActionSheet.Scrollable>
+      <ModalSelector isOpen={activeSheet === 'jig'} onClose={() => setActiveSheet('none')} title="Select Sharpening Jig">
+        
             {jigs.map(j => (
-              <ActionSheet.Item 
+              <ModalSelector.Item 
                 key={j.id} 
                 selected={j.id === global.activeJigId}
                 meta={`Length: ${j.length || j.Dj}mm`}
@@ -261,16 +254,13 @@ export function GlobalSetupCard() {
                 }}
               >
                 {j.name}
-              </ActionSheet.Item>
+              </ModalSelector.Item>
             ))}
-          </ActionSheet.Scrollable>
-        </ActionSheet.Content>
-      </ActionSheet>
+          </ModalSelector>
 
-      <ActionSheet isOpen={activeSheet === 'preset'} onClose={() => setActiveSheet('none')}>
-        <ActionSheet.Content title="Select Preset">
-          <ActionSheet.Scrollable>
-            <ActionSheet.Item 
+      <ModalSelector isOpen={activeSheet === 'preset'} onClose={() => setActiveSheet('none')} title="Select Preset">
+        
+            <ModalSelector.Item 
               selected={selectedPresetId === ''}
               onClick={() => {
                 onLoadPreset('');
@@ -278,9 +268,9 @@ export function GlobalSetupCard() {
               }}
             >
               None (Clear selection)
-            </ActionSheet.Item>
+            </ModalSelector.Item>
             {sessionPresets.map(p => (
-              <ActionSheet.Item 
+              <ModalSelector.Item 
                 key={p.id} 
                 selected={p.id === selectedPresetId}
                 meta={`${p.steps.length} step${p.steps.length === 1 ? '' : 's'}`}
@@ -290,11 +280,9 @@ export function GlobalSetupCard() {
                 }}
               >
                 {p.name}
-              </ActionSheet.Item>
+              </ModalSelector.Item>
             ))}
-          </ActionSheet.Scrollable>
-        </ActionSheet.Content>
-      </ActionSheet>
+          </ModalSelector>
     </>
   );
 }

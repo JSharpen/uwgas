@@ -38,7 +38,7 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
   index,
   className = '',
   style = {},
-  headerClassName = 'w-full px-5 py-4 flex flex-col justify-center items-start',
+  headerClassName = 'w-full p-[var(--ui-gap)] flex flex-col justify-center items-start',
   headerStyle = {},
   headerTouchHandlers = {},
   ...rest
@@ -51,14 +51,14 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
   return (
     <div
       ref={ref}
-      className={`neu-convex rounded-3xl border shadow-lg flex flex-col relative overflow-hidden group transition-all duration-300 ${
+      className={`neu-convex rounded-[var(--ui-radius-mid)] border shadow-lg flex flex-col relative overflow-hidden group transition-all duration-300 ${
         isExpanded ? 'border-amber-400/30' : 'border-black/40'
       } ${className}`}
       style={customStyles}
       {...rest}
     >
       {/* Subtle Top Edge Highlight */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
       {/* Header (Always Visible) */}
       <div

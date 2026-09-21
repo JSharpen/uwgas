@@ -1,32 +1,8 @@
-import type { Wheel } from '../types/core';
+import * as fs from 'fs';
 
-export function isWheelOverdue(wheel: Wheel): boolean {
-  if (!wheel.isWearable || !wheel.measuredAt || !wheel.remeasureInterval) {
-    return false;
-  }
+let content = fs.readFileSync('src/utils/wheelWear.ts', 'utf8');
 
-  let daysMultiplier = 1;
-  switch (wheel.remeasureIntervalUnit) {
-    case 'weeks':
-      daysMultiplier = 7;
-      break;
-    case 'months':
-      daysMultiplier = 30; // Approximation is fine here
-      break;
-    case 'days':
-    default:
-      daysMultiplier = 1;
-      break;
-  }
-
-  const intervalMs = wheel.remeasureInterval * daysMultiplier * 24 * 60 * 60 * 1000;
-  const timeSinceMeasurement = Date.now() - wheel.measuredAt;
-
-  return timeSinceMeasurement > intervalMs;
-}
-
-
-
+const newCode = `
 export function getMeasurementCountdownText(wheel: import('../types/core').Wheel): string | null {
   if (!wheel.isWearable || !wheel.measuredAt || !wheel.remeasureInterval) {
     return null;
@@ -51,9 +27,13 @@ export function getMeasurementCountdownText(wheel: import('../types/core').Wheel
   const msRemaining = targetTime - Date.now();
   
   if (msRemaining <= 0) {
-    return 'OVERDUE';
+    return 'Measurement required';
   }
 
   const daysRemaining = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
-  return `${daysRemaining}d`;
+  return \`Measure in \${daysRemaining} day\${daysRemaining === 1 ? '' : 's'}\`;
 }
+`;
+
+content += '\n' + newCode;
+fs.writeFileSync('src/utils/wheelWear.ts', content);

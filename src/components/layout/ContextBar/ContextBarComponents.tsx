@@ -29,7 +29,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 export function Button({ variant = 'ghost', className = '', children, ...props }: ButtonProps) {
-  const baseStyles = "h-11 px-3 sm:px-4 rounded-2xl font-bold text-[10px] sm:text-xs uppercase tracking-wider transition flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-30 disabled:cursor-not-allowed";
+  const baseStyles = "h-11 px-3 sm:px-4 rounded-[var(--ui-radius-core)] font-bold text-[10px] sm:text-xs uppercase tracking-wider transition flex items-center justify-center cursor-pointer shrink-0 disabled:opacity-30 disabled:cursor-not-allowed";
   
   let variantStyles = '';
   switch (variant) {

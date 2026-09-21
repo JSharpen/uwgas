@@ -251,7 +251,7 @@ export default function CalibrationWizard({
   };
 
   return (
-    <section className="neu-convex rounded-3xl border border-black/40 shadow-2xl p-6 sm:p-8 flex flex-col gap-6 max-w-2xl mx-auto w-full relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <section className="neu-convex rounded-[var(--ui-radius-mid)] border border-black/40 shadow-2xl p-[var(--ui-gap)] flex flex-col gap-[var(--ui-gap)] max-w-2xl mx-auto w-full relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
       <ContextBar.Slot name="center">
         <ContextBar.Title title="Geometry Mapper" subtitle={activeMachine.name} />
       </ContextBar.Slot>
@@ -283,7 +283,7 @@ export default function CalibrationWizard({
       </ContextBar.Slot>
 
       {/* Top Edge Highlight */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
       
         
@@ -354,9 +354,9 @@ export default function CalibrationWizard({
 
       {/* Step 1: Intro / Setup */}
       {step === 'intro' && (
-        <div className="relative z-10 flex flex-col gap-5 w-full">
+        <div className="relative z-10 flex flex-col gap-[var(--ui-gap)] w-full">
           {/* Welcome / Context Banner */}
-          <div className="bg-amber-400/10 border border-amber-400/20 rounded-2xl shadow-sm flex flex-col overflow-hidden transition-all duration-300">
+          <div className="bg-amber-400/10 border border-amber-400/20 rounded-[var(--ui-radius-core)] shadow-sm flex flex-col overflow-hidden transition-all duration-300">
             <div 
               role="button"
               tabIndex={0}
@@ -415,7 +415,7 @@ export default function CalibrationWizard({
             </label>
             <input
               type="text"
-              className="h-12 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-2xl px-4 text-base font-semibold text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition w-full"
+              className="h-12 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-[var(--ui-radius-core)] px-4 text-base font-semibold text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition w-full"
               value={calibName}
               onChange={e => {
                 setCalibName(e.target.value);
@@ -456,7 +456,7 @@ export default function CalibrationWizard({
           </div>
 
           {validationError && (
-            <div className="p-3.5 bg-amber-400/10 border border-amber-400/30 rounded-2xl text-xs text-amber-300 font-medium flex items-center gap-2">
+            <div className="p-3.5 bg-amber-400/10 border border-amber-400/30 rounded-[var(--ui-radius-core)] text-xs text-amber-300 font-medium flex items-center gap-2">
               <span>⚠️</span>
               <span>{validationError}</span>
             </div>
@@ -632,7 +632,7 @@ export default function CalibrationWizard({
 
       {/* Step 3: Results */}
       {step === 'results' && (
-        <div className="relative z-10 flex flex-col gap-6 w-full pb-4">
+        <div className="relative z-10 flex flex-col gap-[var(--ui-gap)] w-full pb-4">
           <div className="flex flex-col gap-2">
             <h3 className="text-lg font-bold text-white tracking-tight">Geometry Solved</h3>
             <p className="text-xs text-white/60">Compare the mathematical engines below. True Least Squares is heavily recommended for maximum precision.</p>
@@ -666,7 +666,7 @@ export default function CalibrationWizard({
             (rearResult.ls?.diagnostics?.maxAbsResidualMm ?? 0) > 0.5 ||
             (frontResult.ls?.diagnostics?.maxAbsResidualMm ?? 0) > 0.5
           ) && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex gap-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-[var(--ui-radius-core)] p-4 flex gap-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
               <span className="text-xl leading-none">⚠️</span>
               <div className="flex flex-col gap-1">
                 <strong className="text-sm text-red-400 font-bold tracking-tight">Measurement Outlier Detected</strong>
@@ -679,7 +679,7 @@ export default function CalibrationWizard({
 
           {/* Rear Base Result Card */}
           {(rearResult.ls || rearResult.legacy) && (
-            <div className="bg-black/25 border border-white/5 border-l-4 border-l-blue-500 rounded-3xl p-5 flex flex-col gap-4 shadow-lg">
+            <div className="bg-black/25 border border-white/5 border-l-4 border-l-blue-500 rounded-[var(--ui-radius-core)] p-[var(--ui-gap)] flex flex-col gap-4 shadow-lg">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-bold text-blue-400">Rear Base</h4>
@@ -718,7 +718,7 @@ export default function CalibrationWizard({
 
           {/* Front Base Result Card */}
           {(frontResult.ls || frontResult.legacy) && (
-            <div className="bg-black/25 border border-white/5 border-l-4 border-l-emerald-500 rounded-3xl p-5 flex flex-col gap-4 shadow-lg">
+            <div className="bg-black/25 border border-white/5 border-l-4 border-l-emerald-500 rounded-[var(--ui-radius-core)] p-[var(--ui-gap)] flex flex-col gap-4 shadow-lg">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-bold text-emerald-400">Front Base</h4>

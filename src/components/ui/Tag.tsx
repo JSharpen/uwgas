@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 export type TagIntent = 'default' | 'accent' | 'warning' | 'success' | 'info';
-export type TagAppearance = 'solid' | 'outline' | 'ghost';
+export type TagAppearance = 'solid' | 'outline' | 'ghost' | 'concave';
 
 export interface TagProps extends React.HTMLAttributes<HTMLSpanElement> {
   intent?: TagIntent;
@@ -9,6 +9,8 @@ export interface TagProps extends React.HTMLAttributes<HTMLSpanElement> {
   shape?: 'rounded' | 'pill';
   uppercase?: boolean;
   mono?: boolean;
+  badge?: React.ReactNode;
+  badgeIntent?: TagIntent;
 }
 
 export function Tag({ 
@@ -17,6 +19,8 @@ export function Tag({
   shape = 'rounded',
   uppercase,
   mono,
+  badge,
+  badgeIntent = 'default',
   className = '', 
   children, 
   ...props 
@@ -86,20 +90,68 @@ export function Tag({
         styleClasses = 'neu-concave border border-white/5 text-white/40';
         break;
     }
+  } else if (appearance === 'concave') {
+    switch (intent) {
+      case 'warning':
+        styleClasses = 'neu-concave border border-black/40 shadow-inner text-amber-400 font-bold';
+        break;
+      case 'success':
+        styleClasses = 'neu-concave border border-black/40 shadow-inner text-emerald-400 font-bold';
+        break;
+      case 'info':
+        styleClasses = 'neu-concave border border-black/40 shadow-inner text-blue-400 font-bold';
+        break;
+      case 'accent':
+        styleClasses = 'neu-concave border border-black/40 shadow-inner text-[var(--color-accent)] font-bold';
+        break;
+      case 'default':
+      default:
+        styleClasses = 'neu-concave border border-black/40 shadow-inner text-white/70 font-bold';
+        break;
+    }
   }
 
   // 2. Resolve Overrides
-  const shapeClasses = shape === 'pill' ? 'rounded-full' : 'rounded';
+  const shapeClasses = shape === 'pill' ? 'rounded-full' : 'rounded-[var(--ui-radius-core)]';
   const isMono = mono ?? defaultMono;
   const isUppercase = uppercase ?? defaultUppercase;
   
   // 3. Assemble
-  // Standardized padding strictly enforced as px-2 py-0.5 to prevent layout drift
-  const baseClasses = `inline-flex items-center justify-center px-2 py-0.5 text-[9px] shrink-0 truncate text-center transition-all ${shapeClasses} ${isMono ? 'font-mono' : ''} ${isUppercase ? 'uppercase tracking-widest' : ''}`;
+  // Standardized padding strictly enforced as px-2 pt-[3px] pb-[1px] to perfectly center uppercase text
+  // If badge exists, remove right padding to let the badge sit flush
+  const paddingClasses = badge ? 'pl-2 pr-0.5 pt-[3px] pb-[1px]' : 'px-2 pt-[3px] pb-[1px]';
+  const baseClasses = `inline-flex items-center justify-center ${paddingClasses} text-[9px] shrink-0 truncate text-center transition-all ${shapeClasses} ${isMono ? 'font-mono' : ''} ${isUppercase ? 'uppercase tracking-widest' : ''}`;
+
+  let badgeClasses = '';
+  if (badge) {
+    switch (badgeIntent) {
+      case 'warning':
+        badgeClasses = 'bg-red-500/10 text-red-500 border border-red-500/20';
+        break;
+      case 'accent':
+        badgeClasses = 'bg-amber-500/15 text-amber-400 border border-amber-500/20';
+        break;
+      case 'success':
+        badgeClasses = 'bg-emerald-500 text-black';
+        break;
+      case 'info':
+        badgeClasses = 'bg-blue-500 text-white';
+        break;
+      case 'default':
+      default:
+        badgeClasses = 'bg-white/10 text-white/90 border border-white/5';
+        break;
+    }
+  }
 
   return (
     <span className={`${baseClasses} ${styleClasses} ${className}`.trim()} {...props}>
       {children}
+      {badge && (
+        <span className={`ml-1.5 px-1.5 py-[1px] rounded-[var(--ui-radius-core)] flex items-center justify-center font-bold font-sans tracking-normal -translate-y-[1px] ${badgeClasses}`}>
+          {badge}
+        </span>
+      )}
     </span>
   );
 }

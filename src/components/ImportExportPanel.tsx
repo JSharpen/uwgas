@@ -91,11 +91,11 @@ function ImportPanel({
   };
 
   return (
-    <section className="neu-convex rounded-3xl border border-black/40 shadow-lg relative flex flex-col overflow-hidden">
+    <section className="neu-convex rounded-[var(--ui-radius-mid)] border border-black/40 shadow-lg relative flex flex-col overflow-hidden">
       {/* Subtle Top Edge Highlight */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
-      <div className="relative z-10 flex items-center justify-between p-6 border-b border-white/5">
+      <div className="relative z-10 flex items-center justify-between p-[var(--ui-gap)] border-b border-white/5">
         <h2 className="text-lg font-bold text-white tracking-wide">Import Data</h2>
         <CollapseToggle
           open={open}
@@ -105,7 +105,7 @@ function ImportPanel({
       </div>
 
       {open && (
-        <div className="relative z-10 p-6 flex flex-col gap-4 text-xs">
+        <div className="relative z-10 p-[var(--ui-gap)] flex flex-col gap-4 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Sections</span>
             <button
@@ -213,11 +213,11 @@ function ExportPanel({
   const anyChecked = Object.values(exportSections).some(Boolean);
 
   return (
-    <section className="neu-convex rounded-3xl border border-black/40 shadow-lg relative flex flex-col overflow-hidden">
+    <section className="neu-convex rounded-[var(--ui-radius-mid)] border border-black/40 shadow-lg relative flex flex-col overflow-hidden">
       {/* Subtle Top Edge Highlight */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-3xl z-0" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
-      <div className="relative z-10 flex items-center justify-between p-6 border-b border-white/5">
+      <div className="relative z-10 flex items-center justify-between p-[var(--ui-gap)] border-b border-white/5">
         <h2 className="text-lg font-bold text-white tracking-wide">Export Data</h2>
         <CollapseToggle
           open={open}
@@ -227,7 +227,7 @@ function ExportPanel({
       </div>
 
       {open && (
-        <div className="relative z-10 p-6 flex flex-col gap-4 text-xs">
+        <div className="relative z-10 p-[var(--ui-gap)] flex flex-col gap-4 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Sections</span>
             <button
@@ -335,7 +335,7 @@ function ImportExportPanel() {
   const [status, setStatus] = React.useState<string | null>(null);
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-20 w-full">
+    <div className="flex flex-col gap-[var(--ui-gap)] max-w-3xl mx-auto pb-20 w-full">
       <ImportPanel
         onImportText={onImportText}
         importSections={importSections}
