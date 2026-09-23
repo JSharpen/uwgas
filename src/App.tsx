@@ -3,7 +3,7 @@ import { useUIStore } from './state/uiStore';
 import { useDevStore } from './state/devStore';
 
 import CalculatorView from './views/CalculatorView';
-import EquipmentView from './views/EquipmentView';
+import HardwareView from './views/HardwareView';
 import SettingsView from './views/SettingsView';
 import PresetsView from './views/PresetsView';
 import { PresetManagerModal } from './components/presets/PresetManagerModal';
@@ -68,7 +68,7 @@ export default function App() {
       {/* Main Routed View */}
       <main className="flex-1 w-full">
         {view === 'calculator' && <CalculatorView />}
-        {view === 'equipment' && <EquipmentView />}
+        {view === 'hardware' && <HardwareView />}
         {view === 'presets' && <PresetsView />}
         {view === 'settings' && <SettingsView />}
       </main>

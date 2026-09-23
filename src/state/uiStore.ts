@@ -29,7 +29,7 @@ export interface UIState {
   calibratingMachineId: string | null;
   calibratingProfileId: string | null;
   calibrationStep: 'intro' | 'measuring' | 'review' | 'results';
-  view: 'calculator' | 'equipment' | 'presets' | 'settings';
+  view: 'calculator' | 'hardware' | 'presets' | 'settings';
   settingsView: 'root' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction';
   equipmentTab: 'machines' | 'wheels' | 'jigs' | 'usbs';
   isSetupPanelOpen: boolean;
@@ -54,7 +54,7 @@ export interface UIState {
   importModes: ImportModes;
 
   // Actions
-  setView: (view: 'calculator' | 'equipment' | 'presets' | 'settings') => void;
+  setView: (view: 'calculator' | 'hardware' | 'presets' | 'settings') => void;
   setEquipmentTab: (tab: 'machines' | 'wheels' | 'jigs' | 'usbs') => void;
   setCalibratingMachineId: (id: string | null, profileId?: string | null, initialStep?: 'intro' | 'measuring' | 'review' | 'results') => void;
   setCalibrationStep: (step: 'intro' | 'measuring' | 'review' | 'results') => void;

@@ -8,7 +8,7 @@ import WheelManagerView from '../components/wheels/WheelManagerView';
 import JigManagerView from '../components/settings/JigManagerView';
 import UsbManagerView from '../components/settings/UsbManagerView';
 
-export default function EquipmentView() {
+export default function HardwareView() {
   const equipmentTab = useUIStore((s) => s.equipmentTab);
   const setEquipmentTab = useUIStore((s) => s.setEquipmentTab);
   const calibratingMachineId = useUIStore((s) => s.calibratingMachineId);

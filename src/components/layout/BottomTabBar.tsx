@@ -34,15 +34,15 @@ export function BottomTabBar() {
       
       <button
         type="button"
-        onClick={() => setView('equipment')}
+        onClick={() => setView('hardware')}
         className={`flex flex-col items-center justify-center w-full h-full transition-colors cursor-pointer ${
-          view === 'equipment' ? 'text-amber-400 font-bold' : 'text-white/40 hover:text-white/80'
+          view === 'hardware' ? 'text-amber-400 font-bold' : 'text-white/40 hover:text-white/80'
         }`}
-        aria-label="Equipment View"
+        aria-label="Hardware View"
       >
         <div
           className={`flex items-center justify-center w-12 h-8 rounded-2xl transition-all relative ${
-            view === 'equipment' ? 'bg-amber-400/10' : ''
+            view === 'hardware' ? 'bg-amber-400/10' : ''
           }`}
         >
           <IconDisc className="w-[22px] h-[22px]" />
@@ -50,7 +50,7 @@ export function BottomTabBar() {
             <div className="absolute top-1 right-2.5 w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] border border-[#18181b]" />
           )}
         </div>
-        <span className="text-[9px] mt-0.5 tracking-wide">Equipment</span>
+        <span className="text-[9px] mt-0.5 tracking-wide">Hardware</span>
       </button>
       
       <button
