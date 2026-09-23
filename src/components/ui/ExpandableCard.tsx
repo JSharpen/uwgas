@@ -111,11 +111,40 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
         // The card's final document position will be its current position minus any card collapsing above it
         const currentCardDocTop = window.scrollY + outerRect.top - collapsingHeightAbove;
         const targetScrollY = currentCardDocTop - targetTopInViewport;
+        const finalTargetScrollY = Math.max(0, targetScrollY);
+        const startScrollY = window.scrollY;
+        const scrollDistance = finalTargetScrollY - startScrollY;
 
-        window.scrollTo({
-          top: Math.max(0, targetScrollY),
-          behavior: 'smooth'
-        });
+        if (Math.abs(scrollDistance) < 2) return;
+
+        const startTime = performance.now();
+        const duration = 300;
+
+        const step = (currentTime: number) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(1, elapsed / duration);
+
+          // Smooth ease-out cubic curve (matches native CSS transition deceleration)
+          const ease = 1 - Math.pow(1 - progress, 3);
+          const currentY = startScrollY + scrollDistance * ease;
+
+          window.scrollTo(0, currentY);
+
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          } else {
+            // Final check on completion to ensure perfect subpixel alignment
+            if (localRef.current) {
+              const finalRect = localRef.current.getBoundingClientRect();
+              const finalDiff = finalRect.top - targetTopInViewport;
+              if (Math.abs(finalDiff) > 2) {
+                window.scrollTo(0, window.scrollY + finalDiff);
+              }
+            }
+          }
+        };
+
+        requestAnimationFrame(step);
       });
     }
   }, [isExpanded, scrollOnExpand]);
