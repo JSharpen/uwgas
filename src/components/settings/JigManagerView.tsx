@@ -91,10 +91,10 @@ export default function JigManagerView() {
                     <Tag
                       intent="default"
                       appearance="ghost"
-                      badge={item.threadPitch ? `⟳ ${item.threadPitch}mm` : undefined}
+                      badge={item.threadPitch ? `⟳ ${item.threadPitch}mm` : 'Sleeve'}
                       badgeIntent="accent"
                     >
-                      Sleeve
+                      Adjustable
                     </Tag>
                   ) : (
                     <Tag intent="default" appearance="ghost">
@@ -126,7 +126,7 @@ export default function JigManagerView() {
 
               <SwitchButton
                 checked={!!item.isAdjustableLength}
-                title="Adjustable Collar"
+                title="Adjustable Sleeve"
                 onChange={() => onUpdateJig(item.id, { isAdjustableLength: !item.isAdjustableLength })}
               />
 
@@ -174,7 +174,7 @@ export default function JigManagerView() {
 
             <SwitchButton
               checked={!!draftJig.isAdjustableLength}
-              title="Adjustable Collar"
+              title="Adjustable Sleeve"
               onChange={() => setDraftJig({ ...draftJig, isAdjustableLength: !draftJig.isAdjustableLength })}
             />
 
