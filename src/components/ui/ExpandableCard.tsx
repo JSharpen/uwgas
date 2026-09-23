@@ -94,23 +94,41 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
         const gap = gapStr ? parseFloat(gapStr) : 12;
 
         const setupClearanceStr = getComputedStyle(document.documentElement).getPropertyValue('--setup-bar-clearance').trim();
-        const bottomClearance = setupClearanceStr ? parseFloat(setupClearanceStr) : 74;
+        // Determine the bottom obstruction: setup bar if active, otherwise detect nav tab bar top, or fallback
+        const navEl = document.querySelector('nav');
+        const navRect = navEl?.getBoundingClientRect();
+        const navTop = (navRect && navRect.top > 0) ? navRect.top : (window.innerHeight - 64);
+        const bottomObstruction = setupClearanceStr ? (window.innerHeight - parseFloat(setupClearanceStr)) : navTop;
 
         const topLimit = headerBottom + gap;
-        const bottomLimit = window.innerHeight - bottomClearance - gap;
+        const bottomLimit = bottomObstruction - gap;
         const visibleHeight = Math.max(100, bottomLimit - topLimit);
-
-        // If card fits with healthy breathing room (at least 32px margin), center it.
-        // Otherwise (for tall cards like Wheel cards), cleanly frame from the top limit
-        // so the card title, diameter stepper, and primary toggles are immediately visible in the active zone.
-        const canComfortablyCenter = (totalTargetHeight + 32) <= visibleHeight;
-        const targetTopInViewport = canComfortablyCenter
-          ? topLimit + (visibleHeight - totalTargetHeight) / 2
-          : topLimit;
 
         // The card's final document position will be its current position minus any card collapsing above it
         const currentCardDocTop = window.scrollY + outerRect.top - collapsingHeightAbove;
-        const targetScrollY = currentCardDocTop - targetTopInViewport;
+        const currentCardDocBottom = currentCardDocTop + totalTargetHeight;
+
+        let targetScrollY = window.scrollY;
+
+        if (totalTargetHeight <= visibleHeight) {
+          const cardViewportTop = currentCardDocTop - window.scrollY;
+          const cardViewportBottom = currentCardDocBottom - window.scrollY;
+
+          if (cardViewportBottom > bottomLimit) {
+            // Card bottom extends past bottom limit; scroll down just enough to reveal it
+            targetScrollY = currentCardDocBottom - bottomLimit;
+          } else if (cardViewportTop < topLimit) {
+            // Card top is tucked behind top header; scroll up just enough to reveal it
+            targetScrollY = currentCardDocTop - topLimit;
+          } else {
+            // Already fully visible within safe window - no scroll needed
+            targetScrollY = window.scrollY;
+          }
+        } else {
+          // Card is taller than visible window; pin top to topLimit so header and primary controls are visible
+          targetScrollY = currentCardDocTop - topLimit;
+        }
+
         const finalTargetScrollY = Math.max(0, targetScrollY);
         const startScrollY = window.scrollY;
         const scrollDistance = finalTargetScrollY - startScrollY;
@@ -133,14 +151,8 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
           if (progress < 1) {
             requestAnimationFrame(step);
           } else {
-            // Final check on completion to ensure perfect subpixel alignment
-            if (localRef.current) {
-              const finalRect = localRef.current.getBoundingClientRect();
-              const finalDiff = finalRect.top - targetTopInViewport;
-              if (Math.abs(finalDiff) > 2) {
-                window.scrollTo(0, window.scrollY + finalDiff);
-              }
-            }
+            // Final check on completion to ensure exact pixel alignment
+            window.scrollTo(0, finalTargetScrollY);
           }
         };
 
