@@ -42,6 +42,7 @@ export default function MachineManagerView() {
   });
   
   const calibratingMachineId = useUIStore(s => s.calibratingMachineId);
+  const calibratingProfileId = useUIStore(s => s.calibratingProfileId);
   const setCalibratingMachineId = useUIStore(s => s.setCalibratingMachineId);
   const [mappingSelectionMachineId, setMappingSelectionMachineId] = React.useState<string | null>(null);
 
@@ -70,11 +71,19 @@ export default function MachineManagerView() {
   
   if (calibratingMachineId) {
     const activeMachine = machines.find(m => m.id === calibratingMachineId) || machines[0];
+    const initialProfile = activeMachine.calibrationProfiles?.find(p => p.id === calibratingProfileId);
     return (
       <CalibrationWizard
         activeMachine={activeMachine}
+        initialProfile={initialProfile}
         onSaveProfile={(profile) => {
-          const newProfiles = [...(activeMachine.calibrationProfiles || []), profile];
+          const newProfiles = [...(activeMachine.calibrationProfiles || [])];
+          const existingIdx = newProfiles.findIndex(p => p.id === profile.id);
+          if (existingIdx >= 0) {
+            newProfiles[existingIdx] = profile;
+          } else {
+            newProfiles.push(profile);
+          }
           const newConstants = { ...activeMachine.constants };
           if (profile.rear) {
             newConstants.rear = { hc: profile.rear.hc, o: profile.rear.o };
@@ -252,41 +261,56 @@ export default function MachineManagerView() {
                   const isActive = selectedMachine.activeCalibrationId === p.id;
                   const isBest = getBestProfile(selectedMachine.calibrationProfiles) === p.id;
                   return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className={`flex items-center justify-between p-4 text-left rounded-[var(--ui-radius-core)] transition-all cursor-pointer neu-button active:scale-[0.98] ${isActive ? 'border border-[var(--color-accent)]/50 bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]' : 'border border-transparent'}`}
-                      onClick={() => {
-                        const newConstants = { ...selectedMachine.constants };
-                        if (p.rear) newConstants.rear = { hc: p.rear.hc, o: p.rear.o };
-                        if (p.front) newConstants.front = { hc: p.front.hc, o: p.front.o };
-                        onUpdateMachine(selectedMachine.id, {
-                          activeCalibrationId: p.id,
-                          constants: newConstants
-                        });
-                        setMappingSelectionMachineId(null);
-                      }}
-                    >
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-white truncate">{p.name}</span>
-                          {isBest && (
-                            <Tag intent="success" appearance="outline" shape="pill">
-                              Best
-                            </Tag>
-                          )}
+                    <div key={p.id} className="flex gap-2 items-stretch">
+                      <button
+                        type="button"
+                        className={`flex-1 flex items-center justify-between p-4 text-left rounded-[var(--ui-radius-core)] transition-all cursor-pointer neu-button active:scale-[0.98] ${isActive ? 'border border-[var(--color-accent)]/50 bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]' : 'border border-transparent'}`}
+                        onClick={() => {
+                          const newConstants = { ...selectedMachine.constants };
+                          if (p.rear) newConstants.rear = { hc: p.rear.hc, o: p.rear.o };
+                          if (p.front) newConstants.front = { hc: p.front.hc, o: p.front.o };
+                          onUpdateMachine(selectedMachine.id, {
+                            activeCalibrationId: p.id,
+                            constants: newConstants
+                          });
+                          setMappingSelectionMachineId(null);
+                        }}
+                      >
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white truncate">{p.name}</span>
+                            {isBest && (
+                              <Tag intent="success" appearance="outline" shape="pill">
+                                Best
+                              </Tag>
+                            )}
+                          </div>
+                          <span className="text-xs text-white/40 font-mono">
+                            {new Date(p.createdAt).toLocaleDateString()} &middot; {p.scope === 'both' ? 'Dual Base' : p.scope === 'rear' ? 'Rear Only' : 'Front Only'}
+                          </span>
                         </div>
-                        <span className="text-xs text-white/40 font-mono">
-                          {new Date(p.createdAt).toLocaleDateString()} &middot; {p.scope === 'both' ? 'Dual Base' : p.scope === 'rear' ? 'Rear Only' : 'Front Only'}
-                        </span>
-                      </div>
-                      
-                      {isActive ? (
-                        <span className="text-[var(--color-accent)] font-bold text-xs uppercase tracking-wider px-2 shrink-0">Active</span>
-                      ) : (
-                        <div className="w-5 h-5 rounded-full border-2 border-white/20 shrink-0 ml-4"></div>
-                      )}
-                    </button>
+                        
+                        {isActive ? (
+                          <span className="text-[var(--color-accent)] font-bold text-xs uppercase tracking-wider px-2 shrink-0">Active</span>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border-2 border-white/20 shrink-0 ml-4"></div>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className="p-4 h-full shrink-0 neu-button rounded-[var(--ui-radius-core)] transition active:scale-[0.98] cursor-pointer flex items-center justify-center border border-white/5 text-white/50 hover:text-white"
+                        onClick={() => {
+                          setMappingSelectionMachineId(null);
+                          setCalibratingMachineId(selectedMachine.id, p.id, 'review');
+                        }}
+                        title="Edit Measurements"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                          <path d="M12 20h9"></path>
+                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                      </button>
+                    </div>
                   );
                 })}
                 <button

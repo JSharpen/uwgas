@@ -27,7 +27,8 @@ export type TopBarConfirmation = {
 
 export interface UIState {
   calibratingMachineId: string | null;
-  calibrationStep: 'intro' | 'measuring' | 'results';
+  calibratingProfileId: string | null;
+  calibrationStep: 'intro' | 'measuring' | 'review' | 'results';
   view: 'calculator' | 'equipment' | 'presets' | 'settings';
   settingsView: 'root' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction';
   equipmentTab: 'machines' | 'wheels' | 'jigs' | 'usbs';
@@ -55,8 +56,8 @@ export interface UIState {
   // Actions
   setView: (view: 'calculator' | 'equipment' | 'presets' | 'settings') => void;
   setEquipmentTab: (tab: 'machines' | 'wheels' | 'jigs' | 'usbs') => void;
-  setCalibratingMachineId: (id: string | null) => void;
-  setCalibrationStep: (step: 'intro' | 'measuring' | 'results') => void;
+  setCalibratingMachineId: (id: string | null, profileId?: string | null, initialStep?: 'intro' | 'measuring' | 'review' | 'results') => void;
+  setCalibrationStep: (step: 'intro' | 'measuring' | 'review' | 'results') => void;
   setSettingsView: (
     view: 'root' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction'
   ) => void;
@@ -108,6 +109,7 @@ const DEFAULT_IMPORT_MODES: ImportModes = {
 export const useUIStore = create<UIState>((set) => ({
   view: 'calculator',
   calibratingMachineId: null,
+  calibratingProfileId: null,
   calibrationStep: 'intro',
   equipmentTab: 'wheels',
   settingsView: 'root',
@@ -133,7 +135,8 @@ export const useUIStore = create<UIState>((set) => ({
   importModes: { ...DEFAULT_IMPORT_MODES },
 
   setView: (view) => set({ view }),
-  setCalibratingMachineId: (id) => set({ calibratingMachineId: id, calibrationStep: 'intro' }),
+  setCalibratingMachineId: (id, profileId = null, initialStep = 'intro') => 
+    set({ calibratingMachineId: id, calibratingProfileId: profileId, calibrationStep: initialStep }),
   setCalibrationStep: (step) => set({ calibrationStep: step }),
   setEquipmentTab: (equipmentTab) => set({ equipmentTab }),
   setSettingsView: (settingsView) => set({ settingsView }),

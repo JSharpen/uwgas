@@ -10,6 +10,16 @@
 - **LCD Tag Bar Experiment**: Explored replacing the individual data pill `<Tag>` elements on Wheel cards with a single unified, hardware-styled `<LcdBar>` component. After implementing and refining several variations (including pneumatic neu-concave cutouts and flat LCD aesthetics), the design was reverted back to the minimal ghost tags to preserve UI cleanliness and reduce visual bulk.
 
 ### Added
+- **Adaptive Calibration Workflow**:
+  - Replaced the fixed 5-point wizard with a lean 3-point adaptive strategy.
+  - Automatically assesses solver quality and identifies the largest measurement gaps.
+  - Dynamically guides the user to add targeted measurements until reaching Excellent accuracy (≤ 0.05° error) or a physical ceiling.
+- **Measurement Outlier Review Screen**:
+  - Added an intercepting review screen to the `CalibrationWizard` when solver residuals exceed 0.5mm.
+  - Allows users to review and fix individual `hn` and `CAo` measurements inline before committing to the calculation.
+- **Saved Profile Editing**:
+  - Added an Edit button alongside existing Geometry Mappings in the `MachineManagerView` modal.
+  - Injects `initialProfile` data into the `CalibrationWizard`, skipping directly to the Review/Edit step, allowing modifications without creating orphaned duplicates.
 - **Shared Modal Selector Component (`JOB-033`)**:
   - Replaced the custom generic `ActionSheet` app-wide with a unified `ModalSelector` component built on top of the shared `ModalShell`.
   - Simplifies component API, enforces consistent `z-50` backdrop stacking, ensures standard safe-area-inset padding, and eliminates arbitrary CSS physics drifting.
