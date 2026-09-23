@@ -46,21 +46,7 @@ const StepCard = React.memo(function StepCard({
   const onUpdateWheel = useStore((s) => s.updateWheel);
   const stepId = r.step?.id ?? r.wheel.id;
   const cardRef = React.useRef<HTMLDivElement>(null);
-  const touchStartY = React.useRef(0);
-
   const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
-    if (isExpanded && deltaY < -30) {
-      // Swipe up to close (similar to dragging the drawer down, but here the edit area is below)
-      onToggleExpand();
-    }
-  };
 
   const effectiveSessionMachineId = globalMachineId || defaultMachineId;
 
@@ -136,7 +122,6 @@ const StepCard = React.memo(function StepCard({
       style={{ viewTransitionName: `step-${stepId}` } as React.CSSProperties}
       headerClassName="flex justify-between items-center px-4 sm:px-6 relative z-10"
       headerStyle={{ minHeight: 'var(--step-card-height, 5.5rem)' }}
-      headerTouchHandlers={{ onTouchStart: handleTouchStart, onTouchEnd: handleTouchEnd }}
       header={
         <>
           <div className="flex flex-col gap-1 min-w-0 flex-1 pr-3 sm:pr-4 relative z-10">

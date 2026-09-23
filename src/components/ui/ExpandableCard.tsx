@@ -19,11 +19,6 @@ export interface ExpandableCardProps extends React.HTMLAttributes<HTMLDivElement
   headerClassName?: string;
   /** Optional custom styles for the header wrapper */
   headerStyle?: React.CSSProperties;
-  /** Optional touch event handlers for the header */
-  headerTouchHandlers?: {
-    onTouchStart?: React.TouchEventHandler<HTMLDivElement>;
-    onTouchEnd?: React.TouchEventHandler<HTMLDivElement>;
-  };
   /** When true, immediately scrolls the card into the visible working window in parallel with the expansion animation */
   scrollOnExpand?: boolean;
 }
@@ -42,7 +37,6 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
   style = {},
   headerClassName = 'w-full p-[var(--ui-gap)] flex flex-col justify-center items-start',
   headerStyle = {},
-  headerTouchHandlers = {},
   scrollOnExpand = false,
   ...rest
 }, ref) => {
@@ -127,7 +121,6 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
         }`}
         style={headerStyle}
         onClick={onToggle}
-        {...headerTouchHandlers}
       >
         {header}
       </div>
