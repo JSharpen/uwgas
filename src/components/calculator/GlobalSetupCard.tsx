@@ -64,6 +64,11 @@ export function GlobalSetupCard() {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         if (!containerRef.current) return;
+        const pill = containerRef.current.lastElementChild || containerRef.current;
+        const pillRect = pill.getBoundingClientRect();
+        const clearance = Math.max(0, window.innerHeight - pillRect.top);
+        document.documentElement.style.setProperty('--setup-bar-clearance', `${clearance}px`);
+
         const rect = containerRef.current.getBoundingClientRect();
         
         const headerBottomStr = getComputedStyle(document.documentElement).getPropertyValue('--progression-header-bottom').trim();

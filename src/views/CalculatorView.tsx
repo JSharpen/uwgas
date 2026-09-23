@@ -208,8 +208,11 @@ export default function CalculatorView() {
           </div>
         </section>
 
-        {/* Bottom scroll clearance spacer (ensures lowest card clears floating setup bar & bottom mask) */}
-        <div className="h-[70px] sm:h-[75px] shrink-0 w-full pointer-events-none" />
+        {/* Bottom scroll clearance spacer (ensures lowest card clears floating setup bar & bottom mask with exact card-stack-gap) */}
+        <div 
+          className="shrink-0 w-full pointer-events-none" 
+          style={{ height: 'calc(var(--setup-bar-clearance, 180px) + var(--card-stack-gap, 0.75rem) - 126px)' }}
+        />
       </div>
 
       <ModalSelector isOpen={isAddStepPickerOpen} onClose={() => setAddStepPickerOpen(false)} title="Select Wheel for New Step">

@@ -346,7 +346,7 @@ export function ProgressionView() {
   }, []);
 
   return (
-    <div className="flex flex-col text-xs pb-10 w-full" style={{ gap: 'var(--card-stack-gap, 1.25rem)' }}>
+    <div className="flex flex-col text-xs w-full" style={{ gap: 'var(--card-stack-gap, 1.25rem)' }}>
       {wheelResults.length === 0 && (
         <div className="text-xs text-white/60 border border-dashed border-white/5 rounded-[var(--ui-radius-mid)] p-[var(--ui-gap)] flex flex-col gap-3 items-center text-center neu-concave shadow-inner">
           <p>No sharpening steps defined yet.</p>
