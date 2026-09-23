@@ -208,8 +208,8 @@ export default function CalculatorView() {
           </div>
         </section>
 
-        {/* Safari flex gap scroll spacer */}
-        <div className="h-px shrink-0 w-full" />
+        {/* Bottom scroll clearance spacer (ensures lowest card clears floating setup bar & bottom mask) */}
+        <div className="h-[140px] sm:h-[150px] shrink-0 w-full pointer-events-none" />
       </div>
 
       <ModalSelector isOpen={isAddStepPickerOpen} onClose={() => setAddStepPickerOpen(false)} title="Select Wheel for New Step">
