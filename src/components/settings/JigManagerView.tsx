@@ -9,6 +9,7 @@ import { generateId } from '../../utils/id';
 import ModalShell from '../ModalShell';
 import useModalLayout from '../../hooks/useModalLayout';
 import ExpandableCard from '../ui/ExpandableCard';
+import { Tag } from '../ui/Tag';
 
 export default function JigManagerView() {
   const { jigs, addJig: onAddJig, updateJig: onUpdateJig } = useStore();
@@ -76,7 +77,30 @@ export default function JigManagerView() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 min-h-[24px]">
-                  {/* Empty tags area for uniform height */}
+                  {item.Dj != null && (
+                    <Tag intent="default" appearance="ghost">
+                      Ø {item.Dj}mm
+                    </Tag>
+                  )}
+                  {item.length != null && (
+                    <Tag intent="default" appearance="ghost">
+                      L: {item.length}mm
+                    </Tag>
+                  )}
+                  {item.isAdjustableLength ? (
+                    <Tag
+                      intent="default"
+                      appearance="ghost"
+                      badge={item.threadPitch ? `⟳ ${item.threadPitch}mm` : undefined}
+                      badgeIntent="accent"
+                    >
+                      Sleeve
+                    </Tag>
+                  ) : (
+                    <Tag intent="default" appearance="ghost">
+                      Fixed
+                    </Tag>
+                  )}
                 </div>
               </div>
             }
