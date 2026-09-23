@@ -50,14 +50,6 @@ const StepCard = React.memo(function StepCard({
 
   const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
 
-  React.useEffect(() => {
-    if (isExpanded && cardRef.current) {
-      setTimeout(() => {
-        cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 150);
-    }
-  }, [isExpanded]);
-
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   };
@@ -137,6 +129,7 @@ const StepCard = React.memo(function StepCard({
     <ExpandableCard
       ref={cardRef}
       isExpanded={isExpanded}
+      scrollOnExpand
       onToggle={onToggleExpand}
       index={index}
       className="relative motion-list-item scroll-m-[120px] sm:scroll-m-[160px]"

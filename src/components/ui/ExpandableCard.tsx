@@ -24,6 +24,8 @@ export interface ExpandableCardProps extends React.HTMLAttributes<HTMLDivElement
     onTouchStart?: React.TouchEventHandler<HTMLDivElement>;
     onTouchEnd?: React.TouchEventHandler<HTMLDivElement>;
   };
+  /** When true, immediately scrolls the card into the visible working window in parallel with the expansion animation */
+  scrollOnExpand?: boolean;
 }
 
 /**
@@ -41,8 +43,65 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
   headerClassName = 'w-full p-[var(--ui-gap)] flex flex-col justify-center items-start',
   headerStyle = {},
   headerTouchHandlers = {},
+  scrollOnExpand = false,
   ...rest
 }, ref) => {
+  const localRef = React.useRef<HTMLDivElement | null>(null);
+  const headerRef = React.useRef<HTMLDivElement | null>(null);
+  const contentRef = React.useRef<HTMLDivElement | null>(null);
+  const prevExpandedRef = React.useRef(isExpanded);
+
+  const setMergedRef = React.useCallback((node: HTMLDivElement | null) => {
+    localRef.current = node;
+    if (typeof ref === 'function') {
+      ref(node);
+    } else if (ref) {
+      (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    }
+  }, [ref]);
+
+  React.useEffect(() => {
+    const wasExpanded = prevExpandedRef.current;
+    prevExpandedRef.current = isExpanded;
+
+    if (scrollOnExpand && !wasExpanded && isExpanded) {
+      // Fire on next animation frame so React has committed child DOM,
+      // enabling simultaneous smooth scroll alongside the 300ms CSS expansion
+      requestAnimationFrame(() => {
+        if (!localRef.current) return;
+        const outerRect = localRef.current.getBoundingClientRect();
+        const headerHeight = headerRef.current ? headerRef.current.offsetHeight : 88;
+        const contentHeight = contentRef.current ? contentRef.current.scrollHeight : 0;
+        const totalTargetHeight = headerHeight + contentHeight;
+
+        const headerBottomStr = getComputedStyle(document.documentElement).getPropertyValue('--progression-header-bottom').trim();
+        const headerBottom = headerBottomStr ? parseFloat(headerBottomStr) : 76;
+
+        const gapStr = getComputedStyle(document.documentElement).getPropertyValue('--card-stack-gap').trim();
+        const gap = gapStr ? parseFloat(gapStr) : 12;
+
+        const setupClearanceStr = getComputedStyle(document.documentElement).getPropertyValue('--setup-bar-clearance').trim();
+        const bottomClearance = setupClearanceStr ? parseFloat(setupClearanceStr) : 74;
+
+        const topLimit = headerBottom + gap;
+        const bottomLimit = window.innerHeight - bottomClearance - gap;
+        const visibleHeight = Math.max(100, bottomLimit - topLimit);
+
+        // Center card within the visible working window if it fits; otherwise align top with safe margin
+        const targetTopInViewport = totalTargetHeight <= visibleHeight
+          ? topLimit + (visibleHeight - totalTargetHeight) / 2
+          : topLimit;
+
+        const currentCardDocTop = window.scrollY + outerRect.top;
+        const targetScrollY = currentCardDocTop - targetTopInViewport;
+
+        window.scrollTo({
+          top: Math.max(0, targetScrollY),
+          behavior: 'smooth'
+        });
+      });
+    }
+  }, [isExpanded, scrollOnExpand]);
   const customStyles = {
     ...style,
     ...(index !== undefined ? { '--motion-order': index } : {})
@@ -50,7 +109,7 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
 
   return (
     <div
-      ref={ref}
+      ref={setMergedRef}
       className={`neu-convex rounded-[var(--ui-radius-mid)] border shadow-lg flex flex-col relative overflow-hidden group transition-all duration-300 ${
         isExpanded ? 'border-amber-400/30' : 'border-black/40'
       } ${className}`}
@@ -62,6 +121,7 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
 
       {/* Header (Always Visible) */}
       <div
+        ref={headerRef}
         className={`${headerClassName} cursor-pointer transition-colors relative z-10 ${
           isExpanded ? 'bg-white/5' : 'hover:bg-white/5 active:bg-white/10'
         }`}
@@ -77,7 +137,7 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
         className="grid transition-[grid-template-rows] duration-300 ease-in-out relative z-10"
         style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
       >
-        <div className="overflow-hidden">
+        <div ref={contentRef} className="overflow-hidden">
           {children}
         </div>
       </div>
