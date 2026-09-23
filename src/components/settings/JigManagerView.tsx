@@ -82,11 +82,6 @@ export default function JigManagerView() {
                       Ø {item.Dj}mm
                     </Tag>
                   )}
-                  {!item.isAdjustableLength && item.length != null && (
-                    <Tag intent="default" appearance="ghost">
-                      L: {item.length}mm
-                    </Tag>
-                  )}
                   {item.isAdjustableLength ? (
                     <Tag
                       intent="default"
@@ -97,7 +92,12 @@ export default function JigManagerView() {
                       Adjustable
                     </Tag>
                   ) : (
-                    <Tag intent="default" appearance="ghost">
+                    <Tag
+                      intent="default"
+                      appearance="ghost"
+                      badge={item.length != null ? `${item.length}mm` : undefined}
+                      badgeIntent="default"
+                    >
                       Fixed
                     </Tag>
                   )}
