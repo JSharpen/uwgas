@@ -65,8 +65,27 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
         if (!localRef.current) return;
         const outerRect = localRef.current.getBoundingClientRect();
         const headerHeight = headerRef.current ? headerRef.current.offsetHeight : 88;
-        const contentHeight = contentRef.current ? contentRef.current.scrollHeight : 0;
+        const contentChild = contentRef.current?.firstElementChild as HTMLElement | null;
+        const contentHeight = contentRef.current 
+          ? Math.max(contentRef.current.scrollHeight, contentChild?.scrollHeight || 0, contentChild?.offsetHeight || 0)
+          : 0;
         const totalTargetHeight = headerHeight + contentHeight;
+
+        // Check if an existing open card above us is currently collapsing.
+        // In single-expand accordions, the previous card begins collapsing at the exact same moment.
+        // If it sits above us in the document, its collapse will shift our card upwards by its height!
+        let collapsingHeightAbove = 0;
+        const allCardGrids = document.querySelectorAll<HTMLElement>('[data-card-grid="true"]');
+        allCardGrids.forEach((gridEl) => {
+          const cardParent = gridEl.closest<HTMLElement>('[data-expandable-card="true"]');
+          if (cardParent && cardParent !== localRef.current) {
+            const cardParentRect = cardParent.getBoundingClientRect();
+            // If the collapsing card is visually above our card and has height > 10px
+            if (cardParentRect.top < outerRect.top && gridEl.offsetHeight > 10) {
+              collapsingHeightAbove += gridEl.offsetHeight;
+            }
+          }
+        });
 
         const headerBottomStr = getComputedStyle(document.documentElement).getPropertyValue('--progression-header-bottom').trim();
         const headerBottom = headerBottomStr ? parseFloat(headerBottomStr) : 76;
@@ -81,12 +100,16 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
         const bottomLimit = window.innerHeight - bottomClearance - gap;
         const visibleHeight = Math.max(100, bottomLimit - topLimit);
 
-        // Center card within the visible working window if it fits; otherwise align top with safe margin
-        const targetTopInViewport = totalTargetHeight <= visibleHeight
+        // If card fits with healthy breathing room (at least 32px margin), center it.
+        // Otherwise (for tall cards like Wheel cards), cleanly frame from the top limit
+        // so the card title, diameter stepper, and primary toggles are immediately visible in the active zone.
+        const canComfortablyCenter = (totalTargetHeight + 32) <= visibleHeight;
+        const targetTopInViewport = canComfortablyCenter
           ? topLimit + (visibleHeight - totalTargetHeight) / 2
           : topLimit;
 
-        const currentCardDocTop = window.scrollY + outerRect.top;
+        // The card's final document position will be its current position minus any card collapsing above it
+        const currentCardDocTop = window.scrollY + outerRect.top - collapsingHeightAbove;
         const targetScrollY = currentCardDocTop - targetTopInViewport;
 
         window.scrollTo({
@@ -104,6 +127,7 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
   return (
     <div
       ref={setMergedRef}
+      data-expandable-card="true"
       className={`neu-convex rounded-[var(--ui-radius-mid)] border shadow-lg flex flex-col relative overflow-hidden group transition-all duration-300 ${
         isExpanded ? 'border-amber-400/30' : 'border-black/40'
       } ${className}`}
@@ -127,6 +151,7 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
 
       {/* Expanded Details Pane */}
       <div
+        data-card-grid="true"
         className="grid transition-[grid-template-rows] duration-300 ease-in-out relative z-10"
         style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
       >
