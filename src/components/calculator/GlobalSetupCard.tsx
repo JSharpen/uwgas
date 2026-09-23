@@ -252,7 +252,7 @@ export function GlobalSetupCard() {
               <ModalSelector.Item 
                 key={j.id} 
                 selected={j.id === global.activeJigId}
-                meta={`Length: ${j.length || j.Dj}mm`}
+                meta={j.isAdjustableLength ? (j.threadPitch ? `Adjustable (⟳ ${j.threadPitch}mm)` : 'Adjustable (Sleeve)') : (j.length ? `L: ${j.length}mm` : `Ø ${j.Dj}mm`)}
                 disabled={global.calcMode === 'projection' && !j.isAdjustableLength}
                 onClick={() => {
                   setGlobal(g => ({ ...g, activeJigId: j.id }));

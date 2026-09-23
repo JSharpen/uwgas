@@ -46,9 +46,9 @@ export default function JigManagerView() {
         id: generateId(),
         name: draftJig.name.trim(),
         Dj: draftJig.Dj,
-        length: draftJig.length,
+        length: draftJig.isAdjustableLength ? undefined : draftJig.length,
         isAdjustableLength: draftJig.isAdjustableLength,
-        threadPitch: draftJig.threadPitch
+        threadPitch: draftJig.isAdjustableLength ? draftJig.threadPitch : undefined
       });
     }
     closeModals();
@@ -82,7 +82,7 @@ export default function JigManagerView() {
                       Ø {item.Dj}mm
                     </Tag>
                   )}
-                  {item.length != null && (
+                  {!item.isAdjustableLength && item.length != null && (
                     <Tag intent="default" appearance="ghost">
                       L: {item.length}mm
                     </Tag>
@@ -118,12 +118,6 @@ export default function JigManagerView() {
                   onBlur={e => onUpdateJig(item.id, { Dj: Number(e.target.value) })}
 />
               
-              <NumberInput
-  label="Base Length (mm)"
-  defaultValue={item.length || ''}
-                  onBlur={e => onUpdateJig(item.id, { length: e.target.value ? Number(e.target.value) : undefined })}
-/>
-
               <SwitchButton
                 checked={!!item.isAdjustableLength}
                 title="Adjustable Sleeve"
@@ -136,6 +130,16 @@ export default function JigManagerView() {
   label="Thread Pitch (Optional, mm)"
   defaultValue={item.threadPitch || ''}
                       onBlur={e => onUpdateJig(item.id, { threadPitch: e.target.value ? Number(e.target.value) : undefined })}
+/>
+                </div>
+              </div>
+
+              <div className="grid transition-all duration-300 ease-in-out" style={{ gridTemplateRows: !item.isAdjustableLength ? "1fr" : "0fr" }}>
+                <div className="overflow-hidden min-h-0">
+                  <NumberInput
+  label="Base Length (mm)"
+  defaultValue={item.length || ''}
+                      onBlur={e => onUpdateJig(item.id, { length: e.target.value ? Number(e.target.value) : undefined })}
 />
                 </div>
               </div>
@@ -166,24 +170,24 @@ export default function JigManagerView() {
                 onChange={e => setDraftJig({ ...draftJig, Dj: Number(e.target.value) })}
 />
             
-            <NumberInput
-  label="Base Length (mm)"
-  value={draftJig.length || ''}
-                onChange={e => setDraftJig({ ...draftJig, length: e.target.value ? Number(e.target.value) : undefined })}
-/>
-
             <SwitchButton
               checked={!!draftJig.isAdjustableLength}
               title="Adjustable Sleeve"
               onChange={() => setDraftJig({ ...draftJig, isAdjustableLength: !draftJig.isAdjustableLength })}
             />
 
-            {draftJig.isAdjustableLength && (
+            {draftJig.isAdjustableLength ? (
               <NumberInput
-  label="Thread Pitch (Optional, mm)"
-  value={draftJig.threadPitch || ''}
-                  onChange={e => setDraftJig({ ...draftJig, threadPitch: e.target.value ? Number(e.target.value) : undefined })}
-/>
+                label="Thread Pitch (Optional, mm)"
+                value={draftJig.threadPitch || ''}
+                onChange={e => setDraftJig({ ...draftJig, threadPitch: e.target.value ? Number(e.target.value) : undefined })}
+              />
+            ) : (
+              <NumberInput
+                label="Base Length (mm)"
+                value={draftJig.length || ''}
+                onChange={e => setDraftJig({ ...draftJig, length: e.target.value ? Number(e.target.value) : undefined })}
+              />
             )}
 
             <div className="flex justify-end gap-2 mt-2">
