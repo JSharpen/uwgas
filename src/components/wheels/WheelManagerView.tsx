@@ -144,6 +144,7 @@ export function WheelManagerView() {
                   <ExpandableCard
                     key={w.id}
                     isExpanded={isExpanded}
+                    scrollOnExpand
                     onToggle={() => setExpandedEquipmentId(isExpanded ? null : w.id)}
                     index={idx}
                     header={

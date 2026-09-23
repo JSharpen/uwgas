@@ -126,6 +126,7 @@ export default function MachineManagerView() {
             <ExpandableCard
               key={m.id}
               isExpanded={isExpanded}
+              scrollOnExpand
               onToggle={() => setExpandedEquipmentId(isExpanded ? null : m.id)}
               index={idx}
               header={

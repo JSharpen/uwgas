@@ -59,6 +59,7 @@ export default function UsbManagerView() {
           <ExpandableCard
             key={item.id}
             isExpanded={isExpanded}
+            scrollOnExpand
             onToggle={() => setExpandedEquipmentId(isExpanded ? null : item.id)}
             index={idx}
             header={

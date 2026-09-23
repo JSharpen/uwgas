@@ -94,6 +94,7 @@ export function GlobalSetupCard() {
       cancelAnimationFrame(rafId);
       observer.disconnect();
       window.removeEventListener('resize', updateHeight);
+      document.documentElement.style.removeProperty('--setup-bar-clearance');
     };
   }, [isSetupPanelOpen]);
 
