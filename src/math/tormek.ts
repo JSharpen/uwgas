@@ -221,85 +221,6 @@ export function computeSuggestedFrontUsbHeight(
  * Calibrate one base (rear or front) from 3-5 measurements.
  * Uses only axle <-> USB geometry, no wheel, no angle.
  */
-export function calibrateBase(
-  rows: readonly ReadonlyCalibrationMeasurement[],
-  Da: number,
-  Ds: number
-): CalibrationResultOutput | null {
-  const Ra = Da / 2;
-  const Rs = Ds / 2;
-
-  // Build numeric arrays, only keeping rows with both values present
-  const CA: number[] = [];
-  const hn: number[] = [];
-
-  for (const row of rows) {
-    const hn_i = typeof row.hn === 'number' ? row.hn : parseFloat(row.hn);
-    const CAo_i = typeof row.CAo === 'number' ? row.CAo : parseFloat(row.CAo);
-    if (!Number.isFinite(hn_i) || !Number.isFinite(CAo_i)) continue;
-    const CA_i = CAo_i - Ra - Rs; // centre-to-centre distance axle <-> USB
-    CA.push(CA_i);
-    hn.push(hn_i);
-  }
-
-  const N = CA.length;
-  if (N < 2) return null;
-
-  // 1) Estimate t = hc - Ds/2 using pairwise linear equations
-  const hn1 = hn[0];
-  const CA1 = CA[0];
-  const tValues: number[] = [];
-
-  for (let i = 1; i < N; i++) {
-    const hni = hn[i];
-    const CAi = CA[i];
-    if (Math.abs(hni - hn1) < 1e-9) continue; // avoid divide-by-zero
-
-    const num = (CA1 * CA1 - CAi * CAi) - (hn1 * hn1 - hni * hni);
-    const den = 2 * (hn1 - hni);
-    tValues.push(num / den);
-  }
-
-  if (!tValues.length) return null;
-
-  const t = tValues.reduce((sum, v) => sum + v, 0) / tValues.length;
-
-  // 2) Recover hc
-  const hc = t + Rs; // Rs = Ds/2
-
-  // 3) Estimate O using all points
-  const O2Values: number[] = [];
-  for (let i = 0; i < N; i++) {
-    const y = hn[i] + t;
-    const O2_i = CA[i] * CA[i] - y * y;
-    if (O2_i > 0) O2Values.push(O2_i);
-  }
-  if (!O2Values.length) return null;
-
-  const O2mean = O2Values.reduce((sum, v) => sum + v, 0) / O2Values.length;
-  const o = Math.sqrt(O2mean);
-
-  // 4) Diagnostics: residuals in hn (mm)
-  const residuals: number[] = [];
-  for (let i = 0; i < N; i++) {
-    const y = Math.sqrt(Math.max(CA[i] * CA[i] - o * o, 0));
-    const predHn = y - hc + Rs;
-    residuals.push(hn[i] - predHn); // measured - predicted
-  }
-  const maxAbsResidualMm = residuals.reduce(
-    (m, r) => Math.max(m, Math.abs(r)),
-    0
-  );
-
-  return Object.freeze({
-    hc,
-    o,
-    diagnostics: Object.freeze({
-      residuals: [...residuals],
-      maxAbsResidualMm,
-    }),
-  });
-}
 
 
 /**
@@ -307,7 +228,7 @@ export function calibrateBase(
  * Uses 2x2 matrix ordinary least squares (OLS) pseudo-inverse.
  * Mathematically minimizes the squared error globally across all points.
  */
-export function calibrateBaseTrueLeastSquares(
+export function calibrateBase(
   rows: readonly ReadonlyCalibrationMeasurement[],
   Da: number,
   Ds: number

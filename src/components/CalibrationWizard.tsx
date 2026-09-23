@@ -10,7 +10,7 @@ import MiniSelect from './MiniSelect';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../state/uiStore';
 import { useStore } from '../state/store';
-import { calibrateBase, calibrateBaseTrueLeastSquares } from '../math/tormek';
+import { calibrateBase } from '../math/tormek';
 import { estimateMaxAngleErrorDeg } from '../services/calculationService';
 import { ContextBar } from './layout/ContextBar';
 import { Tag } from './ui/Tag';
@@ -92,9 +92,8 @@ export default function CalibrationWizard({
     return Array(INITIAL_COUNT).fill({ hn: '', CAo: '' });
   });
 
-  const [solverMode, setSolverMode] = React.useState<'least-squares' | 'legacy'>('least-squares');
-  const [rearResult, setRearResult] = React.useState<{ legacy: SolverOutput | null; ls: SolverOutput | null }>({ legacy: null, ls: null });
-  const [frontResult, setFrontResult] = React.useState<{ legacy: SolverOutput | null; ls: SolverOutput | null }>({ legacy: null, ls: null });
+    const [rearResult, setRearResult] = React.useState<SolverOutput | null>(null);
+  const [frontResult, setFrontResult] = React.useState<SolverOutput | null>(null);
   const [isIntroExpanded, setIsIntroExpanded] = React.useState(false);
   const [isGuideExpanded, setIsGuideExpanded] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
@@ -116,24 +115,20 @@ export default function CalibrationWizard({
   const computeResults = React.useCallback((forceResults = false, preventNavigation = false) => {
     setErrorMsg(null);
 
-    let rResLeg = null;
-    let rResLS = null;
-    let fResLeg = null;
-    let fResLS = null;
+    let rRes = null;
+    let fRes = null;
 
     if (scope === 'both' || scope === 'rear') {
-      rResLeg = calibrateBase(rearRows, calibDa, calibDs);
-      rResLS = calibrateBaseTrueLeastSquares(rearRows, calibDa, calibDs);
-      if (!rResLeg || !rResLS) {
+      rRes = calibrateBase(rearRows, calibDa, calibDs);
+      if (!rRes) {
         setErrorMsg('Failed to calibrate rear base. Check your height and axle measurements.');
         return;
       }
     }
 
     if (scope === 'both' || scope === 'front') {
-      fResLeg = calibrateBase(frontRows, calibDa, calibDs);
-      fResLS = calibrateBaseTrueLeastSquares(frontRows, calibDa, calibDs);
-      if (!fResLeg || !fResLS) {
+      fRes = calibrateBase(frontRows, calibDa, calibDs);
+      if (!fRes) {
         setErrorMsg('Failed to calibrate front base. Check your height and axle measurements.');
         return;
       }
@@ -149,20 +144,14 @@ export default function CalibrationWizard({
       return estimateMaxAngleErrorDeg(res.diagnostics, side, global, dummyMachine, wheels, jigs, usbs);
     };
 
-    setRearResult({
-      legacy: rResLeg ? { hc: rResLeg.hc, o: rResLeg.o, diagnostics: rResLeg.diagnostics, angleErrorDeg: calcError(rResLeg, 'rear') } : null,
-      ls: rResLS ? { hc: rResLS.hc, o: rResLS.o, diagnostics: rResLS.diagnostics, angleErrorDeg: calcError(rResLS, 'rear') } : null,
-    });
+    setRearResult(rRes ? { hc: rRes.hc, o: rRes.o, diagnostics: rRes.diagnostics, angleErrorDeg: calcError(rRes, 'rear') } : null);
 
-    setFrontResult({
-      legacy: fResLeg ? { hc: fResLeg.hc, o: fResLeg.o, diagnostics: fResLeg.diagnostics, angleErrorDeg: calcError(fResLeg, 'front') } : null,
-      ls: fResLS ? { hc: fResLS.hc, o: fResLS.o, diagnostics: fResLS.diagnostics, angleErrorDeg: calcError(fResLS, 'front') } : null,
-    });
+    setFrontResult(fRes ? { hc: fRes.hc, o: fRes.o, diagnostics: fRes.diagnostics, angleErrorDeg: calcError(fRes, 'front') } : null);
 
     if (preventNavigation) return;
 
-    const rAngleError = rResLS ? calcError(rResLS, 'rear') : null;
-    const fAngleError = fResLS ? calcError(fResLS, 'front') : null;
+    const rAngleError = rRes ? calcError(rRes, 'rear') : null;
+    const fAngleError = fRes ? calcError(fRes, 'front') : null;
     const isSubExcellent = (rAngleError !== null && rAngleError > 0.05) ||
                            (fAngleError !== null && fAngleError > 0.05);
 
@@ -219,10 +208,10 @@ export default function CalibrationWizard({
 
   // Editing an existing profile: compute results silently on first render
   React.useEffect(() => {
-    if ((step === 'review' || step === 'results') && !rearResult.ls && !frontResult.ls) {
+    if ((step === 'review' || step === 'results') && !rearResult && !frontResult) {
       computeResults(true, true);
     }
-  }, [step, rearResult.ls, frontResult.ls, computeResults]);
+  }, [step, rearResult, frontResult, computeResults]);
 
   // After committing new rows to state, re-run the solver (reads the updated state)
   React.useEffect(() => {
@@ -251,12 +240,10 @@ export default function CalibrationWizard({
 
   // ── Save ────────────────────────────────────────────────────────────────
   const handleSave = () => {
-    let profileName = calibName.trim();
+    const profileName = calibName.trim();
     if (!profileName) return;
 
-    const tag = solverMode === 'least-squares' ? ' (Least Squares)' : ' (Legacy)';
-    if (!profileName.includes(tag)) profileName += tag;
-
+    
     const profile: CalibrationProfile = {
       id: initialProfile?.id ?? generateId(),
       name: profileName,
@@ -266,7 +253,7 @@ export default function CalibrationWizard({
       Ds: calibDs,
     };
 
-    const rearToSave = solverMode === 'least-squares' ? rearResult.ls : rearResult.legacy;
+    const rearToSave = rearResult;
     if (rearToSave) {
       profile.rear = {
         hc: rearToSave.hc,
@@ -277,7 +264,7 @@ export default function CalibrationWizard({
       };
     }
 
-    const frontToSave = solverMode === 'least-squares' ? frontResult.ls : frontResult.legacy;
+    const frontToSave = frontResult;
     if (frontToSave) {
       profile.front = {
         hc: frontToSave.hc,
@@ -312,8 +299,8 @@ export default function CalibrationWizard({
 
   // Called when the user taps "Improve It" — picks the worse base and transitions to add-guided.
   const handleStartImprove = React.useCallback(() => {
-    const rErr = rearResult.ls?.angleErrorDeg ?? null;
-    const fErr = frontResult.ls?.angleErrorDeg ?? null;
+    const rErr = rearResult?.angleErrorDeg ?? null;
+    const fErr = frontResult?.angleErrorDeg ?? null;
 
     let targetBase: 'rear' | 'front';
     if (scope === 'rear') targetBase = 'rear';
@@ -339,7 +326,7 @@ export default function CalibrationWizard({
     }));
     setAddNewHn('');
     setAddNewCAo('');
-  }, [rearResult.ls, frontResult.ls, rearRows, frontRows, scope, getGuidedZoneHint]);
+  }, [rearResult, frontResult, rearRows, frontRows, scope, getGuidedZoneHint]);
 
   // Called when the user submits a new (hₙ, CAₒ) measurement.
   // Strategy: grow pool to N+1, solve with higher power, prune worst back to N, compare.
@@ -355,7 +342,7 @@ export default function CalibrationWizard({
     const grownRows: CalibrationMeasurement[] = [...currentRows, { hn: newHn, CAo: newCAo }];
 
     // Step 2: Solve on N+1 for residuals with higher statistical power (2 DOF)
-    const grownRes = calibrateBaseTrueLeastSquares(grownRows, calibDa, calibDs);
+    const grownRes = calibrateBase(grownRows, calibDa, calibDs);
     if (!grownRes) {
       setAdaptiveState(prev => ({ ...prev, banner: 'Could not solve with that reading — check your measurements and try again.' }));
       setAddNewHn(''); setAddNewCAo('');
@@ -375,7 +362,7 @@ export default function CalibrationWizard({
     }
 
     // Step 4: Solve on pruned pool for the committed result
-    const finalRes = calibrateBaseTrueLeastSquares(finalRows, calibDa, calibDs);
+    const finalRes = calibrateBase(finalRows, calibDa, calibDs);
     if (!finalRes) {
       setAdaptiveState(prev => ({ ...prev, banner: 'Could not solve after pruning — try a different measurement.' }));
       setAddNewHn(''); setAddNewCAo('');
@@ -389,8 +376,8 @@ export default function CalibrationWizard({
     };
     const newErr = estimateMaxAngleErrorDeg(finalRes.diagnostics, targetBase, global, dummyMachine, wheels, jigs, usbs);
     const baseline = targetBase === 'rear'
-      ? rearResult.ls?.angleErrorDeg ?? null
-      : frontResult.ls?.angleErrorDeg ?? null;
+      ? rearResult?.angleErrorDeg ?? null
+      : frontResult?.angleErrorDeg ?? null;
     const isImprovement = newErr !== null && (baseline === null || newErr < baseline - IMPROVEMENT_EPSILON_DEG);
 
     if (isImprovement) {
@@ -416,7 +403,7 @@ export default function CalibrationWizard({
       }));
     }
     setAddNewHn(''); setAddNewCAo('');
-  }, [adaptiveState, addNewHn, addNewCAo, rearRows, frontRows, calibDa, calibDs, activeMachine, global, wheels, jigs, usbs, rearResult.ls, frontResult.ls]);
+  }, [adaptiveState, addNewHn, addNewCAo, rearRows, frontRows, calibDa, calibDs, activeMachine, global, wheels, jigs, usbs, rearResult, frontResult]);
 
   // ── Diagnostic badge renderer ────────────────────────────────────────────
   const renderDiagnosticBadge = (a: number | null) => {
@@ -823,8 +810,8 @@ export default function CalibrationWizard({
 
       {/* Step 3: Review — Quality Gate / Adaptive Improvement Loop */}
       {step === 'review' && (() => {
-        const rErr = rearResult.ls?.angleErrorDeg ?? null;
-        const fErr = frontResult.ls?.angleErrorDeg ?? null;
+        const rErr = rearResult?.angleErrorDeg ?? null;
+        const fErr = frontResult?.angleErrorDeg ?? null;
         const anySubExcellent = (rErr !== null && rErr > 0.05) || (fErr !== null && fErr > 0.05);
         const { phase, targetBase, guidedZoneHint, banner } = adaptiveState;
 
@@ -836,7 +823,7 @@ export default function CalibrationWizard({
         // Shared base result cards (used by quality-gate and ceiling)
         const baseResultCards = (
           <div className="flex flex-col gap-3">
-            {(scope === 'both' || scope === 'rear') && rearResult.ls && (
+            {(scope === 'both' || scope === 'rear') && rearResult && (
               <div className="bg-black/25 border border-white/5 border-l-4 border-l-blue-500 rounded-xl p-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-blue-400">Rear Base</span>
@@ -845,7 +832,7 @@ export default function CalibrationWizard({
                 {renderDiagnosticBadge(rErr)}
               </div>
             )}
-            {(scope === 'both' || scope === 'front') && frontResult.ls && (
+            {(scope === 'both' || scope === 'front') && frontResult && (
               <div className="bg-black/25 border border-white/5 border-l-4 border-l-emerald-500 rounded-xl p-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-emerald-400">Front Base</span>
@@ -1036,32 +1023,11 @@ export default function CalibrationWizard({
             <p className="text-xs text-white/60">Compare the mathematical engines below. True Least Squares is heavily recommended for maximum precision.</p>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">
-              Select Solver Engine to Save
-            </span>
-            <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-              <button
-                type="button"
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${solverMode === 'least-squares' ? 'bg-amber-400 text-black shadow-sm' : 'text-white/50 hover:text-white/80'}`}
-                onClick={() => setSolverMode('least-squares')}
-              >
-                True Least Squares
-              </button>
-              <button
-                type="button"
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${solverMode === 'legacy' ? 'bg-amber-400 text-black shadow-sm' : 'text-white/50 hover:text-white/80'}`}
-                onClick={() => setSolverMode('legacy')}
-              >
-                Legacy Algebraic
-              </button>
-            </div>
-          </div>
 
           {/* Outlier Warning */}
           {(
-            (rearResult.ls?.diagnostics?.maxAbsResidualMm ?? 0) > 0.5 ||
-            (frontResult.ls?.diagnostics?.maxAbsResidualMm ?? 0) > 0.5
+            (rearResult?.diagnostics?.maxAbsResidualMm ?? 0) > 0.5 ||
+            (frontResult?.diagnostics?.maxAbsResidualMm ?? 0) > 0.5
           ) && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-[var(--ui-radius-core)] p-4 flex gap-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
               <span className="text-xl leading-none">⚠️</span>
@@ -1075,38 +1041,34 @@ export default function CalibrationWizard({
           )}
 
           {/* Rear Base Result Card */}
-          {(rearResult.ls || rearResult.legacy) && (
+          {rearResult && (
             <div className="bg-black/25 border border-white/5 border-l-4 border-l-blue-500 rounded-[var(--ui-radius-core)] p-[var(--ui-gap)] flex flex-col gap-4 shadow-lg">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-bold text-blue-400">Rear Base</h4>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 font-bold uppercase">Edge Leading</span>
                 </div>
-                {renderDiagnosticBadge(solverMode === 'least-squares' ? rearResult.ls?.angleErrorDeg ?? null : rearResult.legacy?.angleErrorDeg ?? null)}
+                {renderDiagnosticBadge(rearResult.angleErrorDeg ?? null)}
               </div>
               <table className="w-full text-left text-xs text-white/70">
                 <thead>
                   <tr>
                     <th className="pb-2 uppercase text-[9px] text-white/40 tracking-wider">Metric</th>
-                    <th className={`pb-2 text-right uppercase text-[9px] tracking-wider ${solverMode === 'least-squares' ? 'text-amber-400' : 'text-white/40'}`}>Least Sq</th>
-                    <th className={`pb-2 text-right uppercase text-[9px] tracking-wider ${solverMode === 'legacy' ? 'text-amber-400' : 'text-white/40'}`}>Legacy</th>
+                    <th className="pb-2 text-right uppercase text-[9px] tracking-wider text-white">Result</th>
                   </tr>
                 </thead>
                 <tbody className="font-mono">
                   <tr className="border-t border-white/10">
                     <td className="py-2">h_c</td>
-                    <td className={`py-2 text-right ${solverMode === 'least-squares' ? 'font-bold text-white' : 'text-white/40'}`}>{rearResult.ls?.hc.toFixed(4) ?? '-'}</td>
-                    <td className={`py-2 text-right ${solverMode === 'legacy' ? 'font-bold text-white' : 'text-white/40'}`}>{rearResult.legacy?.hc.toFixed(4) ?? '-'}</td>
+                    <td className="py-2 text-right font-bold text-white">{rearResult.hc.toFixed(4)}</td>
                   </tr>
                   <tr className="border-t border-white/5">
                     <td className="py-2">o</td>
-                    <td className={`py-2 text-right ${solverMode === 'least-squares' ? 'font-bold text-white' : 'text-white/40'}`}>{rearResult.ls?.o.toFixed(4) ?? '-'}</td>
-                    <td className={`py-2 text-right ${solverMode === 'legacy' ? 'font-bold text-white' : 'text-white/40'}`}>{rearResult.legacy?.o.toFixed(4) ?? '-'}</td>
+                    <td className="py-2 text-right font-bold text-white">{rearResult.o.toFixed(4)}</td>
                   </tr>
                   <tr className="border-t border-white/5">
                     <td className="py-2 text-[10px] text-white/40">Max ε</td>
-                    <td className="py-2 text-right text-[10px]">{rearResult.ls?.diagnostics?.maxAbsResidualMm?.toFixed(3) ?? '-'}</td>
-                    <td className="py-2 text-right text-[10px]">{rearResult.legacy?.diagnostics?.maxAbsResidualMm?.toFixed(3) ?? '-'}</td>
+                    <td className="py-2 text-right text-[10px]">{rearResult.diagnostics.maxAbsResidualMm.toFixed(3)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -1114,38 +1076,34 @@ export default function CalibrationWizard({
           )}
 
           {/* Front Base Result Card */}
-          {(frontResult.ls || frontResult.legacy) && (
+          {frontResult && (
             <div className="bg-black/25 border border-white/5 border-l-4 border-l-emerald-500 rounded-[var(--ui-radius-core)] p-[var(--ui-gap)] flex flex-col gap-4 shadow-lg">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-bold text-emerald-400">Front Base</h4>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 font-bold uppercase">Edge Trailing</span>
                 </div>
-                {renderDiagnosticBadge(solverMode === 'least-squares' ? frontResult.ls?.angleErrorDeg ?? null : frontResult.legacy?.angleErrorDeg ?? null)}
+                {renderDiagnosticBadge(frontResult.angleErrorDeg ?? null)}
               </div>
               <table className="w-full text-left text-xs text-white/70">
                 <thead>
                   <tr>
                     <th className="pb-2 uppercase text-[9px] text-white/40 tracking-wider">Metric</th>
-                    <th className={`pb-2 text-right uppercase text-[9px] tracking-wider ${solverMode === 'least-squares' ? 'text-amber-400' : 'text-white/40'}`}>Least Sq</th>
-                    <th className={`pb-2 text-right uppercase text-[9px] tracking-wider ${solverMode === 'legacy' ? 'text-amber-400' : 'text-white/40'}`}>Legacy</th>
+                    <th className="pb-2 text-right uppercase text-[9px] tracking-wider text-white">Result</th>
                   </tr>
                 </thead>
                 <tbody className="font-mono">
                   <tr className="border-t border-white/10">
                     <td className="py-2">h_c</td>
-                    <td className={`py-2 text-right ${solverMode === 'least-squares' ? 'font-bold text-white' : 'text-white/40'}`}>{frontResult.ls?.hc.toFixed(4) ?? '-'}</td>
-                    <td className={`py-2 text-right ${solverMode === 'legacy' ? 'font-bold text-white' : 'text-white/40'}`}>{frontResult.legacy?.hc.toFixed(4) ?? '-'}</td>
+                    <td className="py-2 text-right font-bold text-white">{frontResult.hc.toFixed(4)}</td>
                   </tr>
                   <tr className="border-t border-white/5">
                     <td className="py-2">o</td>
-                    <td className={`py-2 text-right ${solverMode === 'least-squares' ? 'font-bold text-white' : 'text-white/40'}`}>{frontResult.ls?.o.toFixed(4) ?? '-'}</td>
-                    <td className={`py-2 text-right ${solverMode === 'legacy' ? 'font-bold text-white' : 'text-white/40'}`}>{frontResult.legacy?.o.toFixed(4) ?? '-'}</td>
+                    <td className="py-2 text-right font-bold text-white">{frontResult.o.toFixed(4)}</td>
                   </tr>
                   <tr className="border-t border-white/5">
                     <td className="py-2 text-[10px] text-white/40">Max ε</td>
-                    <td className="py-2 text-right text-[10px]">{frontResult.ls?.diagnostics?.maxAbsResidualMm?.toFixed(3) ?? '-'}</td>
-                    <td className="py-2 text-right text-[10px]">{frontResult.legacy?.diagnostics?.maxAbsResidualMm?.toFixed(3) ?? '-'}</td>
+                    <td className="py-2 text-right text-[10px]">{frontResult.diagnostics.maxAbsResidualMm.toFixed(3)}</td>
                   </tr>
                 </tbody>
               </table>
