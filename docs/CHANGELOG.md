@@ -6,6 +6,20 @@
 
 ## [Unreleased]
 ### Added
+- **Automated Versioning Pipeline [JOB-029]**:
+  - Automatically bumps the build number stored in `package.json` on every commit via the dev console.
+  - Added an interactive semantic version bump protocol (Patch/Minor/Major) natively into the `dev -> main` console release flow.
+  - Exposes the internal build number natively throughout the UI (Settings / Bug Reports).
+- **Dev Console AI Integration**: Updated `angle-dev-console.sh` with non-interactive CLI flags (`promote -y patch`) to allow AI coding assistants to seamlessly run the project's custom job-tracking and versioning automation without hanging on prompts.
+
+### Changed
+- **Dev Console Overhaul**:
+  - Eliminated the 3-second auto-clear timer across all menus to prevent screen tearing and swallowed keystrokes.
+  - Upgraded the Dev Server Log Viewer to use `less +F`, ensuring pressing `Ctrl+C` safely halts the stream without crashing the bash script.
+  - Flattened the Main Menu to prioritize immediate Quick Actions (Start Server, Commit, Checks, Promote) alongside the traditional submenus.
+  - Added an `Auto-Fix Linter` option (`eslint --fix`) natively to the Quality menu.
+
+### Added
 - **Live Diagnostics (Geometry Mapper)**: The UI now tracks mapping precision in real-time starting at step 4. Displays clear warnings if the solver detects a human measurement error and mathematically prunes it out of the dataset.
 - **Smart Outlier Pruning**: `tormek.ts` now wraps base calibrations in a rigorous leave-one-out algorithm, guaranteeing the single worst data point is safely discarded if it fails to hit the physical noise floor of the calipers.
 - **Keyboard Ergonomics**: You can now navigate the Geometry Mapper entirely via keyboard (Tab and Enter), with true auto-focus mapping to the target inputs on step transitions.
