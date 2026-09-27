@@ -195,6 +195,7 @@ export type CalibrationSnapshot = {
   Ds: number;
   createdAt: string;
   measurements: CalibrationMeasurement[];
+    physicalEnvelope?: { minHn: number; maxHn: number };
 };
 
 export type CalibrationProfile = {
@@ -210,6 +211,7 @@ export type CalibrationProfile = {
     diagnostics: CalibrationDiagnostics;
     angleErrorDeg: number | null;
     measurements: CalibrationMeasurement[];
+    physicalEnvelope?: { minHn: number; maxHn: number };
   };
   front?: {
     hc: number;
@@ -217,5 +219,9 @@ export type CalibrationProfile = {
     diagnostics: CalibrationDiagnostics;
     angleErrorDeg: number | null;
     measurements: CalibrationMeasurement[];
+    physicalEnvelope?: { minHn: number; maxHn: number };
   };
 };
+
+// Add PhysicalEnvelope to CalibrationProfile if it doesn't exist
+// Actually, it's inferred from Zod. Let me look at src/types/core.ts

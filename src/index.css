@@ -51,7 +51,7 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--color-bg); /* match your app background */
   --card-stack-gap: 0.75rem;
-  --step-card-height: 5.5rem; /* 88px unified step card height */
+  --step-card-height: 6.75rem; /* 108px unified step card height */
 }
 
 .u-bg {
@@ -344,7 +344,7 @@ html, body {
 }
 
 .card-stack .card-elevated:not(.motion-list-item--removing) {
-  min-height: var(--step-card-height, 5.5rem);
+  min-height: var(--step-card-height, 6.75rem);
   height: auto;
   display: flex;
   flex-direction: column;

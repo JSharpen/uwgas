@@ -35,7 +35,7 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
   index,
   className = '',
   style = {},
-  headerClassName = 'w-full p-[var(--ui-gap)] flex flex-col justify-center items-start',
+  headerClassName = 'w-full p-4 sm:p-5 flex flex-col justify-center items-start',
   headerStyle = {},
   scrollOnExpand = false,
   ...rest
@@ -64,7 +64,7 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
       requestAnimationFrame(() => {
         if (!localRef.current) return;
         const outerRect = localRef.current.getBoundingClientRect();
-        const headerHeight = headerRef.current ? headerRef.current.offsetHeight : 88;
+        const headerHeight = headerRef.current ? headerRef.current.offsetHeight : 108;
         const contentChild = contentRef.current?.firstElementChild as HTMLElement | null;
         const contentHeight = contentRef.current 
           ? Math.max(contentRef.current.scrollHeight, contentChild?.scrollHeight || 0, contentChild?.offsetHeight || 0)
@@ -181,12 +181,11 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
       {/* Header (Always Visible) */}
       <div
         ref={headerRef}
-        className={`${headerClassName} cursor-pointer transition-colors relative z-10 ${
-          isExpanded ? 'bg-white/5' : 'hover:bg-white/5 active:bg-white/10'
-        }`}
+        className={`${headerClassName} cursor-pointer transition-colors relative z-10 hover:bg-white/5 active:bg-white/10`}
         style={headerStyle}
         onClick={onToggle}
       >
+        
         {header}
       </div>
 
@@ -196,7 +195,7 @@ export const ExpandableCard = React.forwardRef<HTMLDivElement, ExpandableCardPro
         className="grid transition-[grid-template-rows] duration-300 ease-in-out relative z-10"
         style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
       >
-        <div ref={contentRef} className="overflow-hidden">
+        <div ref={contentRef} className="overflow-hidden shadow-[inset_0_16px_16px_-16px_rgba(0,0,0,0.8)] bg-black/20">
           {children}
         </div>
       </div>

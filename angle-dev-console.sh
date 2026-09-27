@@ -441,20 +441,36 @@ detect_suggested_commit_info() {
             local changelog_jobs
             changelog_jobs="$(echo "$added_changelog_lines" | grep -oP 'JOB-[0-9]{3}' | sort -u | paste -sd ',' - | sed 's/,/, /g' || true)"
 
-            local -a bullets=()
+            local -a short_titles=()
+            local -a full_bullets=()
+            
             while IFS= read -r line; do
-                [[ -n "$line" ]] && bullets+=("$line")
-            done < <(echo "$added_changelog_lines" | grep -oP '^\s*-\s*\*\*\K[^*]+' | sed -E 's/\s*:\s*$//' || true)
+                [[ -z "$line" ]] && continue
+                
+                # Try to extract bold prefix for potential subject fallback
+                local short_title
+                short_title="$(echo "$line" | grep -oP '^\s*-\s*\*\*\K[^*]+' | sed -E 's/\s*:\s*$//' || true)"
+                [[ -n "$short_title" ]] && short_titles+=("$short_title")
+                
+                # Strip leading dash and markdown asterisks for the detailed body
+                local clean_line
+                clean_line="$(echo "$line" | sed -E 's/^\s*-\s*//' | sed -E 's/\*\*//g')"
+                full_bullets+=("$clean_line")
+            done < <(echo "$added_changelog_lines" | grep -E '^\s*-\s*' || true)
 
             [[ -n "$changelog_jobs" ]] && SUGGESTED_JOB_ID="$changelog_jobs"
             [[ -n "$session_title" ]] && SUGGESTED_MSG="$session_title"
-            if [[ -z "$SUGGESTED_MSG" && ${#bullets[@]} -gt 0 ]]; then
-                SUGGESTED_MSG="${bullets[0]}"
+            
+            if [[ -z "$SUGGESTED_MSG" && ${#short_titles[@]} -gt 0 ]]; then
+                SUGGESTED_MSG="${short_titles[0]}"
+            elif [[ -z "$SUGGESTED_MSG" && ${#full_bullets[@]} -gt 0 ]]; then
+                # Fallback if there was no bold title
+                SUGGESTED_MSG="${full_bullets[0]:0:50}..."
             fi
 
-            if [[ ${#bullets[@]} -gt 0 ]]; then
+            if [[ ${#full_bullets[@]} -gt 0 ]]; then
                 SUGGESTED_BODY="Key Changes & Highlights:"$'\n'
-                for b in "${bullets[@]}"; do
+                for b in "${full_bullets[@]}"; do
                     SUGGESTED_BODY+="• ${b}"$'\n'
                 done
             fi

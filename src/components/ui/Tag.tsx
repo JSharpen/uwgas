@@ -117,9 +117,9 @@ export function Tag({
   const isUppercase = uppercase ?? defaultUppercase;
   
   // 3. Assemble
-  // Standardized padding strictly enforced as px-2 pt-[3px] pb-[1px] to perfectly center uppercase text
-  // If badge exists, remove right padding to let the badge sit flush
-  const paddingClasses = badge ? 'pl-2 pr-0.5 pt-[3px] pb-[1px]' : 'px-2 pt-[3px] pb-[1px]';
+  // Standardized padding: When badge is present, enforce uniform 2px padding (py-0.5 pr-0.5) for concentricity
+  // When no badge, preserve pt-[3px] pb-[1px] for optical vertical centering of uppercase text
+  const paddingClasses = badge ? 'pl-2 pr-0.5 py-0.5' : 'px-2 pt-[3px] pb-[1px]';
   const baseClasses = `inline-flex items-center justify-center ${paddingClasses} text-[9px] shrink-0 truncate text-center transition-all ${shapeClasses} ${isMono ? 'font-mono' : ''} ${isUppercase ? 'uppercase tracking-widest' : ''}`;
 
   let badgeClasses = '';
@@ -144,11 +144,16 @@ export function Tag({
     }
   }
 
+  // Concentric math: Inner Radius = Outer Radius - Uniform Padding (2px)
+  const badgeShapeClasses = shape === 'pill'
+    ? 'rounded-full'
+    : 'rounded-[calc(var(--ui-radius-core)-2px)]';
+
   return (
     <span className={`${baseClasses} ${styleClasses} ${className}`.trim()} {...props}>
       {children}
       {badge && (
-        <span className={`ml-1.5 px-1.5 py-[1px] rounded-[var(--ui-radius-core)] flex items-center justify-center font-bold font-sans tracking-normal -translate-y-[1px] ${badgeClasses}`}>
+        <span className={`ml-1.5 p-0.5 text-[8px] leading-none ${badgeShapeClasses} flex items-center justify-center font-bold font-sans tracking-normal shrink-0 ${badgeClasses}`}>
           {badge}
         </span>
       )}

@@ -10,7 +10,7 @@ import MiniSelect from './MiniSelect';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../state/uiStore';
 import { useStore } from '../state/store';
-import { calibrateBase } from '../math/tormek';
+import { calculateOptimalMeasurementTargets, calculateNextOptimalTarget, solveWithSmartPruning } from '../math/tormek';
 import { estimateMaxAngleErrorDeg } from '../services/calculationService';
 import { ContextBar } from './layout/ContextBar';
 import { Tag } from './ui/Tag';
@@ -21,7 +21,7 @@ type CalibrationWizardProps = {
   onSaveProfile: (profile: CalibrationProfile) => void;
 };
 
-type Scope = 'both' | 'rear' | 'front';
+type Scope = 'rear' | 'front';
 type SolverOutput = {
   hc: number;
   o: number;
@@ -35,28 +35,11 @@ type SolverOutput = {
 // 'add-guided'   : Shows the suggested USB zone for the next additional reading
 // 'add-measure'  : Shows blank hₙ / CAₒ inputs for the active base
 // 'ceiling'      : Shows quality badges with no further improvement option
-type AdaptivePhase = 'quality-gate' | 'add-guided' | 'add-measure' | 'ceiling';
 
-type AdaptiveState = {
-  phase: AdaptivePhase;
-  noImprovementCount: number;   // consecutive rounds with no improvement → ceiling at 2
-  targetBase: 'rear' | 'front'; // which base is being improved right now
-  guidedZoneHint: string;       // midpoint of largest hₙ gap — suggested USB position
-  banner: string | null;        // info / warning shown on add-guided screen
-};
 
 // Initial zone count — solver needs ≥ 3 for overdetermination (1 degree of freedom).
-const INITIAL_COUNT = 3;
-// Minimum improvement threshold: must reduce angle error by at least this many degrees.
-const IMPROVEMENT_EPSILON_DEG = 0.002;
+const INITIAL_COUNT = 5;
 
-// Zone guidance for the 3 initial measurements
-const ZONE_LABELS = ['LOW ZONE', 'MIDDLE ZONE', 'HIGH ZONE'];
-const ZONE_COPY = [
-  'Drop USB to a low, comfortable position — a couple of turns from the bottom. Lock the collar.',
-  'Move USB to the middle of its travel. Any height you haven\'t used yet is fine. Lock the collar.',
-  'Raise USB to a high, comfortable position — a couple of turns from the top. Lock the collar.',
-];
 
 export default function CalibrationWizard({
   activeMachine,
@@ -70,7 +53,8 @@ export default function CalibrationWizard({
   const step = useUIStore(s => s.calibrationStep);
   const setStep = useUIStore(s => s.setCalibrationStep);
   const setCalibratingMachineId = useUIStore(s => s.setCalibratingMachineId);
-  const [scope, setScope] = React.useState<Scope>(initialProfile?.scope || 'both');
+  const calibratingScope = useUIStore(s => s.calibratingScope);
+  const [scope] = React.useState<Scope>((calibratingScope as Scope) ?? initialProfile?.scope ?? 'rear');
   const [calibName, setCalibName] = React.useState(
     initialProfile?.name ||
     `${activeMachine.name} - ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
@@ -81,6 +65,8 @@ export default function CalibrationWizard({
   const [validationError, setValidationError] = React.useState<string | null>(null);
 
   const [measIndex, setMeasIndex] = React.useState(0);
+  const [noImprovementCount, setNoImprovementCount] = React.useState(0);
+  const [bestError, setBestError] = React.useState<number | null>(null);
 
   // Pools grow dynamically — no fixed length. Initialise from profile if editing, else 3 empty slots.
   const [rearRows, setRearRows] = React.useState<CalibrationMeasurement[]>(() => {
@@ -95,47 +81,34 @@ export default function CalibrationWizard({
     const [rearResult, setRearResult] = React.useState<SolverOutput | null>(null);
   const [frontResult, setFrontResult] = React.useState<SolverOutput | null>(null);
   const [isIntroExpanded, setIsIntroExpanded] = React.useState(false);
-  const [isGuideExpanded, setIsGuideExpanded] = React.useState(false);
+  
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
-  const [adaptiveState, setAdaptiveState] = React.useState<AdaptiveState>({
-    phase: 'quality-gate',
-    noImprovementCount: 0,
-    targetBase: 'rear',
-    guidedZoneHint: '',
-    banner: null,
-  });
-  // Both inputs always blank — user always measures fresh
-  const [addNewHn, setAddNewHn] = React.useState('');
-  const [addNewCAo, setAddNewCAo] = React.useState('');
-  // Flag: triggers computeResults() after pool state has been committed to React
-  const [pendingFinalCompute, setPendingFinalCompute] = React.useState(false);
+
 
   // ── Solver ───────────────────────────────────────────────────────────────
-  const computeResults = React.useCallback((forceResults = false, preventNavigation = false) => {
+  const computeResults = React.useCallback((preventNavigation = false) => {
     setErrorMsg(null);
-
     let rRes = null;
     let fRes = null;
 
-    if (scope === 'both' || scope === 'rear') {
-      rRes = calibrateBase(rearRows, calibDa, calibDs);
+    if (scope === 'rear') {
+      rRes = solveWithSmartPruning(rearRows.filter(r => r.hn !== '' && r.CAo !== ''), calibDa, calibDs, 0.02);
       if (!rRes) {
         setErrorMsg('Failed to calibrate rear base. Check your height and axle measurements.');
         return;
       }
     }
 
-    if (scope === 'both' || scope === 'front') {
-      fRes = calibrateBase(frontRows, calibDa, calibDs);
+    if (scope === 'front') {
+      fRes = solveWithSmartPruning(frontRows.filter(r => r.hn !== '' && r.CAo !== ''), calibDa, calibDs, 0.02);
       if (!fRes) {
         setErrorMsg('Failed to calibrate front base. Check your height and axle measurements.');
         return;
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const calcError = (res: any, side: 'rear' | 'front') => {
+    const calcError = (res: import('../math/types').CalibrationResultOutput, side: 'rear' | 'front') => {
       if (!res) return null;
       const dummyMachine: MachineConfig = {
         ...activeMachine,
@@ -145,22 +118,10 @@ export default function CalibrationWizard({
     };
 
     setRearResult(rRes ? { hc: rRes.hc, o: rRes.o, diagnostics: rRes.diagnostics, angleErrorDeg: calcError(rRes, 'rear') } : null);
-
     setFrontResult(fRes ? { hc: fRes.hc, o: fRes.o, diagnostics: fRes.diagnostics, angleErrorDeg: calcError(fRes, 'front') } : null);
 
     if (preventNavigation) return;
-
-    const rAngleError = rRes ? calcError(rRes, 'rear') : null;
-    const fAngleError = fRes ? calcError(fRes, 'front') : null;
-    const isSubExcellent = (rAngleError !== null && rAngleError > 0.05) ||
-                           (fAngleError !== null && fAngleError > 0.05);
-
-    if (isSubExcellent && !forceResults) {
-      // adaptiveState.phase is managed exclusively by handler functions — not overwritten here
-      setStep('review');
-    } else {
-      setStep('results');
-    }
+    setStep('results');
   }, [scope, rearRows, frontRows, calibDa, calibDs, activeMachine, global, wheels, jigs, usbs, setStep]);
 
   // ── Navigation ───────────────────────────────────────────────────────────
@@ -174,13 +135,85 @@ export default function CalibrationWizard({
     setMeasIndex(0);
   }, [calibName, setStep]);
 
+  const canProceed = React.useCallback(() => {
+    const isRearValid = rearRows[measIndex]?.hn !== '' && rearRows[measIndex]?.CAo !== '';
+    const isFrontValid = frontRows[measIndex]?.hn !== '' && frontRows[measIndex]?.CAo !== '';
+    if (scope === 'rear') return isRearValid;
+    if (scope === 'front') return isFrontValid;
+    return isRearValid && isFrontValid;
+  }, [measIndex, scope, rearRows, frontRows]);
+
   const nextMeasurement = React.useCallback(() => {
-    if (measIndex < INITIAL_COUNT - 1) {
-      setMeasIndex(measIndex + 1);
-    } else {
-      computeResults();
+    if (!canProceed()) return;
+    // Shared solver eval helper
+    const evalCurrentError = (): number | null => {
+      let rErr = 0; let fErr = 0;
+      if (scope === 'rear') {
+        const rRows = rearRows.slice(0, measIndex + 1).filter(r => r.hn !== '' && r.CAo !== '');
+        const rRes = solveWithSmartPruning(rRows, calibDa, calibDs, 0.02);
+        if (rRes) {
+          const dummyMachine: MachineConfig = { ...activeMachine, constants: { ...activeMachine.constants, rear: { hc: rRes.hc, o: rRes.o } } };
+          rErr = estimateMaxAngleErrorDeg(rRes.diagnostics, 'rear', global, dummyMachine, wheels, jigs, usbs) || 0;
+        } else { return null; }
+      }
+      if (scope === 'front') {
+        const fRows = frontRows.slice(0, measIndex + 1).filter(r => r.hn !== '' && r.CAo !== '');
+        const fRes = solveWithSmartPruning(fRows, calibDa, calibDs, 0.02);
+        if (fRes) {
+          const dummyMachine: MachineConfig = { ...activeMachine, constants: { ...activeMachine.constants, front: { hc: fRes.hc, o: fRes.o } } };
+          fErr = estimateMaxAngleErrorDeg(fRes.diagnostics, 'front', global, dummyMachine, wheels, jigs, usbs) || 0;
+        } else { return null; }
+      }
+      return Math.max(rErr, fErr);
+    };
+
+    if (measIndex === 3) {
+      // Early exit check at N=4
+      const currentError = evalCurrentError();
+      if (currentError !== null && currentError <= 0.015) {
+        computeResults();
+        return;
+      }
     }
-  }, [measIndex, computeResults]);
+
+    if (measIndex >= 4) {
+      // Endless loop stop conditions
+      const currentError = evalCurrentError();
+      if (currentError !== null) {
+        if (currentError <= 0.015) {
+          computeResults();
+          return;
+        }
+        
+        let newCount = noImprovementCount;
+        let newBest = bestError;
+        
+        const IMPROVEMENT_EPSILON_DEG = 0.002;
+        if (bestError === null || currentError < bestError - IMPROVEMENT_EPSILON_DEG) {
+          newCount = 0;
+          newBest = currentError;
+        } else {
+          newCount += 1;
+        }
+        
+        setNoImprovementCount(newCount);
+        setBestError(newBest);
+        
+        if (newCount >= 2) {
+          // Ceiling hit.
+          computeResults();
+          return;
+        }
+      }
+    }
+
+    // Continue to next step
+    if (measIndex + 1 >= rearRows.length) {
+      setRearRows(prev => [...prev, { hn: '', CAo: '' }]);
+      setFrontRows(prev => [...prev, { hn: '', CAo: '' }]);
+    }
+    setMeasIndex(measIndex + 1);
+  }, [measIndex, computeResults, scope, rearRows, frontRows, calibDa, calibDs, activeMachine, global, wheels, jigs, usbs, noImprovementCount, bestError, canProceed]);
 
   const prevMeasurement = React.useCallback(() => {
     if (measIndex > 0) {
@@ -209,17 +242,11 @@ export default function CalibrationWizard({
   // Editing an existing profile: compute results silently on first render
   React.useEffect(() => {
     if ((step === 'review' || step === 'results') && !rearResult && !frontResult) {
-      computeResults(true, true);
+      computeResults(true);
     }
   }, [step, rearResult, frontResult, computeResults]);
 
-  // After committing new rows to state, re-run the solver (reads the updated state)
-  React.useEffect(() => {
-    if (pendingFinalCompute) {
-      setPendingFinalCompute(false);
-      computeResults(false, false);
-    }
-  }, [pendingFinalCompute, computeResults]);
+
 
   // ── Measuring step helpers ───────────────────────────────────────────────
   const updateRear = (field: 'hn' | 'CAo', val: string) => {
@@ -253,6 +280,14 @@ export default function CalibrationWizard({
       Ds: calibDs,
     };
 
+    const getEnvelope = (rows: CalibrationMeasurement[]) => {
+      if (rows.length < 2) return undefined;
+      const h0 = parseFloat(String(rows[0].hn));
+      const h1 = parseFloat(String(rows[1].hn));
+      if (!Number.isFinite(h0) || !Number.isFinite(h1)) return undefined;
+      return { minHn: Math.min(h0, h1), maxHn: Math.max(h0, h1) };
+    };
+
     const rearToSave = rearResult;
     if (rearToSave) {
       profile.rear = {
@@ -260,7 +295,8 @@ export default function CalibrationWizard({
         o: rearToSave.o,
         diagnostics: rearToSave.diagnostics,
         angleErrorDeg: rearToSave.angleErrorDeg,
-        measurements: rearRows,
+        measurements: rearRows.filter(r => r.hn !== '' && r.CAo !== ''),
+        physicalEnvelope: getEnvelope(rearRows),
       };
     }
 
@@ -271,139 +307,15 @@ export default function CalibrationWizard({
         o: frontToSave.o,
         diagnostics: frontToSave.diagnostics,
         angleErrorDeg: frontToSave.angleErrorDeg,
-        measurements: frontRows,
+        measurements: frontRows.filter(r => r.hn !== '' && r.CAo !== ''),
+        physicalEnvelope: getEnvelope(frontRows),
       };
-    }
+    };
+
+
 
     onSaveProfile(profile);
   };
-
-  // ── Adaptive improvement helpers ─────────────────────────────────────────
-
-  // Returns the midpoint of the largest gap between existing hₙ values.
-  // This is the position where a new measurement adds the most solver conditioning.
-  const getGuidedZoneHint = React.useCallback((rows: CalibrationMeasurement[]): string => {
-    const hns = rows
-      .map(r => parseFloat(String(r.hn)))
-      .filter(v => Number.isFinite(v))
-      .sort((a, b) => a - b);
-    if (hns.length < 2) return '';
-    let largestGap = 0;
-    let midpoint = hns[0];
-    for (let i = 0; i < hns.length - 1; i++) {
-      const gap = hns[i + 1] - hns[i];
-      if (gap > largestGap) { largestGap = gap; midpoint = (hns[i] + hns[i + 1]) / 2; }
-    }
-    return midpoint.toFixed(1);
-  }, []);
-
-  // Called when the user taps "Improve It" — picks the worse base and transitions to add-guided.
-  const handleStartImprove = React.useCallback(() => {
-    const rErr = rearResult?.angleErrorDeg ?? null;
-    const fErr = frontResult?.angleErrorDeg ?? null;
-
-    let targetBase: 'rear' | 'front';
-    if (scope === 'rear') targetBase = 'rear';
-    else if (scope === 'front') targetBase = 'front';
-    else {
-      const rSub = rErr !== null && rErr > 0.05;
-      const fSub = fErr !== null && fErr > 0.05;
-      if (rSub && !fSub) targetBase = 'rear';
-      else if (fSub && !rSub) targetBase = 'front';
-      else targetBase = (rErr ?? 0) >= (fErr ?? 0) ? 'rear' : 'front';
-    }
-
-    const rows = targetBase === 'rear' ? rearRows : frontRows;
-    const hint = getGuidedZoneHint(rows);
-
-    setAdaptiveState(prev => ({
-      ...prev,
-      phase: 'add-guided',
-      targetBase,
-      guidedZoneHint: hint,
-      noImprovementCount: 0,
-      banner: null,
-    }));
-    setAddNewHn('');
-    setAddNewCAo('');
-  }, [rearResult, frontResult, rearRows, frontRows, scope, getGuidedZoneHint]);
-
-  // Called when the user submits a new (hₙ, CAₒ) measurement.
-  // Strategy: grow pool to N+1, solve with higher power, prune worst back to N, compare.
-  const handleAddMeasurementSubmit = React.useCallback(() => {
-    const { targetBase } = adaptiveState;
-    const newHn = addNewHn.trim();
-    const newCAo = addNewCAo.trim();
-    if (!newHn || !newCAo) return;
-
-    const currentRows = targetBase === 'rear' ? rearRows : frontRows;
-
-    // Step 1: Grow to N+1
-    const grownRows: CalibrationMeasurement[] = [...currentRows, { hn: newHn, CAo: newCAo }];
-
-    // Step 2: Solve on N+1 for residuals with higher statistical power (2 DOF)
-    const grownRes = calibrateBase(grownRows, calibDa, calibDs);
-    if (!grownRes) {
-      setAdaptiveState(prev => ({ ...prev, banner: 'Could not solve with that reading — check your measurements and try again.' }));
-      setAddNewHn(''); setAddNewCAo('');
-      return;
-    }
-
-    // Step 3: Prune worst residual, but never shrink below INITIAL_COUNT
-    let finalRows: CalibrationMeasurement[];
-    if (grownRows.length > INITIAL_COUNT) {
-      const worstIdx = grownRes.diagnostics.residuals
-        .map((r, i) => ({ i, abs: Math.abs(r) }))
-        .sort((a, b) => b.abs - a.abs)[0].i;
-      finalRows = grownRows.filter((_, i) => i !== worstIdx);
-    } else {
-      // Can't prune below floor — keep grown pool (N+1 = INITIAL_COUNT temporarily)
-      finalRows = grownRows;
-    }
-
-    // Step 4: Solve on pruned pool for the committed result
-    const finalRes = calibrateBase(finalRows, calibDa, calibDs);
-    if (!finalRes) {
-      setAdaptiveState(prev => ({ ...prev, banner: 'Could not solve after pruning — try a different measurement.' }));
-      setAddNewHn(''); setAddNewCAo('');
-      return;
-    }
-
-    // Step 5: Compare new error against the currently committed baseline
-    const dummyMachine: MachineConfig = {
-      ...activeMachine,
-      constants: { ...activeMachine.constants, [targetBase]: { hc: finalRes.hc, o: finalRes.o } },
-    };
-    const newErr = estimateMaxAngleErrorDeg(finalRes.diagnostics, targetBase, global, dummyMachine, wheels, jigs, usbs);
-    const baseline = targetBase === 'rear'
-      ? rearResult?.angleErrorDeg ?? null
-      : frontResult?.angleErrorDeg ?? null;
-    const isImprovement = newErr !== null && (baseline === null || newErr < baseline - IMPROVEMENT_EPSILON_DEG);
-
-    if (isImprovement) {
-      if (targetBase === 'rear') setRearRows(finalRows);
-      else setFrontRows(finalRows);
-      setAdaptiveState(prev => ({
-        ...prev,
-        phase: 'quality-gate',
-        noImprovementCount: 0,
-        banner: null,
-      }));
-      setPendingFinalCompute(true);
-    } else {
-      const newCount = adaptiveState.noImprovementCount + 1;
-      const hitCeiling = newCount >= 2;
-      setAdaptiveState(prev => ({
-        ...prev,
-        phase: hitCeiling ? 'ceiling' : 'add-guided',
-        noImprovementCount: newCount,
-        banner: hitCeiling
-          ? null
-          : 'That reading didn\'t improve the result — try a different position.',
-      }));
-    }
-    setAddNewHn(''); setAddNewCAo('');
-  }, [adaptiveState, addNewHn, addNewCAo, rearRows, frontRows, calibDa, calibDs, activeMachine, global, wheels, jigs, usbs, rearResult, frontResult]);
 
   // ── Diagnostic badge renderer ────────────────────────────────────────────
   const renderDiagnosticBadge = (a: number | null) => {
@@ -457,9 +369,18 @@ export default function CalibrationWizard({
         {step === 'measuring' && (
           <ContextBar.Button
             variant="primary"
+            disabled={!canProceed()}
             onClick={() => window.dispatchEvent(new CustomEvent('wizard-next'))}
           >
-            {measIndex === INITIAL_COUNT - 1 ? 'Analyse →' : 'Next →'}
+            {measIndex >= INITIAL_COUNT - 1 ? 'Analyse →' : 'Next →'}
+          </ContextBar.Button>
+        )}
+        {step === 'results' && (
+          <ContextBar.Button
+            variant="primary"
+            onClick={handleSave}
+          >
+            Save
           </ContextBar.Button>
         )}
         {step === 'intro' && (
@@ -621,22 +542,7 @@ export default function CalibrationWizard({
             />
           </div>
 
-          {/* Scope Selector */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">
-              Calibration Scope
-            </label>
-            <MiniSelect
-              value={scope}
-              options={[
-                { value: 'both', label: 'Both Bases (Recommended: Rear + Front)' },
-                { value: 'rear', label: 'Rear Base Only (Edge Leading)' },
-                { value: 'front', label: 'Front Base Only (Edge Trailing)' },
-              ]}
-              onChange={val => setScope(val as Scope)}
-              widthClass="w-full"
-            />
-          </div>
+
 
           {validationError && (
             <div className="p-3.5 bg-amber-400/10 border border-amber-400/30 rounded-[var(--ui-radius-core)] text-xs text-amber-300 font-medium flex items-center gap-2">
@@ -649,370 +555,238 @@ export default function CalibrationWizard({
       )}
 
       {/* Step 2: Measuring */}
-      {step === 'measuring' && (
-        <div className="relative z-10 flex flex-col gap-3 w-full">
-          {/* Zone Instructions Banner */}
-          <div className="px-3 py-2 bg-black/40 border border-amber-400/20 rounded-xl text-[11px] text-white/90 leading-tight">
-            <span className="font-bold text-amber-400 uppercase tracking-wider text-[9px] block mb-0.5">
-              {ZONE_LABELS[measIndex]}
-            </span>
-            <p>{ZONE_COPY[measIndex]}</p>
-          </div>
+      {step === 'measuring' && (() => {
+        let title = '';
+        let desc = '';
+        let targetHint: number | null = null;
+        
+        const rH0 = parseFloat(String(rearRows[0]?.hn));
+        const rH1 = parseFloat(String(rearRows[1]?.hn));
+        const hasRearEnvelope = Number.isFinite(rH0) && Number.isFinite(rH1);
+        const rearMin = hasRearEnvelope ? Math.min(rH0, rH1) : 0;
+        const rearMax = hasRearEnvelope ? Math.max(rH0, rH1) : 0;
+        
+        const hints = hasRearEnvelope ? calculateOptimalMeasurementTargets(rearMin, rearMax) : [0,0,0];
 
-          {/* Measurement Guide Accordion */}
-          <div className="bg-black/20 border border-white/5 rounded-xl flex flex-col overflow-hidden transition-all duration-300">
-            <div
-              role="button"
-              tabIndex={0}
-              className="p-3 text-[10px] uppercase tracking-widest font-bold text-amber-400/80 hover:text-amber-400 cursor-pointer select-none flex items-center justify-between hover:bg-white/5 transition-colors"
-              onClick={() => setIsGuideExpanded(!isGuideExpanded)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsGuideExpanded(!isGuideExpanded); } }}
-            >
-              <span>How do I measure these?</span>
-              <span className={`text-lg leading-none transition-transform duration-300 ease-in-out ${isGuideExpanded ? 'rotate-45' : 'rotate-0'}`}>+</span>
+        if (measIndex === 0) {
+          title = 'Low Travel';
+          desc = 'Drop USB to a low position, a few turns from the bottom. Lock collar, then measure.';
+        } else if (measIndex === 1) {
+          title = 'High Travel';
+          desc = 'Set USB high, near the top of its stable travel. Ensure the bar is firmly supported without wobble, then lock collar.';
+        } else if (measIndex === 2) {
+          title = 'Midpoint';
+          targetHint = hints[0];
+          desc = `Set USB near ≈ ${targetHint.toFixed(1)} mm (midway along your travel). Lock collar, then measure.`;
+        } else if (measIndex === 3) {
+          title = 'Lower-Mid';
+          targetHint = hints[1];
+          desc = `Set USB near ≈ ${targetHint.toFixed(1)} mm. Lock collar, then measure.`;
+        } else if (measIndex === 4) {
+          title = 'Upper-Mid';
+          targetHint = hints[2];
+          desc = `Set USB near ≈ ${targetHint.toFixed(1)} mm. Lock collar, then measure.`;
+        } else {
+          title = 'Refining...';
+          const validHns = (scope === 'rear') 
+            ? rearRows.slice(0, measIndex).map(r => parseFloat(String(r.hn))) 
+            : frontRows.slice(0, measIndex).map(r => parseFloat(String(r.hn)));
+          targetHint = hasRearEnvelope ? calculateNextOptimalTarget(validHns, rearMin, rearMax) : 0;
+          desc = `Let's refine this further to eliminate variance. Set USB near ≈ ${targetHint.toFixed(1)} mm.`;
+        }
+
+        return (
+          <div key={measIndex} className="relative z-10 flex flex-col gap-4 w-full pb-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-amber-400">
+                Reading {measIndex + 1} {measIndex < INITIAL_COUNT ? `of ${INITIAL_COUNT}` : ''} · {title}
+              </h3>
             </div>
-            <div className="grid transition-[grid-template-rows] duration-300 ease-in-out" style={{ gridTemplateRows: isGuideExpanded ? "1fr" : "0fr" }}>
-              <div className="overflow-hidden">
-                <div className="p-3 pt-0 text-xs text-white/70 flex flex-col gap-3 border-t border-white/5 mt-2">
-              <div className="flex flex-col gap-1.5">
-                <strong className="text-white">hₙ (Datum Height)</strong>
-                <p>Rest the bottom of your calipers on your chosen datum (usually the flat machine casing right beneath the USB) and extend the top jaw to the top of the USB bar.</p>
-                <div className="mt-0.5 bg-amber-400/10 border border-amber-400/20 rounded-lg p-2.5 text-[10px] text-amber-200/90 leading-relaxed flex flex-col gap-1.5">
-                  <strong className="text-amber-400 text-[11px] block">💡 Choosing a Custom Datum</strong>
-                  <p>Our math engine lets you use ANY flat, horizontal surface as your zero-point (perfect for custom builds), provided you follow two strict rules:</p>
-                  <ul className="list-disc pl-3.5 space-y-1 text-amber-200/80">
-                    <li>You must be able to hold your calipers <strong className="text-amber-300">perfectly vertical</strong> (straight up and down). <strong>Never tilt them diagonally</strong> to reach a spot off to the side, as this will corrupt the calibration math.</li>
-                    <li>You must measure from this exact same surface whenever you set sharpening heights in the future.</li>
-                  </ul>
+
+            <p className="text-xs text-white/50 leading-snug">
+              {desc}
+            </p>
+
+            {/* Live Diagnostics Feedback (Requires >= 3 completed points) */}
+            {measIndex >= 3 && (() => {
+              // Calculate live error from previously completed rows
+              let rErr: number | null = null;
+              let fErr: number | null = null;
+              let rPruned = -1;
+              let fPruned = -1;
+
+              if (scope === 'rear') {
+                const rRows = rearRows.slice(0, measIndex).filter(r => r.hn !== '' && r.CAo !== '');
+                if (rRows.length >= 3) {
+                  const rRes = solveWithSmartPruning(rRows, calibDa, calibDs, 0.02);
+                  if (rRes) {
+                    const dummyMachine: MachineConfig = { ...activeMachine, constants: { ...activeMachine.constants, rear: { hc: rRes.hc, o: rRes.o } } };
+                    rErr = estimateMaxAngleErrorDeg(rRes.diagnostics, 'rear', global, dummyMachine, wheels, jigs, usbs);
+                    rPruned = rRes.diagnostics.prunedIndex ?? -1;
+                  }
+                }
+              }
+
+              if (scope === 'front') {
+                const fRows = frontRows.slice(0, measIndex).filter(r => r.hn !== '' && r.CAo !== '');
+                if (fRows.length >= 3) {
+                  const fRes = solveWithSmartPruning(fRows, calibDa, calibDs, 0.02);
+                  if (fRes) {
+                    const dummyMachine: MachineConfig = { ...activeMachine, constants: { ...activeMachine.constants, front: { hc: fRes.hc, o: fRes.o } } };
+                    fErr = estimateMaxAngleErrorDeg(fRes.diagnostics, 'front', global, dummyMachine, wheels, jigs, usbs);
+                    fPruned = fRes.diagnostics.prunedIndex ?? -1;
+                  }
+                }
+              }
+
+              const maxErr = Math.max(rErr ?? 0, fErr ?? 0);
+              const wasPruned = (rPruned === measIndex - 1) || (fPruned === measIndex - 1);
+
+              if (maxErr === 0) return null;
+
+              return (
+                <div className="flex flex-col gap-2 mt-2">
+                  <div className="flex items-center gap-3 bg-black/40 border border-white/5 rounded-lg p-3">
+                    <div className="flex-1 flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Current Precision</span>
+                      <span className={`text-sm font-mono font-bold ${maxErr <= 0.015 ? 'text-emerald-400' : maxErr <= 0.05 ? 'text-amber-400' : 'text-red-400'}`}>
+                        ±{maxErr.toFixed(3)}°
+                      </span>
+                    </div>
+                    {maxErr <= 0.015 ? (
+                      <Tag intent="success" appearance="solid">Flawless</Tag>
+                    ) : (
+                      <Tag intent="warning" appearance="outline">Refining...</Tag>
+                    )}
+                  </div>
+                  
+                  {wasPruned && (
+                    <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
+                      <span className="text-[12px] leading-none mt-0.5">⚠️</span>
+                      <p className="text-[10px] text-red-200/90 font-medium leading-relaxed">
+                        Your last measurement was detected as a statistical outlier and discarded by the solver. Please ensure the calipers are perfectly seated and try again.
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="flex flex-col gap-1">
-                <strong className="text-white">CAₒ (Axle Top)</strong>
-                <p>Rest the bottom of your calipers on the very top curve of the main drive axle (where the wheel mounts). Extend the top jaw to the top of the USB bar.</p>
-              </div>
-            </div>
-              </div>
-            </div>
-          </div>
+              );
+            })()}
 
-          {/* Rear Base Card */}
-          {(scope === 'both' || scope === 'rear') && (
-            <div className="bg-black/25 border border-white/5 border-l-2 border-l-blue-500 rounded-xl p-3 flex flex-col gap-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-blue-400 tracking-wide flex items-center gap-2">
-                  <span>Rear Base</span>
-                  <Tag intent="info" appearance="outline">
-                    Edge Leading
-                  </Tag>
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
-                    hₙ (Datum)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="h-10 bg-black/30 border border-white/5 focus:border-blue-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-400/20 transition w-full"
-                      placeholder="mm"
-                      value={rearRows[measIndex]?.hn}
-                      onChange={e => updateRear('hn', e.target.value)}
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
-                      mm
-                    </span>
+            {/* Rear Base Card */}
+            {(scope === 'rear') && (
+              <div className="bg-black/25 border border-white/5 border-l-2 border-l-amber-500 rounded-xl p-3 flex flex-col gap-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-amber-400 tracking-wide flex items-center gap-2">
+                    <span>Rear Base</span>
+                    <Tag intent="info" appearance="outline">
+                      Edge Leading
+                    </Tag>
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
+                      hₙ (Datum)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="h-10 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-amber-400/20 transition w-full"
+                        placeholder="mm"
+                        value={rearRows[measIndex]?.hn}
+                        onChange={e => updateRear('hn', e.target.value)}
+                        autoFocus
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
+                        mm
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
+                      CAₒ (Axle Top)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="h-10 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-amber-400/20 transition w-full"
+                        placeholder="mm"
+                        value={rearRows[measIndex]?.CAo}
+                        onChange={e => updateRear('CAo', e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') window.dispatchEvent(new CustomEvent('wizard-next')); }}
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
+                        mm
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
-                    CAₒ (Axle Top)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="h-10 bg-black/30 border border-white/5 focus:border-blue-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-400/20 transition w-full"
-                      placeholder="mm"
-                      value={rearRows[measIndex]?.CAo}
-                      onChange={e => updateRear('CAo', e.target.value)}
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
-                      mm
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Front Base Card */}
-          {(scope === 'both' || scope === 'front') && (
-            <div className="bg-black/25 border border-white/5 border-l-2 border-l-emerald-500 rounded-xl p-3 flex flex-col gap-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-emerald-400 tracking-wide flex items-center gap-2">
-                  <span>Front Base</span>
-                  <Tag intent="success" appearance="outline">
-                    Edge Trailing
-                  </Tag>
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
-                    hₙ (Datum)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="h-10 bg-black/30 border border-white/5 focus:border-emerald-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-emerald-400/20 transition w-full"
-                      placeholder="mm"
-                      value={frontRows[measIndex]?.hn}
-                      onChange={e => updateFront('hn', e.target.value)}
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
-                      mm
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
-                    CAₒ (Axle Top)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="h-10 bg-black/30 border border-white/5 focus:border-emerald-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-emerald-400/20 transition w-full"
-                      placeholder="mm"
-                      value={frontRows[measIndex]?.CAo}
-                      onChange={e => updateFront('CAo', e.target.value)}
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
-                      mm
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {errorMsg && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-[11px] text-red-400 font-bold flex items-center gap-2">
-              <span>⚠️</span>
-              <span>{errorMsg}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Step 3: Review — Quality Gate / Adaptive Improvement Loop */}
-      {step === 'review' && (() => {
-        const rErr = rearResult?.angleErrorDeg ?? null;
-        const fErr = frontResult?.angleErrorDeg ?? null;
-        const anySubExcellent = (rErr !== null && rErr > 0.05) || (fErr !== null && fErr > 0.05);
-        const { phase, targetBase, guidedZoneHint, banner } = adaptiveState;
-
-        const baseName = (b: 'rear' | 'front') => b === 'rear' ? 'Rear Base' : 'Front Base';
-        const baseColor = (b: 'rear' | 'front') => b === 'rear' ? 'text-blue-400' : 'text-emerald-400';
-        const baseBorderL = (b: 'rear' | 'front') => b === 'rear' ? 'border-l-blue-500' : 'border-l-emerald-500';
-        const inputFocus = (b: 'rear' | 'front') => b === 'rear' ? 'focus:border-blue-400/60' : 'focus:border-emerald-400/60';
-
-        // Shared base result cards (used by quality-gate and ceiling)
-        const baseResultCards = (
-          <div className="flex flex-col gap-3">
-            {(scope === 'both' || scope === 'rear') && rearResult && (
-              <div className="bg-black/25 border border-white/5 border-l-4 border-l-blue-500 rounded-xl p-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-blue-400">Rear Base</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-300 font-bold">Edge Leading</span>
-                </div>
-                {renderDiagnosticBadge(rErr)}
               </div>
             )}
-            {(scope === 'both' || scope === 'front') && frontResult && (
-              <div className="bg-black/25 border border-white/5 border-l-4 border-l-emerald-500 rounded-xl p-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-emerald-400">Front Base</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 font-bold">Edge Trailing</span>
+
+            {/* Front Base Card */}
+            {(scope === 'front') && (
+              <div className="bg-black/25 border border-white/5 border-l-2 border-l-blue-500 rounded-xl p-3 flex flex-col gap-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-blue-400 tracking-wide flex items-center gap-2">
+                    <span>Front Base</span>
+                    <Tag intent="success" appearance="outline">
+                      Edge Trailing
+                    </Tag>
+                  </h3>
                 </div>
-                {renderDiagnosticBadge(fErr)}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
+                      hₙ (Datum)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="h-10 bg-black/30 border border-white/5 focus:border-blue-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-400/20 transition w-full"
+                        placeholder="mm"
+                        value={frontRows[measIndex]?.hn}
+                        onChange={e => updateFront('hn', e.target.value)}
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
+                        mm
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
+                      CAₒ (Axle Top)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="h-10 bg-black/30 border border-white/5 focus:border-blue-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-400/20 transition w-full"
+                        placeholder="mm"
+                        value={frontRows[measIndex]?.CAo}
+                        onChange={e => updateFront('CAo', e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') window.dispatchEvent(new CustomEvent('wizard-next')); }}
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
+                        mm
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {errorMsg && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-[11px] text-red-400 font-bold flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{errorMsg}</span>
               </div>
             )}
           </div>
         );
-
-        // ── Quality Gate ──────────────────────────────────────────────────
-        if (phase === 'quality-gate' || phase === 'ceiling') {
-          const isCeiling = phase === 'ceiling';
-          const worseBaseName = (rErr ?? 0) >= (fErr ?? 0) ? 'Rear Base' : 'Front Base';
-
-          return (
-            <div className="relative z-10 flex flex-col gap-4 w-full pb-4">
-              <h3 className="text-lg font-bold text-white tracking-tight">✓ Geometry Mapped</h3>
-              {baseResultCards}
-
-              {isCeiling ? (
-                <div className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs text-white/60 leading-snug">
-                  This is your machine's natural measurement limit. A Good rating means accuracy within ~0.1° — well within workshop tolerances for most blades.
-                </div>
-              ) : anySubExcellent ? (
-                <div className="px-3 py-2.5 bg-amber-400/10 border border-amber-400/20 rounded-xl text-xs text-amber-200/90 leading-snug">
-                  {scope === 'both'
-                    ? `${worseBaseName} is pulling the curve slightly off. One more reading usually sharpens it.`
-                    : 'One reading is pulling the curve slightly off. One more measurement usually sharpens it.'
-                  }
-                </div>
-              ) : (
-                <div className="px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-200/90 leading-snug">
-                  Your machine is mapped with maximum precision.
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                <button
-                  type="button"
-                  className="h-12 px-5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/25 text-white font-bold text-xs transition flex items-center justify-center cursor-pointer"
-                  onClick={() => computeResults(true)}
-                >
-                  {anySubExcellent && !isCeiling ? 'Save As-Is →' : 'View Results →'}
-                </button>
-                {anySubExcellent && !isCeiling && (
-                  <button
-                    type="button"
-                    className="h-12 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-bold text-xs shadow-lg shadow-amber-950/30 transition flex items-center justify-center cursor-pointer"
-                    onClick={handleStartImprove}
-                  >
-                    Improve It
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        }
-
-        // ── Add Guided ───────────────────────────────────────────────────
-        if (phase === 'add-guided') {
-          return (
-            <div className="relative z-10 flex flex-col gap-4 w-full pb-4">
-              <div className="flex items-center justify-between">
-                <h3 className={`text-sm font-extrabold uppercase tracking-wider ${baseColor(targetBase)}`}>
-                  Additional Reading · {baseName(targetBase)}
-                </h3>
-                <span className="text-[10px] text-white/30 font-mono">
-                  {rearRows.length + frontRows.length} measurements so far
-                </span>
-              </div>
-
-              {banner && (
-                <div className="px-3 py-2.5 bg-amber-400/10 border border-amber-400/20 rounded-xl text-xs text-amber-200/90 leading-snug">
-                  {banner}
-                </div>
-              )}
-
-              <div className={`bg-black/25 border border-white/5 border-l-4 ${baseBorderL(targetBase)} rounded-xl p-4 flex flex-col gap-2`}>
-                <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Suggested zone</span>
-                {guidedZoneHint ? (
-                  <span className="text-4xl font-extrabold font-mono text-amber-400 tracking-tight leading-none">
-                    ≈ {guidedZoneHint} mm
-                  </span>
-                ) : (
-                  <span className="text-xl font-bold text-amber-400/60">Any unused height</span>
-                )}
-                <p className="text-xs text-white/60 mt-1 leading-snug">
-                  Set USB near this zone — a few mm either way is fine. Lock collar, then measure.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                <button
-                  type="button"
-                  className="h-12 px-5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition flex items-center justify-center cursor-pointer"
-                  onClick={() => setAdaptiveState(prev => ({ ...prev, phase: 'quality-gate', banner: null }))}
-                >
-                  ← Back
-                </button>
-                <button
-                  type="button"
-                  className="h-12 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-bold text-xs shadow-lg shadow-amber-950/30 transition flex items-center justify-center cursor-pointer"
-                  onClick={() => { setAddNewHn(''); setAddNewCAo(''); setAdaptiveState(prev => ({ ...prev, phase: 'add-measure', banner: null })); }}
-                >
-                  Measure →
-                </button>
-              </div>
-            </div>
-          );
-        }
-
-        // ── Add Measure ──────────────────────────────────────────────────
-        if (phase === 'add-measure') {
-          const canSubmit = addNewHn.trim() !== '' && addNewCAo.trim() !== '';
-          return (
-            <div className="relative z-10 flex flex-col gap-4 w-full pb-4">
-              <h3 className={`text-sm font-extrabold uppercase tracking-wider ${baseColor(targetBase)}`}>
-                {baseName(targetBase)}
-              </h3>
-
-              <p className="text-xs text-white/50 leading-snug">
-                Measure fresh — both fields are blank on purpose. Don't copy your previous numbers.
-              </p>
-
-              <div className={`bg-black/25 border border-white/5 border-l-4 ${baseBorderL(targetBase)} rounded-xl p-3 flex flex-col gap-3`}>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1">hₙ (Datum)</label>
-                    <div className="relative">
-                      <input
-                        type="number" step="0.01"
-                        className={`h-10 bg-black/30 border border-white/5 ${inputFocus(targetBase)} rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 transition w-full`}
-                        placeholder="mm"
-                        value={addNewHn}
-                        onChange={e => setAddNewHn(e.target.value)}
-                        autoFocus
-                      />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">mm</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1">CAₒ (Axle Top)</label>
-                    <div className="relative">
-                      <input
-                        type="number" step="0.01"
-                        className={`h-10 bg-black/30 border border-white/5 ${inputFocus(targetBase)} rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 transition w-full`}
-                        placeholder="mm"
-                        value={addNewCAo}
-                        onChange={e => setAddNewCAo(e.target.value)}
-                      />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">mm</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                <button
-                  type="button"
-                  className="h-12 px-5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition flex items-center justify-center cursor-pointer"
-                  onClick={() => setAdaptiveState(prev => ({ ...prev, phase: 'add-guided' }))}
-                >
-                  ← Back
-                </button>
-                <button
-                  type="button"
-                  disabled={!canSubmit}
-                  className={`h-12 px-6 rounded-xl font-bold text-xs shadow-lg transition flex items-center justify-center ${canSubmit ? 'bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black shadow-amber-950/30 cursor-pointer' : 'bg-white/10 text-white/30 cursor-not-allowed'}`}
-                  onClick={handleAddMeasurementSubmit}
-                >
-                  Submit ✓
-                </button>
-              </div>
-            </div>
-          );
-        }
-
-        return null;
       })()}
 
       {/* Step 4: Results */}
@@ -1020,9 +794,41 @@ export default function CalibrationWizard({
         <div className="relative z-10 flex flex-col gap-[var(--ui-gap)] w-full pb-4">
           <div className="flex flex-col gap-2">
             <h3 className="text-lg font-bold text-white tracking-tight">Geometry Solved</h3>
-            <p className="text-xs text-white/60">Compare the mathematical engines below. True Least Squares is heavily recommended for maximum precision.</p>
+            <p className="text-xs text-white/60">Your machine geometry has been successfully calculated and mathematically optimized for precision.</p>
           </div>
 
+
+          {/* Potential Improvement Banner */}
+          {(() => {
+            const worstError = Math.max(rearResult?.angleErrorDeg ?? 0, frontResult?.angleErrorDeg ?? 0);
+            if (worstError > 0.015) {
+              const diff = worstError - 0.015;
+              return (
+                <div className="relative overflow-hidden bg-gradient-to-br from-amber-500/10 to-amber-900/10 border border-amber-500/20 rounded-[var(--ui-radius-core)] p-5 flex gap-4 shadow-[0_4px_20px_rgba(245,158,11,0.05)] animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none" />
+                  <div className="relative z-10 text-2xl leading-none pt-0.5 filter drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">💡</div>
+                  <div className="relative z-10 flex flex-col gap-1.5">
+                    <strong className="text-[13px] text-amber-400 font-extrabold tracking-tight">Precision Check</strong>
+                    <p className="text-xs text-amber-100/80 leading-relaxed font-medium">
+                      Your mapping has a {worstError.toFixed(3)}° worst-case error. The physical limit of your calipers is ≈ 0.015°, meaning you have <strong className="text-amber-300">{diff.toFixed(3)}° of potential improvement</strong> left.
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500/10 to-emerald-900/10 border border-emerald-500/20 rounded-[var(--ui-radius-core)] p-5 flex gap-4 shadow-[0_4px_20px_rgba(16,185,129,0.05)] animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none" />
+                <div className="relative z-10 text-2xl leading-none pt-0.5 filter drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">🏆</div>
+                <div className="relative z-10 flex flex-col gap-1.5">
+                  <strong className="text-[13px] text-emerald-400 font-extrabold tracking-tight">Flawless Mapping</strong>
+                  <p className="text-xs text-emerald-100/80 leading-relaxed font-medium">
+                    Your mapping error is {(worstError || 0).toFixed(3)}°, which is perfectly inside the physical noise floor of your calipers.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Outlier Warning */}
           {(
@@ -1042,89 +848,73 @@ export default function CalibrationWizard({
 
           {/* Rear Base Result Card */}
           {rearResult && (
-            <div className="bg-black/25 border border-white/5 border-l-4 border-l-blue-500 rounded-[var(--ui-radius-core)] p-[var(--ui-gap)] flex flex-col gap-4 shadow-lg">
+            <div className="bg-black/25 border border-white/5 border-l-4 border-l-amber-500 rounded-[var(--ui-radius-core)] p-[var(--ui-gap)] flex flex-col gap-4 shadow-lg">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-blue-400">Rear Base</h4>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 font-bold uppercase">Edge Leading</span>
+                  <h4 className="text-sm font-bold text-amber-400">Rear Base</h4>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 font-bold uppercase">Edge Leading</span>
                 </div>
                 {renderDiagnosticBadge(rearResult.angleErrorDeg ?? null)}
               </div>
-              <table className="w-full text-left text-xs text-white/70">
-                <thead>
-                  <tr>
-                    <th className="pb-2 uppercase text-[9px] text-white/40 tracking-wider">Metric</th>
-                    <th className="pb-2 text-right uppercase text-[9px] tracking-wider text-white">Result</th>
-                  </tr>
-                </thead>
-                <tbody className="font-mono">
-                  <tr className="border-t border-white/10">
-                    <td className="py-2">h_c</td>
-                    <td className="py-2 text-right font-bold text-white">{rearResult.hc.toFixed(4)}</td>
-                  </tr>
-                  <tr className="border-t border-white/5">
-                    <td className="py-2">o</td>
-                    <td className="py-2 text-right font-bold text-white">{rearResult.o.toFixed(4)}</td>
-                  </tr>
-                  <tr className="border-t border-white/5">
-                    <td className="py-2 text-[10px] text-white/40">Max ε</td>
-                    <td className="py-2 text-right text-[10px]">{rearResult.diagnostics.maxAbsResidualMm.toFixed(3)}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="flex flex-col mt-2">
+                <div className="flex items-center justify-between py-2.5 border-b border-white/5">
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">h_c</span>
+                  <span className="text-xs font-mono font-bold text-white">{rearResult.hc.toFixed(4)}</span>
+                </div>
+                <div className="flex items-center justify-between py-2.5 border-b border-white/5">
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">o</span>
+                  <span className="text-xs font-mono font-bold text-white">{rearResult.o.toFixed(4)}</span>
+                </div>
+                <div className="flex items-center justify-between py-2.5">
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Max ε</span>
+                  <span className="text-xs font-mono text-white/70">{rearResult.diagnostics.maxAbsResidualMm.toFixed(3)} mm</span>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Front Base Result Card */}
           {frontResult && (
-            <div className="bg-black/25 border border-white/5 border-l-4 border-l-emerald-500 rounded-[var(--ui-radius-core)] p-[var(--ui-gap)] flex flex-col gap-4 shadow-lg">
+            <div className="bg-black/25 border border-white/5 border-l-4 border-l-blue-500 rounded-[var(--ui-radius-core)] p-[var(--ui-gap)] flex flex-col gap-4 shadow-lg">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-emerald-400">Front Base</h4>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 font-bold uppercase">Edge Trailing</span>
+                  <h4 className="text-sm font-bold text-blue-400">Front Base</h4>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 font-bold uppercase">Edge Trailing</span>
                 </div>
                 {renderDiagnosticBadge(frontResult.angleErrorDeg ?? null)}
               </div>
-              <table className="w-full text-left text-xs text-white/70">
-                <thead>
-                  <tr>
-                    <th className="pb-2 uppercase text-[9px] text-white/40 tracking-wider">Metric</th>
-                    <th className="pb-2 text-right uppercase text-[9px] tracking-wider text-white">Result</th>
-                  </tr>
-                </thead>
-                <tbody className="font-mono">
-                  <tr className="border-t border-white/10">
-                    <td className="py-2">h_c</td>
-                    <td className="py-2 text-right font-bold text-white">{frontResult.hc.toFixed(4)}</td>
-                  </tr>
-                  <tr className="border-t border-white/5">
-                    <td className="py-2">o</td>
-                    <td className="py-2 text-right font-bold text-white">{frontResult.o.toFixed(4)}</td>
-                  </tr>
-                  <tr className="border-t border-white/5">
-                    <td className="py-2 text-[10px] text-white/40">Max ε</td>
-                    <td className="py-2 text-right text-[10px]">{frontResult.diagnostics.maxAbsResidualMm.toFixed(3)}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="flex flex-col mt-2">
+                <div className="flex items-center justify-between py-2.5 border-b border-white/5">
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">h_c</span>
+                  <span className="text-xs font-mono font-bold text-white">{frontResult.hc.toFixed(4)}</span>
+                </div>
+                <div className="flex items-center justify-between py-2.5 border-b border-white/5">
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">o</span>
+                  <span className="text-xs font-mono font-bold text-white">{frontResult.o.toFixed(4)}</span>
+                </div>
+                <div className="flex items-center justify-between py-2.5">
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Max ε</span>
+                  <span className="text-xs font-mono text-white/70">{frontResult.diagnostics.maxAbsResidualMm.toFixed(3)} mm</span>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-2">
+          <div className="flex justify-center pt-6 pb-2">
             <button
               type="button"
-              className="h-12 px-5 rounded-xl bg-white/10 hover:bg-white/20 active:bg-white/25 text-white font-bold text-xs transition flex items-center justify-center cursor-pointer"
-              onClick={() => setStep('review')}
+              className="px-6 py-2 rounded-full hover:bg-white/5 active:bg-white/10 text-white/40 hover:text-white/80 font-bold text-[10px] uppercase tracking-wider transition cursor-pointer"
+              onClick={() => {
+                setRearRows(Array(INITIAL_COUNT).fill({ hn: '', CAo: '' }));
+                setFrontRows(Array(INITIAL_COUNT).fill({ hn: '', CAo: '' }));
+                setMeasIndex(0);
+                setNoImprovementCount(0);
+                setBestError(null);
+                setStep('measuring');
+              }}
             >
-              ← Review
-            </button>
-            <button
-              type="button"
-              className="h-12 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-bold text-xs shadow-lg shadow-amber-950/30 transition flex items-center justify-center cursor-pointer"
-              onClick={handleSave}
-            >
-              Save Profile ✓
+              ← Re-measure Entire Envelope
             </button>
           </div>
         </div>

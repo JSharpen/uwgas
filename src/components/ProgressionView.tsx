@@ -8,8 +8,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../state/store';
 import { useWheelResults } from '../services/calculationService';
 import ExpandableCard from './ui/ExpandableCard';
-import { Tag } from './ui/Tag';
-import { isWheelOverdue } from '../utils/wheelWear';
+import { Tag, Divider } from './ui';
+import { isWheelOverdue, getMeasurementCountdownText } from '../utils/wheelWear';
 
 export type ProgressionViewProps = Record<string, never>;
 
@@ -58,6 +58,7 @@ const StepCard = React.memo(function StepCard({
   const hasOffset = angleOffset !== 0;
   const effectiveUsb = usbs.find(u => u.id === (r.step?.usbId || globalUsbId));
   const effectiveJig = jigs?.find(j => j.id === globalJigId);
+  const countdownText = getMeasurementCountdownText(r.wheel);
 
   const prevEffectiveMachineId = index === 0 ? null : (prevR?.step?.machineId || effectiveSessionMachineId);
   const currEffectiveMachineId = r.step?.machineId || effectiveSessionMachineId;
@@ -66,33 +67,39 @@ const StepCard = React.memo(function StepCard({
   const prevEffectiveUsbId = index === 0 ? null : (prevR?.step?.usbId || globalUsbId);
   const currEffectiveUsbId = r.step?.usbId || globalUsbId;
   const isUsbChanged = currEffectiveUsbId !== prevEffectiveUsbId;
+  const isBaseChanged = r.baseForHn !== prevR?.baseForHn;
 
   let deltaText = null;
   let deltaTurnsText = null;
 
   if (prevR) {
     if (!isProjectionMode) {
-      const currH = heightMode === 'hn' ? r.hnBase : r.hrWheel;
-      const prevH = heightMode === 'hn' ? prevR.hnBase : prevR.hrWheel;
-      const diff = currH - prevH;
-      if (Math.abs(diff) >= 0.01) {
-        deltaText = `Δ ${diff > 0 ? '+' : ''}${diff.toFixed(2)} MM`;
-        if (effectiveUsb?.threadPitch) {
-          const turns = Math.abs(diff) / effectiveUsb.threadPitch;
-          if (effectiveUsb.microAdjustMarks) {
-            let fullTurns = Math.floor(turns);
-            let marks = Math.round((turns - fullTurns) * effectiveUsb.microAdjustMarks * 2) / 2;
-            if (marks === effectiveUsb.microAdjustMarks) {
-              fullTurns += 1;
-              marks = 0;
-            }
-            if (fullTurns > 0) {
-                deltaTurnsText = `${diff > 0 ? 'UP' : 'DOWN'} ${fullTurns}T ${marks}M`;
+      // Relative nut adjustment is only physically valid on the same base, USB, and machine
+      if (!isBaseChanged && !isUsbChanged && !isMachineChanged) {
+        // Nut travel strictly alters datum height (hn), regardless of whether display is in hn or hr mode
+        const diffHn = r.hnBase - prevR.hnBase;
+        if (Math.abs(diffHn) >= 0.01) {
+          deltaText = `Δ ${diffHn > 0 ? '+' : ''}${diffHn.toFixed(2)} MM`;
+          if (effectiveUsb?.threadPitch) {
+            const turns = Math.abs(diffHn) / effectiveUsb.threadPitch;
+            if (effectiveUsb.microAdjustMarks) {
+              let fullTurns = Math.floor(turns);
+              let marks = Math.round((turns - fullTurns) * effectiveUsb.microAdjustMarks * 2) / 2;
+              if (marks === effectiveUsb.microAdjustMarks) {
+                fullTurns += 1;
+                marks = 0;
+              }
+              const dir = diffHn > 0 ? 'UP' : 'DOWN';
+              if (fullTurns > 0 && marks > 0) {
+                deltaTurnsText = `${dir} ${fullTurns}T ${marks}M`;
+              } else if (fullTurns > 0) {
+                deltaTurnsText = `${dir} ${fullTurns}T`;
+              } else if (marks > 0) {
+                deltaTurnsText = `${dir} ${marks}M`;
+              }
             } else {
-                deltaTurnsText = `${diff > 0 ? 'UP' : 'DOWN'} ${marks}M`;
+              deltaTurnsText = `${diffHn > 0 ? 'UP' : 'DOWN'} ${turns.toFixed(1)}T`;
             }
-          } else {
-            deltaTurnsText = `${diff > 0 ? 'UP' : 'DOWN'} ${turns.toFixed(1)}T`;
           }
         }
       }
@@ -120,35 +127,43 @@ const StepCard = React.memo(function StepCard({
       index={index}
       className="relative motion-list-item scroll-m-[120px] sm:scroll-m-[160px]"
       style={{ viewTransitionName: `step-${stepId}` } as React.CSSProperties}
-      headerClassName="flex justify-between items-center px-4 sm:px-6 relative z-10"
-      headerStyle={{ minHeight: 'var(--step-card-height, 5.5rem)' }}
+      headerClassName="flex items-stretch justify-between px-4 sm:px-6 py-3 sm:py-3.5 relative z-10 w-full"
+      headerStyle={{ minHeight: 'var(--step-card-height, 6.75rem)' }}
       header={
         <>
-          <div className="flex flex-col gap-1 min-w-0 flex-1 pr-3 sm:pr-4 relative z-10">
-            <div className="flex items-center gap-2 w-full">
-              <span className={`text-base font-medium tracking-wide truncate transition-colors ${isExpanded ? 'text-amber-400' : 'text-white'}`}>
-                {r.wheel.name}
-              </span>
-              {isWheelOverdue(r.wheel) && (
-                <Tag intent="warning" appearance="solid" className="shrink-0">
-                  Overdue
-                </Tag>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-2 flex-wrap mt-0.5">
+          {/* Left Column: Identity, Setup & Hardware */}
+          <div className="flex flex-col justify-between flex-1 min-w-0 pr-3 sm:pr-3.5 py-0.5 gap-1.5">
+            {/* Line 1: Step Number + Wheel Name + Grit/Honing chip */}
+            <div className="flex items-center gap-2 min-w-0">
               {r.step && (
                 <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center text-[10px] font-bold tabular-nums text-white border border-black/60 shadow-inner shrink-0">
                   {index + 1}
                 </div>
               )}
+              <span className={`text-base font-semibold tracking-wide truncate transition-colors ${isExpanded ? 'text-amber-400' : 'text-white'}`}>
+                {r.wheel.name}
+              </span>
+              {r.wheel.grit && (
+                <Tag intent="default" appearance="outline" mono className="shrink-0 text-[10px] px-1.5 py-0 border-white/20 text-white/70">
+                  {r.wheel.grit.startsWith('#') ? r.wheel.grit : `#${r.wheel.grit}`}
+                </Tag>
+              )}
+              {r.wheel.isHoning && (
+                <Tag intent="accent" appearance="ghost" className="shrink-0 text-[10px] px-1.5 py-0">
+                  Honing
+                </Tag>
+              )}
+            </div>
+
+            {/* Line 2: Angle Offset, Direction, Angle/Base */}
+            <div className="flex items-center gap-2 flex-wrap">
               {hasOffset && (
                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 shadow-sm ${angleOffset > 0 ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'bg-danger/20 text-danger border border-danger/20'}`}>
                   {angleOffset > 0 ? '+' : ''}{angleOffset.toFixed(1)}°
                 </span>
               )}
               {r.step && (
-                <div className="flex items-center shrink-0 ml-1" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
+                <div className="flex items-center shrink-0 ml-0.5" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
                   {r.step.base === 'rear' ? <IconEdgeLeading className="w-3.5 h-3.5 text-[var(--color-accent)] opacity-80" /> : <IconEdgeTrailing className="w-3.5 h-3.5 text-sky-400 opacity-80" />}
                 </div>
               )}
@@ -157,36 +172,46 @@ const StepCard = React.memo(function StepCard({
               </span>
             </div>
 
-            {/* Row 3: Hardware Pills */}
-            {(showAdvancedStepOverrides || r.step?.machineId || r.step?.usbId) && (
-              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                {(showAdvancedStepOverrides || r.step?.machineId) && effectiveMachine && (
-                  <Tag 
-                    intent={isMachineChanged ? 'warning' : 'default'} 
-                    appearance={isMachineChanged ? 'solid' : 'ghost'}
-                    mono={!isMachineChanged} 
-                    uppercase={false}
-                  >
-                    {effectiveMachine.name}
-                  </Tag>
-                )}
-                {(showAdvancedStepOverrides || r.step?.usbId) && effectiveUsb && (
-                  <Tag 
-                    intent={isUsbChanged ? 'warning' : 'default'} 
-                    appearance={isUsbChanged ? 'solid' : 'ghost'}
-                    mono={!isUsbChanged} 
-                    uppercase={false}
-                  >
-                    {effectiveUsb.name}
-                  </Tag>
-                )}
-              </div>
-            )}
+            {/* Line 3: Hardware Tags (Diameter Tag on Left, followed by overrides) */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Tag 
+                intent="default" 
+                appearance="ghost"
+                badge={countdownText}
+                badgeIntent={isWheelOverdue(r.wheel) ? 'warning' : 'accent'}
+                className="shrink-0"
+              >
+                Ø {r.wheel.D}mm
+              </Tag>
+              {(showAdvancedStepOverrides || r.step?.machineId) && effectiveMachine && (
+                <Tag 
+                  intent={isMachineChanged ? 'warning' : 'default'} 
+                  appearance={isMachineChanged ? 'solid' : 'ghost'}
+                  mono={!isMachineChanged} 
+                  uppercase={false}
+                >
+                  {effectiveMachine.name}
+                </Tag>
+              )}
+              {(showAdvancedStepOverrides || r.step?.usbId) && effectiveUsb && (
+                <Tag 
+                  intent={isUsbChanged ? 'warning' : 'default'} 
+                  appearance={isUsbChanged ? 'solid' : 'ghost'}
+                  mono={!isUsbChanged} 
+                  uppercase={false}
+                >
+                  {effectiveUsb.name}
+                </Tag>
+              )}
+            </div>
           </div>
 
-          {/* Massive USB/Projection Output */}
-          <div className="flex flex-col items-end shrink-0 relative z-10">
-            <span className="text-2xl sm:text-3xl font-bold text-amber-400 tracking-tight amber-glow tabular-nums">
+          {/* Neumorphic Vertical Divider */}
+          <Divider orientation="vertical" className="my-1" />
+
+          {/* Right Column: Dedicated Output Gauge Pillar */}
+          <div className="flex flex-col items-end justify-center shrink-0 pl-3 sm:pl-3.5 relative z-10 min-w-[88px] sm:min-w-[104px]">
+            <span className="text-2xl sm:text-3xl font-bold text-amber-400 tracking-tight amber-glow tabular-nums leading-none">
               {isProjectionMode ? (
                 r.isReachable !== false && r.requiredProjectionA != null ? (
                   <>{r.requiredProjectionA.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
@@ -200,18 +225,20 @@ const StepCard = React.memo(function StepCard({
               )}
             </span>
             
-            <div className="flex flex-col items-end mt-1">
-              {deltaTurnsText ? (
-                 <div className="flex flex-col items-end gap-1">
-                    <Tag intent="warning" appearance="concave" className="text-[10px] px-1.5 tracking-wide">{deltaTurnsText}</Tag>
-                    <span className="text-[10px] text-white/30 font-bold uppercase tracking-wide">{deltaText}</span>
-                 </div>
-              ) : deltaText ? (
-                <span className="text-[10px] text-amber-400 uppercase tracking-wide font-bold">
-                  {deltaText}
-                </span>
-              ) : null}
-            </div>
+            {(deltaTurnsText || deltaText) && (
+              <div className="flex flex-col items-end mt-1.5">
+                {deltaTurnsText ? (
+                   <div className="flex flex-col items-end gap-1">
+                      <Tag intent="warning" appearance="concave">{deltaTurnsText}</Tag>
+                      <span className="text-[10px] text-white/30 font-bold uppercase tracking-wide">{deltaText}</span>
+                   </div>
+                ) : deltaText ? (
+                  <span className="text-[10px] text-amber-400 uppercase tracking-wide font-bold">
+                    {deltaText}
+                  </span>
+                ) : null}
+              </div>
+            )}
           </div>
         </>
       }

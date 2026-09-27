@@ -25,7 +25,7 @@ export interface DevState {
 
 export const initialState = {
   uiScale: 1.0,
-  stepCardHeight: 92,
+  stepCardHeight: 108,
   cardStackGap: 12,
   topBarThickness: 48,
   uiRadius: 24,
@@ -48,9 +48,13 @@ export const useDevStore = create<DevState>()(
     }),
     {
       name: 'uwgas-dev-settings',
-      version: 1,
-      migrate: (persistedState: unknown) => {
-        return { ...initialState, ...(persistedState as Partial<DevState>) } as DevState;
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        const state = (persistedState || {}) as Partial<DevState>;
+        if (version < 2) {
+          return { ...initialState, ...state, stepCardHeight: 108 };
+        }
+        return { ...initialState, ...state } as DevState;
       },
     }
   )

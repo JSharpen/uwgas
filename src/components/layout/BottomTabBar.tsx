@@ -3,12 +3,16 @@ import { useUIStore } from '../../state/uiStore';
 import { useStore } from '../../state/store';
 import { IconCalculator, IconDisc, IconSettings, IconFolder } from '../../icons';
 import { isWheelOverdue } from '../../utils/wheelWear';
+import { isMachineUnmapped } from '../../utils/machineStatus';
 
 export function BottomTabBar() {
   const view = useUIStore((s) => s.view);
   const setView = useUIStore((s) => s.setView);
   const wheels = useStore((s) => s.wheels);
   const hasOverdueWheels = wheels.some(isWheelOverdue);
+  const machines = useStore((s) => s.machines);
+  const hasUnmappedMachines = machines.some(isMachineUnmapped);
+  const hardwareNeedsAttention = hasOverdueWheels || hasUnmappedMachines;
 
   return (
     <nav className="touch-none fixed bottom-[-10px] left-0 right-0 h-[calc(74px_+_env(safe-area-inset-bottom))] pb-[calc(10px_+_env(safe-area-inset-bottom))] bg-[#18181b]/95 backdrop-blur-lg border-t border-white/5 flex items-center justify-around z-40 shadow-2xl">
@@ -46,7 +50,7 @@ export function BottomTabBar() {
           }`}
         >
           <IconDisc className="w-[22px] h-[22px]" />
-          {hasOverdueWheels && (
+          {hardwareNeedsAttention && (
             <div className="absolute top-1 right-2.5 w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] border border-[#18181b]" />
           )}
         </div>

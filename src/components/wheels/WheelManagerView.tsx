@@ -171,7 +171,7 @@ export function WheelManagerView() {
                       </div>
                     }
                   >
-                    <div className="p-[var(--ui-gap)] pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
+                    <div className="p-4 sm:p-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
                       <WheelFormFields
                         value={w}
                         onChange={patch => onUpdateWheel(w.id, patch as Partial<import('../../types/core').Wheel>)}

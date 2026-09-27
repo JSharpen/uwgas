@@ -65,9 +65,15 @@ export interface ReadonlyCalibrationMeasurement {
   readonly CAo: number | string;
 }
 
+export interface PhysicalEnvelope {
+  readonly minHn: number;
+  readonly maxHn: number;
+}
+
 export interface CalibrationDiagnosticsOutput {
   readonly residuals: number[];
   readonly maxAbsResidualMm: number;
+  readonly prunedIndex?: number;
 }
 
 export interface CalibrationResultOutput {

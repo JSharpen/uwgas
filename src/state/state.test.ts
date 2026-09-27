@@ -441,8 +441,8 @@ describe('State Persistence & Storage Migration Challenger Suite', () => {
       ui.setView('settings');
       assert.strictEqual(useUIStore.getState().view, 'settings');
 
-      ui.setSettingsView('measurement');
-      assert.strictEqual(useUIStore.getState().settingsView, 'measurement');
+      ui.setSettingsView('general');
+      assert.strictEqual(useUIStore.getState().settingsView, 'general');
 
       ui.toggleSetupPanel();
       assert.strictEqual(useUIStore.getState().isSetupPanelOpen, true);

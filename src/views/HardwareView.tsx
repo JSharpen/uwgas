@@ -7,8 +7,15 @@ import MachineManagerView from '../components/settings/MachineManagerView';
 import WheelManagerView from '../components/wheels/WheelManagerView';
 import JigManagerView from '../components/settings/JigManagerView';
 import UsbManagerView from '../components/settings/UsbManagerView';
+import SegmentedControl from '../components/ui/SegmentedControl';
+import { isMachineUnmapped } from '../utils/machineStatus';
+
+// We will compute options dynamically inside component
 
 export default function HardwareView() {
+  const machines = useStore(s => s.machines);
+  const hasUnmappedMachines = machines.some(isMachineUnmapped);
+
   const equipmentTab = useUIStore((s) => s.equipmentTab);
   const setEquipmentTab = useUIStore((s) => s.setEquipmentTab);
   const calibratingMachineId = useUIStore((s) => s.calibratingMachineId);
@@ -77,60 +84,28 @@ export default function HardwareView() {
       ) : null}
 
       {!calibratingMachineId && (
-        <div className="neu-convex rounded-full border border-black/40 p-1 flex bg-neutral-950 shadow-lg relative z-20 shrink-0">
-          <button
-            onClick={() => {
-              setEquipmentTab('wheels');
-              useUIStore.getState().setExpandedEquipmentId(null);
-            }}
-            className={`flex-1 h-11 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-all active:scale-95 ${
-              equipmentTab === 'wheels'
-                ? 'bg-amber-400 text-black shadow-sm'
-                : 'text-white/40 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            Wheels
-          </button>
-          <button
-            onClick={() => {
-              setEquipmentTab('machines');
-              useUIStore.getState().setExpandedEquipmentId(null);
-            }}
-            className={`flex-1 h-11 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-all active:scale-95 ${
-              equipmentTab === 'machines'
-                ? 'bg-amber-400 text-black shadow-sm'
-                : 'text-white/40 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            Machines
-          </button>
-          <button
-            onClick={() => {
-              setEquipmentTab('jigs');
-              useUIStore.getState().setExpandedEquipmentId(null);
-            }}
-            className={`flex-1 h-11 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-all active:scale-95 ${
-              equipmentTab === 'jigs'
-                ? 'bg-amber-400 text-black shadow-sm'
-                : 'text-white/40 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            Jigs
-          </button>
-          <button
-            onClick={() => {
-              setEquipmentTab('usbs');
-              useUIStore.getState().setExpandedEquipmentId(null);
-            }}
-            className={`flex-1 h-11 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-full transition-all active:scale-95 ${
-              equipmentTab === 'usbs'
-                ? 'bg-amber-400 text-black shadow-sm'
-                : 'text-white/40 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            USBs
-          </button>
-        </div>
+        <SegmentedControl
+          value={equipmentTab}
+          onChange={(tab) => {
+            setEquipmentTab(tab);
+            useUIStore.getState().setExpandedEquipmentId(null);
+          }}
+          options={[
+            { value: 'wheels' as const, label: 'Wheels' },
+            { 
+              value: 'machines' as const, 
+              label: (
+                <div className="flex items-center gap-1.5 relative">
+                  Machines
+                  {hasUnmappedMachines && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />}
+                </div>
+              ) 
+            },
+            { value: 'jigs' as const, label: 'Jigs' },
+            { value: 'usbs' as const, label: 'USBs' },
+          ]}
+          ariaLabel="Hardware sections"
+        />
       )}
 
       {equipmentTab === 'wheels' && <WheelManagerView />}

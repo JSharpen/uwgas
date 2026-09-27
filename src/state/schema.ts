@@ -108,6 +108,11 @@ export const CalibrationDiagnosticsSchema = z.object({
   maxAbsResidualMm: z.number(),
 });
 
+export const PhysicalEnvelopeSchema = z.object({
+  minHn: z.number(),
+  maxHn: z.number(),
+});
+
 export const CalibrationProfileSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -121,6 +126,7 @@ export const CalibrationProfileSchema = z.object({
     diagnostics: CalibrationDiagnosticsSchema,
     angleErrorDeg: z.number().nullable().catch(null),
     measurements: z.array(CalibrationMeasurementSchema).catch([]),
+    physicalEnvelope: PhysicalEnvelopeSchema.optional(),
   }).optional(),
   front: z.object({
     hc: z.number(),
@@ -128,6 +134,7 @@ export const CalibrationProfileSchema = z.object({
     diagnostics: CalibrationDiagnosticsSchema,
     angleErrorDeg: z.number().nullable().catch(null),
     measurements: z.array(CalibrationMeasurementSchema).catch([]),
+    physicalEnvelope: PhysicalEnvelopeSchema.optional(),
   }).optional(),
 });
 

@@ -58,3 +58,56 @@ export function SwitchButton({
     </button>
   );
 }
+
+export interface SwitchToggleProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+  ariaLabel?: string;
+  className?: string;
+}
+
+/**
+ * Compact neumorphic tactile toggle switch.
+ * Designed to sit inside setting rows and compact toolbars while maintaining
+ * a 44px ergonomic touch area.
+ */
+export function SwitchToggle({
+  checked,
+  onChange,
+  disabled = false,
+  ariaLabel,
+  className = '',
+}: SwitchToggleProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      disabled={disabled}
+      onClick={() => {
+        if (!disabled) onChange(!checked);
+      }}
+      className={`min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer select-none bg-transparent ${
+        disabled ? 'opacity-40 cursor-not-allowed' : ''
+      } ${className}`.trim()}
+    >
+      <div
+        className={`w-12 h-7 rounded-full p-1 transition-all duration-200 neu-concave relative flex items-center ${
+          checked
+            ? 'border border-amber-400/60 shadow-[0_0_10px_rgba(251,191,36,0.2)]'
+            : 'border border-white/10'
+        }`}
+      >
+        <div
+          className={`w-5 h-5 rounded-full transition-transform duration-200 ease-out ${
+            checked
+              ? 'translate-x-5 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'
+              : 'translate-x-0 bg-white/40'
+          }`}
+        />
+      </div>
+    </button>
+  );
+}

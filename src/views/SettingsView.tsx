@@ -3,7 +3,7 @@ import { useUIStore } from '../state/uiStore';
 import { ContextBar } from '../components/layout/ContextBar';
 import { APP_VERSION_DISPLAY } from '../version';
 import SettingsRootView from '../components/settings/SettingsRootView';
-import MeasurementSettingsView from '../components/settings/MeasurementSettingsView';
+import GeneralSettingsView from '../components/settings/GeneralSettingsView';
 import ImportExportPanel from '../components/ImportExportPanel';
 import GlossaryPage from '../components/GlossaryPage';
 import DevRootView from '../components/settings/DevRootView';
@@ -15,7 +15,7 @@ export default function SettingsView() {
   const setSettingsView = useUIStore(s => s.setSettingsView);
   
   const titleMap: Record<string, string> = {
-    'measurement': 'Measurement',
+    'general': 'General',
     'import': 'Import / Export',
     'glossary': 'Glossary',
     'dev': 'Dev Mode',
@@ -55,7 +55,7 @@ export default function SettingsView() {
           {titleMap[settingsView] || 'Settings'}
         </ContextBar.AmbientInfo>
       </ContextBar.Slot>
-      {settingsView === 'measurement' && <MeasurementSettingsView />}
+      {settingsView === 'general' && <GeneralSettingsView />}
       {settingsView === 'import' && <ImportExportPanel />}
       {settingsView === 'glossary' && <GlossaryPage />}
       {settingsView === 'dev' && import.meta.env.DEV && <DevRootView />}

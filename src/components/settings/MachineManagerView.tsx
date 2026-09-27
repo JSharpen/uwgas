@@ -2,8 +2,10 @@ import * as React from 'react';
 import { TextInput } from "../ui/TextInput";
 import { NumberInput } from "../ui/NumberInput";
 import { generateId } from "../../utils/id";
-import type { MachineConfig, CalibrationProfile } from '../../types/core';
+import type { MachineConfig } from '../../types/core';
 import ModalShell from '../ModalShell';
+import { ModalSelector } from '../ui/ModalSelector';
+import { Button, Surface } from '../ui';
 import { IconGrinder } from '../../icons';
 import useModalLayout from '../../hooks/useModalLayout';
 import CalibrationWizard from '../CalibrationWizard';
@@ -11,6 +13,7 @@ import ExpandableCard from '../ui/ExpandableCard';
 import { Tag } from '../ui/Tag';
 
 import { useMachineState } from '../../state/store';
+import { isMachineUnmapped } from '../../utils/machineStatus';
 
 import { useUIStore } from '../../state/uiStore';
 
@@ -24,6 +27,7 @@ export default function MachineManagerView() {
     setDefaultMachineId: onSetDefaultMachine,
   } = useMachineState();
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [mappingSelectionBase, setMappingSelectionBase] = React.useState<{machineId: string, base: 'rear'|'front'} | null>(null);
     
   const expandedEquipmentId = useUIStore(s => s.expandedEquipmentId);
   const setExpandedEquipmentId = useUIStore(s => s.setExpandedEquipmentId);
@@ -44,7 +48,7 @@ export default function MachineManagerView() {
   const calibratingMachineId = useUIStore(s => s.calibratingMachineId);
   const calibratingProfileId = useUIStore(s => s.calibratingProfileId);
   const setCalibratingMachineId = useUIStore(s => s.setCalibratingMachineId);
-  const [mappingSelectionMachineId, setMappingSelectionMachineId] = React.useState<string | null>(null);
+  
 
   const { overlayStyle, getDialogStyle } = useModalLayout();
 
@@ -103,16 +107,6 @@ export default function MachineManagerView() {
   }
 
 
-  const getBestProfile = (profiles?: CalibrationProfile[]): string | null => {
-    if (!profiles || profiles.length === 0) return null;
-    let best = profiles[0];
-    for (const p of profiles) {
-      const bestRes = Math.max(best.rear?.diagnostics.maxAbsResidualMm || 0, best.front?.diagnostics.maxAbsResidualMm || 0);
-      const currRes = Math.max(p.rear?.diagnostics.maxAbsResidualMm || 0, p.front?.diagnostics.maxAbsResidualMm || 0);
-      if (currRes < bestRes) best = p;
-    }
-    return best.id;
-  };
 
   
   return (
@@ -134,6 +128,9 @@ export default function MachineManagerView() {
                   <div className="flex items-center gap-2.5 w-full">
                     <IconGrinder className="w-6 h-6 text-[var(--color-accent)] shrink-0" />
                     <span className={`text-base font-medium tracking-wide truncate ${isExpanded ? 'text-amber-400/80' : 'text-white'}`}>{m.name}</span>
+                    {isMachineUnmapped(m) && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] ml-auto mr-1 shrink-0" />
+                    )}
                   </div>
                   <div className="flex items-center gap-2 min-h-[24px]">
                     {m.id === defaultMachineId && (
@@ -150,7 +147,7 @@ export default function MachineManagerView() {
                 </div>
               }
             >
-              <div className="p-[var(--ui-gap)] pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
+              <div className="p-4 sm:p-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
                     
                 <TextInput
   label="Machine Name"
@@ -168,74 +165,74 @@ export default function MachineManagerView() {
                   <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Geometry Mapping</span>
                   
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="neu-concave border border-black/40 shadow-inner rounded-[var(--ui-radius-core)] p-3 flex flex-col gap-1">
-                      <span className="text-[10px] text-[var(--color-accent)] uppercase tracking-widest font-bold">Rear Base</span>
-                      <span className="font-mono text-xs text-white/80">
-                        hc: <b className="text-white font-bold">{m.constants.rear.hc.toFixed(1)}</b>, o: <b className="text-white font-bold">{m.constants.rear.o.toFixed(1)}</b>
-                      </span>
-                    </div>
-                    <div className="neu-concave border border-black/40 shadow-inner rounded-[var(--ui-radius-core)] p-3 flex flex-col gap-1">
-                      <span className="text-[10px] text-[var(--color-focus)] uppercase tracking-widest font-bold">Front Base</span>
-                      <span className="font-mono text-xs text-white/80">
-                        hc: <b className="text-white font-bold">{m.constants.front.hc.toFixed(1)}</b>, o: <b className="text-white font-bold">{m.constants.front.o.toFixed(1)}</b>
-                      </span>
-                    </div>
+                    {/* Rear */}
+                    <Surface variant="concave" padding="md" className="flex flex-col gap-3 justify-between">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] text-[var(--color-accent)] uppercase tracking-widest font-bold">Rear Base</span>
+                        <span className="font-mono text-[11px] text-white/80 whitespace-nowrap">
+                          hc: <b className="text-white font-bold">{m.constants.rear.hc.toFixed(1)}</b>, o: <b className="text-white font-bold">{m.constants.rear.o.toFixed(1)}</b>
+                        </span>
+                        {(() => {
+                          const active = m.calibrationProfiles?.find(p => p.rear?.hc === m.constants.rear.hc && p.rear?.o === m.constants.rear.o)
+                                      || m.calibrationProfiles?.filter(p => p.rear).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+                          if (!active) return null;
+                          return (
+                            <div 
+                               className="text-[9px] text-white/50 mt-1 border-t border-white/5 pt-1.5 flex justify-between items-center"
+                            >
+                              <span>{new Date(active.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
+                              <span className="font-mono text-amber-300/80">err: {(active.rear?.angleErrorDeg ?? 0).toFixed(3)}°</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <Button
+                        variant="neu-convex" intent="accent" size="sm" fluid
+                        onClick={(e) => { e.stopPropagation(); setMappingSelectionBase({machineId: m.id, base: 'rear'}); }}
+                      >
+                        Rear Mappings
+                      </Button>
+                    </Surface>
+
+                    {/* Front */}
+                    <Surface variant="concave" padding="md" className="flex flex-col gap-3 justify-between">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] text-[var(--color-focus)] uppercase tracking-widest font-bold">Front Base</span>
+                        <span className="font-mono text-[11px] text-white/80 whitespace-nowrap">
+                          hc: <b className="text-white font-bold">{m.constants.front.hc.toFixed(1)}</b>, o: <b className="text-white font-bold">{m.constants.front.o.toFixed(1)}</b>
+                        </span>
+                        {(() => {
+                          const active = m.calibrationProfiles?.find(p => p.front?.hc === m.constants.front.hc && p.front?.o === m.constants.front.o)
+                                      || m.calibrationProfiles?.filter(p => p.front).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+                          if (!active) return null;
+                          return (
+                            <div 
+                               className="text-[9px] text-white/50 mt-1 border-t border-white/5 pt-1.5 flex justify-between items-center"
+                            >
+                              <span>{new Date(active.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
+                              <span className="font-mono text-blue-300/80">err: {(active.front?.angleErrorDeg ?? 0).toFixed(3)}°</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <Button
+                        variant="neu-convex" intent="focus" size="sm" fluid
+                        onClick={(e) => { e.stopPropagation(); setMappingSelectionBase({machineId: m.id, base: 'front'}); }}
+                      >
+                        Front Mappings
+                      </Button>
+                    </Surface>
                   </div>
                       
-                      {m.calibrationProfiles && m.calibrationProfiles.length > 0 ? (() => {
-                        const activeProfile = m.calibrationProfiles.find(p => p.id === m.activeCalibrationId);
-                        const isBest = activeProfile && getBestProfile(m.calibrationProfiles) === activeProfile.id;
-                        return (
-                          <div className="mt-2 flex flex-col gap-1">
-                            <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Active Mapping</span>
-                            <button
-                              type="button"
-                              className="w-full flex items-center justify-between p-3.5 neu-button rounded-[var(--ui-radius-core)] transition active:scale-[0.98] cursor-pointer"
-                              onClick={(e) => { e.stopPropagation(); setMappingSelectionMachineId(m.id); }}
-                            >
-                              <div className="flex flex-col items-start gap-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-white text-sm truncate">
-                                    {activeProfile ? activeProfile.name : "None selected"}
-                                  </span>
-                                  {isBest && (
-                                    <Tag intent="success" appearance="outline" shape="pill">
-                                      Best
-                                    </Tag>
-                                  )}
-                                </div>
-                                {activeProfile && (
-                                  <span className="text-[10px] text-white/40 font-mono">
-                                    {activeProfile.scope === 'both' ? 'Dual Base' : activeProfile.scope === 'rear' ? 'Rear Only' : 'Front Only'}
-                                  </span>
-                                )}
-                              </div>
-                              
-                            </button>
-                          </div>
-                        );
-                      })() : (
-                        <button
-                          type="button"
-                          className="mt-2 w-full flex flex-col items-center justify-center p-4 neu-button border border-[var(--color-accent)]/30 border-dashed rounded-[var(--ui-radius-core)] transition active:scale-[0.98] cursor-pointer"
-                          onClick={(e) => { e.stopPropagation(); setCalibratingMachineId(m.id); }}
-                        >
-                          <span className="font-bold text-[var(--color-accent)] text-sm mb-1">No mappings found</span>
-                          <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--color-accent)]/70">+ Tap to measure machine</span>
-                        </button>
-                      )}
                     </div>
 
                     {m.id !== defaultMachineId && (
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          className="px-4 py-2 rounded-[var(--ui-radius-core)] neu-button text-xs font-bold text-white/80 uppercase tracking-wider transition active:scale-95 cursor-pointer"
-                          onClick={(e) => { e.stopPropagation(); onSetDefaultMachine(m.id); }}
-                        >
-                          Set as Default
-                        </button>
-                      </div>
+                      <Button
+                        variant="neu" intent="default" size="md" fluid
+                        onClick={(e) => { e.stopPropagation(); onSetDefaultMachine(m.id); }}
+                      >
+                        Set as Default
+                      </Button>
                     )}
                   </div>
             </ExpandableCard>
@@ -243,94 +240,68 @@ export default function MachineManagerView() {
         })}
       </div>
 
-      {/* Add Modal */}
-      {mappingSelectionMachineId && (() => {
-        const selectedMachine = machines.find(x => x.id === mappingSelectionMachineId);
+      
+      {/* Mapping History Modal */}
+      {mappingSelectionBase && (() => {
+        const selectedMachine = machines.find(x => x.id === mappingSelectionBase.machineId);
         if (!selectedMachine) return null;
         
+        const base = mappingSelectionBase.base;
+        const titleName = base === 'rear' ? 'Rear Base' : 'Front Base';
+        const profiles = (selectedMachine.calibrationProfiles || []).filter(p => p[base]).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const currentHC = selectedMachine.constants[base].hc;
+        const currentO = selectedMachine.constants[base].o;
+
         return (
-          <ModalShell
-            title="Select Geometry Mapping"
-            subtitle="Choose a saved geometry mapping to use for calculations."
-            onClose={() => setMappingSelectionMachineId(null)}
-            overlayStyle={overlayStyle}
-            dialogStyle={getDialogStyle({ liftByKeyboard: false })}
+          <ModalSelector
+            isOpen={true}
+            onClose={() => setMappingSelectionBase(null)}
+            title={`${titleName} Mappings`}
+            subtitle="Select a historical mapping to set as active, or map a new one."
           >
-            {selectedMachine.calibrationProfiles && selectedMachine.calibrationProfiles.length > 0 ? (
-              <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1 -mr-1">
-                {selectedMachine.calibrationProfiles.map(p => {
-                  const isActive = selectedMachine.activeCalibrationId === p.id;
-                  const isBest = getBestProfile(selectedMachine.calibrationProfiles) === p.id;
-                  return (
-                    <div key={p.id} className="flex gap-2 items-stretch">
-                      <button
-                        type="button"
-                        className={`flex-1 flex items-center justify-between p-4 text-left rounded-[var(--ui-radius-core)] transition-all cursor-pointer neu-button active:scale-[0.98] ${isActive ? 'border border-[var(--color-accent)]/50 bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]' : 'border border-transparent'}`}
-                        onClick={() => {
-                          const newConstants = { ...selectedMachine.constants };
-                          if (p.rear) newConstants.rear = { hc: p.rear.hc, o: p.rear.o };
-                          if (p.front) newConstants.front = { hc: p.front.hc, o: p.front.o };
-                          onUpdateMachine(selectedMachine.id, {
-                            activeCalibrationId: p.id,
-                            constants: newConstants
-                          });
-                          setMappingSelectionMachineId(null);
-                        }}
-                      >
-                        <div className="flex flex-col gap-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-white truncate">{p.name}</span>
-                            {isBest && (
-                              <Tag intent="success" appearance="outline" shape="pill">
-                                Best
-                              </Tag>
-                            )}
-                          </div>
-                          <span className="text-xs text-white/40 font-mono">
-                            {new Date(p.createdAt).toLocaleDateString()} &middot; {p.scope === 'both' ? 'Dual Base' : p.scope === 'rear' ? 'Rear Only' : 'Front Only'}
-                          </span>
-                        </div>
-                        
-                        {isActive ? (
-                          <span className="text-[var(--color-accent)] font-bold text-xs uppercase tracking-wider px-2 shrink-0">Active</span>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full border-2 border-white/20 shrink-0 ml-4"></div>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        className="p-4 h-full shrink-0 neu-button rounded-[var(--ui-radius-core)] transition active:scale-[0.98] cursor-pointer flex items-center justify-center border border-white/5 text-white/50 hover:text-white"
-                        onClick={() => {
-                          setMappingSelectionMachineId(null);
-                          setCalibratingMachineId(selectedMachine.id, p.id, 'review');
-                        }}
-                        title="Edit Measurements"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                          <path d="M12 20h9"></path>
-                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                        </svg>
-                      </button>
-                    </div>
-                  );
-                })}
-                <button
-                  type="button"
-                  className="mt-2 w-full p-4 rounded-[var(--ui-radius-core)] neu-button border border-[var(--color-accent)]/30 text-[var(--color-accent)] transition active:scale-[0.98] flex items-center justify-center gap-2 font-bold text-sm cursor-pointer"
+            {profiles.map(p => {
+              const data = p[base]!;
+              const isActive = data.hc === currentHC && data.o === currentO;
+              return (
+                <ModalSelector.Item
+                  key={p.id}
+                  selected={isActive}
+                  intent={base === 'rear' ? 'accent' : 'focus'}
+                  meta={`Err: ${(data.angleErrorDeg ?? 0).toFixed(3)}°`}
                   onClick={() => {
-                     setMappingSelectionMachineId(null);
-                     setCalibratingMachineId(selectedMachine.id);
+                    if (!isActive) {
+                      const newConstants = { ...selectedMachine.constants };
+                      newConstants[base] = { hc: data.hc, o: data.o };
+                      onUpdateMachine(selectedMachine.id, { constants: newConstants });
+                    }
+                    setMappingSelectionBase(null);
                   }}
                 >
-                  + Create New Mapping
-                </button>
-              </div>
-            ) : (
-              <div className="p-4 text-center text-sm text-white/50">
-                No profiles available.
+                  {p.name}
+                </ModalSelector.Item>
+              );
+            })}
+            
+            {profiles.length === 0 && (
+              <div className="p-4 text-center text-xs text-white/50 mb-2">
+                No {titleName.toLowerCase()} mappings found.
               </div>
             )}
-          </ModalShell>
+
+            <Button
+              variant="outline"
+              intent={base === 'rear' ? 'accent' : 'focus'}
+              fluid
+              size="md"
+              className="mt-2"
+              onClick={() => {
+                 setMappingSelectionBase(null);
+                 setCalibratingMachineId(selectedMachine.id, null, 'intro', base);
+              }}
+            >
+              + Map New {titleName}
+            </Button>
+          </ModalSelector>
         );
       })()}
 
@@ -357,16 +328,14 @@ export default function MachineManagerView() {
 />
 
             <div className="flex justify-end gap-2 mt-2">
-              <button
-                type="button"
-                className="px-4 h-11 rounded-[var(--ui-radius-core)] neu-button text-white/70 font-semibold text-xs uppercase tracking-wide transition active:scale-95 cursor-pointer flex items-center justify-center"
+              <Button
+                variant="neu" intent="default" size="md"
                 onClick={closeAdd}
               >
                 Cancel
-              </button>
-              <button 
-                type="button" 
-                className="px-6 h-11 rounded-[var(--ui-radius-core)] bg-[var(--color-accent)] text-neutral-950 font-bold text-xs uppercase tracking-wide shadow-lg transition active:scale-95 flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed border border-[var(--color-accent)]" 
+              </Button>
+              <Button 
+                variant="solid" intent="accent" size="md"
                 disabled={!draftName.trim()}
                 onClick={() => {
                   onAddMachine({
@@ -379,7 +348,7 @@ export default function MachineManagerView() {
                 }}
               >
                 Save
-              </button>
+              </Button>
             </div>
           </div>
         </ModalShell>

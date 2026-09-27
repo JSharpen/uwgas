@@ -28,9 +28,10 @@ export type TopBarConfirmation = {
 export interface UIState {
   calibratingMachineId: string | null;
   calibratingProfileId: string | null;
+  calibratingScope: 'rear' | 'front' | null;
   calibrationStep: 'intro' | 'measuring' | 'review' | 'results';
   view: 'calculator' | 'hardware' | 'presets' | 'settings';
-  settingsView: 'root' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction';
+  settingsView: 'root' | 'general' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction';
   equipmentTab: 'machines' | 'wheels' | 'jigs' | 'usbs';
   isSetupPanelOpen: boolean;
   activeUsbTab: 'rear' | 'front';
@@ -56,10 +57,10 @@ export interface UIState {
   // Actions
   setView: (view: 'calculator' | 'hardware' | 'presets' | 'settings') => void;
   setEquipmentTab: (tab: 'machines' | 'wheels' | 'jigs' | 'usbs') => void;
-  setCalibratingMachineId: (id: string | null, profileId?: string | null, initialStep?: 'intro' | 'measuring' | 'review' | 'results') => void;
+  setCalibratingMachineId: (id: string | null, profileId?: string | null, initialStep?: 'intro' | 'measuring' | 'review' | 'results', initialScope?: 'rear' | 'front' | null) => void;
   setCalibrationStep: (step: 'intro' | 'measuring' | 'review' | 'results') => void;
   setSettingsView: (
-    view: 'root' | 'measurement' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction'
+    view: 'root' | 'general' | 'import' | 'glossary' | 'dev' | 'dev-ui' | 'dev-state' | 'dev-interaction'
   ) => void;
   setSetupPanelOpen: (isOpen: boolean) => void;
   setActiveUsbTab: (tab: 'rear' | 'front') => void;
@@ -110,6 +111,7 @@ export const useUIStore = create<UIState>((set) => ({
   view: 'calculator',
   calibratingMachineId: null,
   calibratingProfileId: null,
+  calibratingScope: null,
   calibrationStep: 'intro',
   equipmentTab: 'wheels',
   settingsView: 'root',
@@ -135,8 +137,8 @@ export const useUIStore = create<UIState>((set) => ({
   importModes: { ...DEFAULT_IMPORT_MODES },
 
   setView: (view) => set({ view }),
-  setCalibratingMachineId: (id, profileId = null, initialStep = 'intro') => 
-    set({ calibratingMachineId: id, calibratingProfileId: profileId, calibrationStep: initialStep }),
+  setCalibratingMachineId: (id, profileId = null, initialStep = 'intro', initialScope = null) => 
+    set({ calibratingMachineId: id, calibratingProfileId: profileId, calibratingScope: initialScope, calibrationStep: initialStep }),
   setCalibrationStep: (step) => set({ calibrationStep: step }),
   setEquipmentTab: (equipmentTab) => set({ equipmentTab }),
   setSettingsView: (settingsView) => set({ settingsView }),

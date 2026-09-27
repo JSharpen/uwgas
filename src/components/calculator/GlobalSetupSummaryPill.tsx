@@ -7,7 +7,7 @@ import { useDevStore } from '../../state/devStore';
 import { computeSuggestedFrontUsbHeight } from '../../math/tormek';
 import { _nz } from '../../utils/numbers';
 import { DEFAULT_CONSTANTS } from '../../state/defaults';
-import { Tag } from '../ui/Tag';
+import { Tag, Divider } from '../ui';
 
 export function GlobalSetupSummaryPill() {
   const maskBottomFade = useDevStore((s) => s.maskBottomFade);
@@ -107,7 +107,7 @@ export function GlobalSetupSummaryPill() {
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none rounded-[var(--ui-radius-mid)] z-0" />
 
           {/* Top Row: Hardware Pill Chips */}
-          <div className="relative z-10 flex flex-col items-start w-full gap-2 mb-3">
+          <div className="relative z-10 flex flex-col items-start w-full gap-2">
             <div className="grid grid-cols-3 gap-1.5 w-full">
               <Tag>{machines.find(m => m.id === defaultMachineId)?.name || 'Default'}</Tag>
               <Tag>{activeUsb?.name || 'USB'}</Tag>
@@ -115,8 +115,11 @@ export function GlobalSetupSummaryPill() {
             </div>
           </div>
           
+          {/* Neumorphic Horizontal Divider */}
+          <Divider orientation="horizontal" className="my-2.5" />
+
           {/* Main Readouts Row */}
-          <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center justify-between w-full pt-2 border-t border-white/5 gap-2">
+          <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center justify-between w-full gap-2">
             {/* Target Angle */}
             <div className="flex items-baseline gap-1.5">
               <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Angle</span>

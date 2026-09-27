@@ -4,7 +4,30 @@
 > All notable changes and autonomous AI session modifications are logged in this file.
 > The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased] (Session: Context Bar Refactor)
+## [Unreleased]
+### Added
+- **Live Diagnostics (Geometry Mapper)**: The UI now tracks mapping precision in real-time starting at step 4. Displays clear warnings if the solver detects a human measurement error and mathematically prunes it out of the dataset.
+- **Smart Outlier Pruning**: `tormek.ts` now wraps base calibrations in a rigorous leave-one-out algorithm, guaranteeing the single worst data point is safely discarded if it fails to hit the physical noise floor of the calipers.
+- **Keyboard Ergonomics**: You can now navigate the Geometry Mapper entirely via keyboard (Tab and Enter), with true auto-focus mapping to the target inputs on step transitions.
+
+### Changed
+- **Geometry Mapper Wizard**: Destroyed the manual "Improve It" loop. Replaced it with a Boundary-First determinism track. It automatically establishes the physical envelope, calculates dynamic target gaps, and traps the user in an automatic continuous refinement loop until the math engine confirms precision.
+- **Remeasure Strategy**: Pushing 'Re-measure' now executes a mathematically mandatory Hard Reset, requiring fresh boundaries to ensure pristine extrapolation anchoring.
+
+ (Session: Context Bar Refactor)
+
+### Added
+- **Settings Tree Redesign & Shared Neumorphic Components**:
+  - Renamed the "Measurement" settings section to **General** across UI, routing identifiers, store states, and backing files (`MeasurementSettingsView.tsx` $\rightarrow$ `GeneralSettingsView.tsx`).
+  - Added **`<SettingGroup>`** (`SettingGroup.tsx`): Machined `neu-convex` grouping container with category headers and automatic divider rendering between rows.
+  - Added **`<SettingItem>`** (`SettingItem.tsx`): Standardized row component supporting drill-down navigation (with tactile icon badge wells and chevrons) or embedded controls.
+  - Added **`<SwitchToggle>`** (`SwitchButton.tsx`): Compact tactile neumorphic switch toggle with 44px ergonomic touch bounds and amber active glow.
+  - Upgraded **`<SegmentedControl>`** (`SegmentedControl.tsx`):
+    - Added `size="sm"` variant (34px height) for compact row placement.
+    - Added **full-pill toggle mode** (`isToggle`): the entire pill acts as an accessible switch button where tapping anywhere immediately flips the state.
+    - Added **dual-layer geometric clipping mask**: active text colors are physically clipped to the sliding pill with counter-translation, eliminating color popping, contrast clashes, and deselect flicker.
+  - Modernized **`SettingsRootView.tsx`**: Categorized into **Workshop & Engine**, **Data & Storage**, **Reference & Help**, and **Developer Suite** with inset icon badge wells.
+  - Modernized **`GeneralSettingsView.tsx`**: Added reactive, context-aware descriptions that dynamically update based on the currently selected solver mode, projection style, and datum base.
 
 ### Changed / Reverted
 - **LCD Tag Bar Experiment**: Explored replacing the individual data pill `<Tag>` elements on Wheel cards with a single unified, hardware-styled `<LcdBar>` component. After implementing and refining several variations (including pneumatic neu-concave cutouts and flat LCD aesthetics), the design was reverted back to the minimal ghost tags to preserve UI cleanliness and reduce visual bulk.
@@ -93,6 +116,16 @@
 - **Drawer Overlap Geometry**: Verified DOM tree geometry to ensure the `Drawer Body` successfully wraps the inner scroll area and gracefully slides behind the overlapping `Summary Pill` without structural leakage.
 
 ## [Unreleased]
+### Added
+- **Live Diagnostics (Geometry Mapper)**: The UI now tracks mapping precision in real-time starting at step 4. Displays clear warnings if the solver detects a human measurement error and mathematically prunes it out of the dataset.
+- **Smart Outlier Pruning**: `tormek.ts` now wraps base calibrations in a rigorous leave-one-out algorithm, guaranteeing the single worst data point is safely discarded if it fails to hit the physical noise floor of the calipers.
+- **Keyboard Ergonomics**: You can now navigate the Geometry Mapper entirely via keyboard (Tab and Enter), with true auto-focus mapping to the target inputs on step transitions.
+
+### Changed
+- **Geometry Mapper Wizard**: Destroyed the manual "Improve It" loop. Replaced it with a Boundary-First determinism track. It automatically establishes the physical envelope, calculates dynamic target gaps, and traps the user in an automatic continuous refinement loop until the math engine confirms precision.
+- **Remeasure Strategy**: Pushing 'Re-measure' now executes a mathematically mandatory Hard Reset, requiring fresh boundaries to ensure pristine extrapolation anchoring.
+
+
 - **Shared Modal Selector Component (`JOB-033`)**:
   - Replaced the custom generic `ActionSheet` app-wide with a unified `ModalSelector` component built on top of the shared `ModalShell`.
   - Simplifies component API, enforces consistent `z-50` backdrop stacking, ensures standard safe-area-inset padding, and eliminates arbitrary CSS physics drifting.
@@ -177,6 +210,16 @@
 - Dynamically reflowed the Hardware Selection block to display side-by-side on desktop when spanning full-width.
 
 ## [Unreleased]
+### Added
+- **Live Diagnostics (Geometry Mapper)**: The UI now tracks mapping precision in real-time starting at step 4. Displays clear warnings if the solver detects a human measurement error and mathematically prunes it out of the dataset.
+- **Smart Outlier Pruning**: `tormek.ts` now wraps base calibrations in a rigorous leave-one-out algorithm, guaranteeing the single worst data point is safely discarded if it fails to hit the physical noise floor of the calipers.
+- **Keyboard Ergonomics**: You can now navigate the Geometry Mapper entirely via keyboard (Tab and Enter), with true auto-focus mapping to the target inputs on step transitions.
+
+### Changed
+- **Geometry Mapper Wizard**: Destroyed the manual "Improve It" loop. Replaced it with a Boundary-First determinism track. It automatically establishes the physical envelope, calculates dynamic target gaps, and traps the user in an automatic continuous refinement loop until the math engine confirms precision.
+- **Remeasure Strategy**: Pushing 'Re-measure' now executes a mathematically mandatory Hard Reset, requiring fresh boundaries to ensure pristine extrapolation anchoring.
+
+
 
 ### 🎨 Styling & Theming
 - **Equipment Forms Neumorphic Overhaul**: 

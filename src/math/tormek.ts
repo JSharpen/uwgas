@@ -424,3 +424,86 @@ export function computeMaxAngleErrorFromResiduals(
   if (maxAngle === 0) return null;
   return maxAngle;
 }
+
+/**
+ * Calculates D-optimal interior target measurement points based on the established physical envelope.
+ * Returns an array of target heights (e.g. 50%, 25%, 75% spans).
+ */
+export function calculateNextOptimalTarget(currentHnValues: number[], minHn: number, maxHn: number): number {
+  const valid = currentHnValues.filter(h => !isNaN(h) && h >= minHn && h <= maxHn);
+  const sorted = [minHn, ...valid, maxHn].sort((a, b) => a - b);
+  let maxGap = 0;
+  let optimalHn = minHn + (maxHn - minHn) * 0.5;
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const gap = sorted[i + 1] - sorted[i];
+    if (gap > maxGap) {
+      maxGap = gap;
+      optimalHn = sorted[i] + gap / 2;
+    }
+  }
+  return Math.round(optimalHn);
+}
+
+export function calculateOptimalMeasurementTargets(minHn: number, maxHn: number): number[] {
+  const span = maxHn - minHn;
+  return [
+    Math.round(minHn + span * 0.50), // Point 3: Midpoint
+    Math.round(minHn + span * 0.25), // Point 4: Lower-mid
+    Math.round(minHn + span * 0.75), // Point 5: Upper-mid
+  ];
+}
+
+/**
+ * Robust mathematical wrapper over calibrateBase that implements smart leave-one-out pruning.
+ * If N=5, it evaluates all subsets of 4 points. If the 5-point fit fails the noise floor target,
+ * it will identify and prune the worst outlier to salvage a gold-standard 4-point fit if possible.
+ */
+export function solveWithSmartPruning(
+  rows: readonly ReadonlyCalibrationMeasurement[],
+  Da: number,
+  Ds: number,
+  targetResidualMm: number = 0.02
+): CalibrationResultOutput | null {
+  if (rows.length < 5) {
+    return calibrateBase(rows, Da, Ds);
+  }
+
+  // 1. Try all points first
+  const fullRes = calibrateBase(rows, Da, Ds);
+
+  // If the full pool is already better than the noise floor, keep it all!
+  if (fullRes && fullRes.diagnostics.maxAbsResidualMm <= targetResidualMm) {
+    return fullRes;
+  }
+
+  // 2. Otherwise, we have some slop. Let's do leave-one-out pruning.
+  let bestSubsetRes: CalibrationResultOutput | null = null;
+  let bestPrunedIdx = -1;
+  let lowestMaxResidual = Infinity;
+
+  for (let i = 0; i < rows.length; i++) {
+    const subset = rows.filter((_, idx) => idx !== i);
+    const subRes = calibrateBase(subset, Da, Ds);
+    if (subRes) {
+      if (subRes.diagnostics.maxAbsResidualMm < lowestMaxResidual) {
+        lowestMaxResidual = subRes.diagnostics.maxAbsResidualMm;
+        bestSubsetRes = subRes;
+        bestPrunedIdx = i;
+      }
+    }
+  }
+
+  // 3. Return the best pruned result
+  if (bestSubsetRes) {
+    return {
+      ...bestSubsetRes,
+      diagnostics: {
+        ...bestSubsetRes.diagnostics,
+        prunedIndex: bestPrunedIdx
+      }
+    };
+  }
+
+  return fullRes; // Fallback to full result if subsets somehow failed to solve
+}
