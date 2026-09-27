@@ -6,7 +6,7 @@ import {
   IconBug,
   IconTerminal,
 } from '../../icons';
-import { APP_VERSION, APP_VERSION_DISPLAY } from '../../version';
+import { APP_VERSION_DISPLAY } from '../../version';
 import { useUIStore } from '../../state/uiStore';
 import { useStore } from '../../state/store';
 import { SettingGroup, SettingItem } from '../ui';
@@ -20,7 +20,6 @@ export default function SettingsRootView() {
 
   const handleBugReport = () => {
     const version = APP_VERSION_DISPLAY;
-    const build = APP_VERSION;
     const userAgent = navigator.userAgent;
     const screen = `${window.innerWidth}x${window.innerHeight} (DPR: ${window.devicePixelRatio || 1})`;
 
@@ -77,7 +76,7 @@ export default function SettingsRootView() {
 
 ---
 Diagnostic Info:
-App Version: ${version} (Build ${build})
+App Version: ${version}
 User Agent: ${userAgent}
 Screen Size: ${screen}
 Display Mode: ${displayMode}
@@ -104,7 +103,7 @@ Note: If your bug is highly specific to a tool or custom profile, please also at
       <div className="flex flex-col items-center py-4 mb-1">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Settings</h1>
         <div className="text-xs text-white/40 font-mono mt-1.5 bg-white/5 px-3 py-1 rounded-full border border-white/5">
-          v{APP_VERSION_DISPLAY} (Build {APP_VERSION})
+          v{APP_VERSION_DISPLAY}
         </div>
       </div>
 

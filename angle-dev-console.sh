@@ -702,6 +702,14 @@ git_commit_and_push_dev() {
     fi
 
     echo ""
+    echo -e "${TAG_INFO} Auto-incrementing Build Number..."
+    node -e "
+      const fs = require('fs');
+      const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+      pkg.buildNumber = (pkg.buildNumber || 0) + 1;
+      fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+    "
+
     echo -e "${TAG_INFO} Staging changes across repository..."
     git add -A
 
@@ -740,6 +748,7 @@ git_commit_and_push_dev() {
 
 git_promote_dev_to_main() {
     local cli_flag="${1:-}"
+    local bump_arg="${2:-}"
 
     cd "$GIT_ROOT" || exit 1
     update_live_status
@@ -784,6 +793,46 @@ git_promote_dev_to_main() {
     if ! npm run lint; then
         echo -e "${TAG_FAIL} Lint failed on 'dev'! Aborting merge to main."
         return 1
+    fi
+
+    echo ""
+    echo -e "${C_YELLOW}${C_BOLD}Version Bump Protocol${C_RESET}"
+    local current_version
+    current_version="$(node -p "require('./package.json').version")"
+    echo -e "Current Version: ${C_CYAN}v${current_version}${C_RESET}"
+    
+    local bump_type=""
+    if [[ -n "$bump_arg" ]]; then
+        case "$bump_arg" in
+            patch|minor|major) bump_type="$bump_arg" ;;
+            none|skip) bump_type="" ;;
+            *) echo -e "${TAG_WARN} Invalid bump arg '${bump_arg}'. Skipping version bump." ;;
+        esac
+    else
+        echo -e "  ${C_CYAN}[1]${C_RESET} Patch (Bug fixes)"
+        echo -e "  ${C_CYAN}[2]${C_RESET} Minor (New features)"
+        echo -e "  ${C_CYAN}[3]${C_RESET} Major (Breaking changes)"
+        echo -e "  ${C_YELLOW}[0]${C_RESET} Skip version bump"
+        echo -en "${C_WHITE}${C_BOLD}Select version bump (0-3):${C_RESET} "
+        read -r bump_choice
+
+        case "$bump_choice" in
+            1) bump_type="patch" ;;
+            2) bump_type="minor" ;;
+            3) bump_type="major" ;;
+        esac
+    fi
+
+    if [[ -n "$bump_type" ]]; then
+        echo -e "${TAG_INFO} Bumping version ($bump_type)..."
+        npm version "$bump_type" --no-git-tag-version
+        git add package.json package-lock.json 2>/dev/null || git add package.json
+        local new_version
+        new_version="$(node -p "require('./package.json').version")"
+        git commit -m "chore: version bump to v${new_version} [Automated]"
+        echo -e "${TAG_OK} Version bumped to v${new_version} and committed on 'dev'."
+    else
+        echo -e "${TAG_INFO} Skipping version bump."
     fi
 
     cd "$GIT_ROOT" || exit 1
@@ -1107,6 +1156,7 @@ run_deploy_protocol() {
 
 run_full_release() {
     local cli_flag="${1:-}"
+    local bump_arg="${2:-}"
     echo -e "${C_CYAN}${C_BOLD}==============================================================================${C_RESET}"
     echo -e "${C_WHITE}${C_BOLD}                   UWGAS FULL RELEASE & DEPLOY PIPELINE                       ${C_RESET}"
     echo -e "${C_CYAN}------------------------------------------------------------------------------${C_RESET}"
@@ -1127,7 +1177,7 @@ run_full_release() {
 
     echo ""
     echo -e "${TAG_INFO} Step 2/3: Promoting 'dev' to 'main'..."
-    if ! git_promote_dev_to_main "$cli_flag"; then
+    if ! git_promote_dev_to_main "$cli_flag" "$bump_arg"; then
         echo -e "${TAG_FAIL} Merge to 'main' cancelled or failed. Release aborted."
         return 1
     fi
