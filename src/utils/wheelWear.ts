@@ -54,6 +54,20 @@ export function getMeasurementCountdownText(wheel: import('../types/core').Wheel
     return 'OVERDUE';
   }
 
-  const daysRemaining = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
-  return `${daysRemaining}d`;
+  const days = Math.floor(msRemaining / (1000 * 60 * 60 * 24));
+  if (days > 0) {
+    return `${days}d`;
+  }
+
+  const hours = Math.floor(msRemaining / (1000 * 60 * 60));
+  if (hours > 0) {
+    return `${hours}h`;
+  }
+
+  const minutes = Math.floor(msRemaining / (1000 * 60));
+  if (minutes > 0) {
+    return `${minutes}m`;
+  }
+
+  return '<1m';
 }

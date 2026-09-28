@@ -48,7 +48,6 @@ export function WheelFormFields({
           onChange={(checked) => {
             onChange({
               isHoning: checked,
-              baseForHn: checked ? 'front' : value.baseForHn,
               ...(checked && { isWearable: false, remeasureInterval: undefined, remeasureIntervalUnit: undefined }),
             });
           }}
@@ -60,7 +59,6 @@ export function WheelFormFields({
               <SwitchButton
                 checked={value.baseForHn === 'front'}
                 title="Default Base"
-                subtitle={value.baseForHn === 'front' ? 'Front (Trailing edge)' : 'Rear (Leading edge)'}
                 checkedLabel="FRONT"
                 uncheckedLabel="REAR"
                 onChange={(checked) => onChange({ baseForHn: checked ? 'front' : 'rear' })}
@@ -80,33 +78,36 @@ export function WheelFormFields({
             if (value.isHoning) return;
             onChange({
               isWearable: checked,
-              remeasureInterval: checked ? (value.remeasureInterval || 30) : undefined,
-              remeasureIntervalUnit: checked ? (value.remeasureIntervalUnit || 'days') : undefined,
             });
           }}
         />
 
         <div className={`grid transition-all duration-300 ease-in-out ${!(value.isWearable && !value.isHoning) ? 'opacity-0 invisible' : 'opacity-100 visible'}`} style={{ gridTemplateRows: value.isWearable && !value.isHoning ? "1fr" : "0fr" }}>
           <div className="overflow-hidden min-h-0">
-            <div className="flex flex-col gap-1.5 pt-[var(--ui-gap)]">
-              <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Remind me to re-measure every:</span>
-              <div className="flex items-center gap-[var(--ui-gap)]">
-                <input
-                  type="number"
-                  min="1"
-                  className="neu-concave border border-black/40 shadow-inner rounded-[var(--ui-radius-core)] p-[var(--ui-gap)] text-base font-mono font-bold text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition w-24 text-center"
-                  value={value.remeasureInterval || 30}
-                  onChange={e => onChange({ remeasureInterval: parseInt(e.target.value, 10) || undefined })}
+            <div className="flex items-center gap-2 pt-[var(--ui-gap)]">
+              <div className="flex-1 min-w-0">
+                <SwitchButton
+                  title="Reminders"
+                  checked={value.remeasureInterval !== undefined}
+                  className="h-10 !py-0 !px-3"
+                  onChange={(checked) => {
+                    if (!checked) {
+                      onChange({ remeasureInterval: undefined });
+                    } else {
+                      onChange({ remeasureInterval: 30, remeasureIntervalUnit: 'days' });
+                    }
+                  }}
                 />
-                <select
-                  className="neu-concave border border-black/40 shadow-inner rounded-[var(--ui-radius-core)] p-[var(--ui-gap)] text-sm font-semibold text-white bg-transparent focus:border-[var(--color-accent)] outline-none transition flex-1 appearance-none"
-                  value={value.remeasureIntervalUnit || 'days'}
-                  onChange={e => onChange({ remeasureIntervalUnit: e.target.value as 'days' | 'weeks' | 'months' })}
-                >
-                  <option value="days">Days</option>
-                  <option value="weeks">Weeks</option>
-                  <option value="months">Months</option>
-                </select>
+              </div>
+              <div className={`w-36 shrink-0 transition-opacity ${value.remeasureInterval === undefined ? 'opacity-30 pointer-events-none' : ''}`}>
+                <StepperControl
+                  value={value.remeasureInterval ?? 30}
+                  onChange={(val) => onChange({ remeasureInterval: val, remeasureIntervalUnit: 'days' })}
+                  min={1}
+                  step={1}
+                  unit="D"
+                  variant="mini"
+                />
               </div>
             </div>
           </div>

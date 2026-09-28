@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 export type TagIntent = 'default' | 'accent' | 'warning' | 'success' | 'info';
-export type TagAppearance = 'solid' | 'outline' | 'ghost' | 'concave';
+export type TagAppearance = 'solid' | 'outline' | 'ghost' | 'concave' | 'convex';
 
 export interface TagProps extends React.HTMLAttributes<HTMLSpanElement> {
   intent?: TagIntent;
@@ -106,7 +106,26 @@ export function Tag({
         break;
       case 'default':
       default:
-        styleClasses = 'neu-concave border border-black/40 shadow-inner text-white/70 font-bold';
+        styleClasses = 'neu-concave border border-black/40 shadow-inner text-white font-bold';
+        break;
+    }
+  } else if (appearance === 'convex') {
+    switch (intent) {
+      case 'warning':
+        styleClasses = 'neu-convex border border-amber-500/30 text-amber-400 font-bold';
+        break;
+      case 'success':
+        styleClasses = 'neu-convex border border-emerald-500/30 text-emerald-400 font-bold';
+        break;
+      case 'info':
+        styleClasses = 'neu-convex border border-blue-500/30 text-blue-400 font-bold';
+        break;
+      case 'accent':
+        styleClasses = 'neu-convex border border-[var(--color-accent)]/30 text-[var(--color-accent)] font-bold';
+        break;
+      case 'default':
+      default:
+        styleClasses = 'neu-badge-convex text-white font-bold';
         break;
     }
   }
@@ -117,9 +136,9 @@ export function Tag({
   const isUppercase = uppercase ?? defaultUppercase;
   
   // 3. Assemble
-  // Standardized padding: When badge is present, enforce uniform 2px padding (py-0.5 pr-0.5) for concentricity
-  // When no badge, preserve pt-[3px] pb-[1px] for optical vertical centering of uppercase text
-  const paddingClasses = badge ? 'pl-2 pr-0.5 py-0.5' : 'px-2 pt-[3px] pb-[1px]';
+  // Standardized padding: All tags strictly preserve pt-[3px] pb-[1px] to ensure container size 
+  // and text baselines perfectly match across the app.
+  const paddingClasses = badge ? 'pl-2 pr-0.5 pt-[3px] pb-[1px]' : 'px-2 pt-[3px] pb-[1px]';
   const baseClasses = `inline-flex items-center justify-center ${paddingClasses} text-[9px] shrink-0 truncate text-center transition-all ${shapeClasses} ${isMono ? 'font-mono' : ''} ${isUppercase ? 'uppercase tracking-widest' : ''}`;
 
   let badgeClasses = '';
@@ -153,7 +172,7 @@ export function Tag({
     <span className={`${baseClasses} ${styleClasses} ${className}`.trim()} {...props}>
       {children}
       {badge && (
-        <span className={`ml-1.5 p-0.5 text-[8px] leading-none ${badgeShapeClasses} flex items-center justify-center font-bold font-sans tracking-normal shrink-0 ${badgeClasses}`}>
+        <span className={`ml-1.5 p-0.5 text-[8px] leading-none ${badgeShapeClasses} flex items-center justify-center font-bold font-sans tracking-normal shrink-0 ${badgeClasses} -translate-y-px`}>
           {badge}
         </span>
       )}

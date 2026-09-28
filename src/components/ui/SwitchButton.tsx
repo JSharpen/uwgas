@@ -1,4 +1,5 @@
 import React from 'react';
+import { Tag } from './Tag';
 
 export interface SwitchButtonProps {
   checked: boolean;
@@ -18,14 +19,16 @@ export function SwitchButton({
   subtitle,
   disabled,
   className = '',
-  checkedLabel = 'Yes',
+  checkedLabel,
   uncheckedLabel,
 }: SwitchButtonProps) {
   const baseClasses = "flex items-center justify-between w-full p-[var(--ui-gap)] rounded-[var(--ui-radius-core)] transition active:scale-[0.98] cursor-pointer";
   const shapeClass = (checked && !disabled) 
-    ? 'neu-concave shadow-inner border border-[var(--color-accent)]/50' 
-    : 'neu-button';
+    ? 'neu-button-pressed active-concave' 
+    : 'neu-button active-concave';
   const opacityClass = disabled ? 'opacity-50' : '';
+
+  const hasCustomLabels = checkedLabel !== undefined || uncheckedLabel !== undefined;
 
   return (
     <button
@@ -38,22 +41,33 @@ export function SwitchButton({
         if (!disabled) onChange(!checked);
       }}
     >
-      <div className="flex flex-col items-start min-w-0 text-left">
-        <span className={`text-sm font-bold ${checked && !disabled ? 'text-amber-400' : 'text-white'}`}>
+      <div className="flex flex-col items-start min-w-0 text-left flex-1 pr-2">
+        <span className="text-sm font-bold text-white truncate w-full">
           {title}
         </span>
         {subtitle && (
-          <span className="text-[10px] text-white/40 font-mono mt-0.5 truncate max-w-[200px] sm:max-w-none">
+          <div className="text-[10px] text-white/40 font-mono mt-0.5 truncate max-w-[200px] sm:max-w-none">
             {subtitle}
-          </span>
+          </div>
         )}
       </div>
-      {checked ? (
-        <span className="text-amber-400 font-bold text-xs uppercase tracking-wider px-2 shrink-0">{checkedLabel}</span>
-      ) : uncheckedLabel ? (
-        <span className="text-white/60 font-bold text-xs uppercase tracking-wider px-2 shrink-0">{uncheckedLabel}</span>
+
+      {hasCustomLabels ? (
+        checked ? (
+          <Tag appearance="convex" intent="default">{checkedLabel || ''}</Tag>
+        ) : (
+          <Tag appearance="concave" intent="default">{uncheckedLabel || ''}</Tag>
+        )
       ) : (
-        <div className="w-5 h-5 rounded-full border-2 border-white/20 shrink-0 ml-4"></div>
+        <div className="shrink-0 ml-4 mr-1 flex items-center justify-center w-8 h-8 pointer-events-none">
+          <div
+            className={`w-5 h-5 rounded-full transition-all duration-200 ${
+              checked
+                ? 'bg-[radial-gradient(circle_at_40%_40%,_#fbbf24_0%,_#f59e0b_100%)] shadow-[inset_-1px_-1px_2px_rgba(0,0,0,0.2),0_0_8px_rgba(251,191,36,0.5)] border border-black/0'
+                : 'neu-concave border border-black/40'
+            }`}
+          />
+        </div>
       )}
     </button>
   );
@@ -111,3 +125,4 @@ export function SwitchToggle({
     </button>
   );
 }
+

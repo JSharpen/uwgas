@@ -1,7 +1,7 @@
 import React, { useCallback, useRef } from 'react';
 
 interface StepperControlProps {
-  label: string;
+  label?: string;
   value: number;
   onChange: (value: number) => void;
   min?: number;
@@ -12,15 +12,17 @@ interface StepperControlProps {
   onReset?: () => void;
   resetLabel?: string;
   className?: string;
+  variant?: 'default' | 'mini';
 }
 
-type StepperButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
+type StepperButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { size?: 'default' | 'mini' };
 
-export const StepperButton: React.FC<StepperButtonProps> = ({ className = '', ...props }) => {
+export const StepperButton: React.FC<StepperButtonProps> = ({ className = '', size = 'default', ...props }) => {
+  const sizeClasses = size === 'mini' ? 'w-8 h-8 text-sm' : 'w-12 h-10';
   return (
     <button
       type="button"
-      className={`w-12 h-10 shrink-0 neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95 touch-manipulation ${className}`}
+      className={`${sizeClasses} shrink-0 neu-button flex items-center justify-center text-white/80 font-bold transition active:scale-95 touch-manipulation ${className}`}
       onContextMenu={(e) => e.preventDefault()}
       {...props}
     />
@@ -39,6 +41,7 @@ export const StepperControl: React.FC<StepperControlProps> = ({
   onReset,
   resetLabel = 'Reset',
   className = '',
+  variant = 'default',
 }) => {
   const intervalRef = useRef<number | null>(null);
   const [localText, setLocalText] = React.useState<string | null>(null);
@@ -75,73 +78,85 @@ export const StepperControl: React.FC<StepperControlProps> = ({
     }
   }, []);
 
-  return (
-    <div className={`flex-1 flex flex-col gap-1.5 w-full ${className}`}>
-      <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1 flex justify-between select-none">
-        <span>{label}</span>
-        {onReset && (
-          <span
-            className="text-white/30 hover:text-white cursor-pointer transition-colors"
-            onClick={onReset}
-          >
-            {resetLabel}
+  const content = (
+    <div className={`neu-concave border border-black/40 rounded-[var(--ui-radius-core)] flex items-center justify-between p-1 shadow-inner select-none ${variant === 'mini' ? 'h-10 ' + className : ''}`}>
+      <StepperButton
+        size={variant}
+        onClick={decrement}
+        className="rounded-[calc(var(--ui-radius-core)-0.25rem)]"
+        onPointerDown={() => startLongPress(decrement)}
+        onPointerUp={stopLongPress}
+        onPointerLeave={stopLongPress}
+      >
+        -
+      </StepperButton>
+      <div className="flex-1 flex justify-center items-center overflow-hidden px-2 relative group">
+        <input
+          type="text"
+          inputMode="decimal"
+          className={`text-center tabular-nums font-bold text-white tracking-wider bg-transparent outline-none appearance-none min-w-[20px] ${variant === 'mini' ? 'text-xs' : 'text-sm'}`}
+          style={{ width: `${Math.max(2, String(displayValue).length)}ch` }}
+          value={displayValue}
+          onChange={(e) => {
+            const text = e.target.value;
+            setLocalText(text);
+            const trimmed = text.trim();
+            if (trimmed === '') {
+              onChange(NaN);
+              return;
+            }
+            const val = Number(trimmed.replace(',', '.'));
+            if (!Number.isNaN(val)) {
+              onChange(val);
+            }
+          }}
+          onFocus={(e) => e.target.select()}
+          onBlur={() => {
+            setLocalText(null);
+            if (!Number.isNaN(value)) {
+              onChange(Math.max(min, Math.min(max, value)));
+            }
+          }}
+        />
+        {unit && (
+          <span className={`font-bold text-white tracking-wider pointer-events-none ml-1 ${variant === 'mini' ? 'text-[10px] opacity-50' : 'text-sm'}`}>
+            {unit}
           </span>
         )}
-      </label>
-      <div className="neu-concave border border-black/40 rounded-[var(--ui-radius-core)] flex items-center justify-between p-1 shadow-inner select-none">
-        <StepperButton
-          onClick={decrement}
-          className="rounded-[calc(var(--ui-radius-core)-0.25rem)]"
-          onPointerDown={() => startLongPress(decrement)}
-          onPointerUp={stopLongPress}
-          onPointerLeave={stopLongPress}
-        >
-          -
-        </StepperButton>
-        <div className="flex-1 flex justify-center items-center overflow-hidden px-2 relative group">
-          <input
-            type="text"
-            inputMode="decimal"
-            className="text-center text-sm tabular-nums font-bold text-white tracking-wider bg-transparent outline-none appearance-none min-w-[20px]"
-            style={{ width: `${Math.max(2, String(displayValue).length)}ch` }}
-            value={displayValue}
-            onChange={(e) => {
-              const text = e.target.value;
-              setLocalText(text);
-              const trimmed = text.trim();
-              if (trimmed === '') {
-                onChange(NaN);
-                return;
-              }
-              const val = Number(trimmed.replace(',', '.'));
-              if (!Number.isNaN(val)) {
-                onChange(val);
-              }
-            }}
-            onFocus={(e) => e.target.select()}
-            onBlur={() => {
-              setLocalText(null);
-              if (!Number.isNaN(value)) {
-                onChange(Math.max(min, Math.min(max, value)));
-              }
-            }}
-          />
-          {unit && (
-            <span className="text-sm font-bold text-white tracking-wider pointer-events-none ml-1">
-              {unit}
+      </div>
+      <StepperButton
+        size={variant}
+        onClick={increment}
+        className="rounded-[calc(var(--ui-radius-core)-0.25rem)]"
+        onPointerDown={() => startLongPress(increment)}
+        onPointerUp={stopLongPress}
+        onPointerLeave={stopLongPress}
+      >
+        +
+      </StepperButton>
+    </div>
+  );
+
+  if (variant === 'mini') {
+    return content;
+  }
+
+  return (
+    <div className={`flex-1 flex flex-col gap-1.5 w-full ${className}`}>
+      {label && (
+        <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1 flex justify-between select-none">
+          <span>{label}</span>
+          {onReset && (
+            <span
+              className="text-white/30 hover:text-white cursor-pointer transition-colors"
+              onClick={onReset}
+            >
+              {resetLabel}
             </span>
           )}
-        </div>
-        <StepperButton
-          onClick={increment}
-          className="rounded-[calc(var(--ui-radius-core)-0.25rem)]"
-          onPointerDown={() => startLongPress(increment)}
-          onPointerUp={stopLongPress}
-          onPointerLeave={stopLongPress}
-        >
-          +
-        </StepperButton>
-      </div>
+        </label>
+      )}
+      {content}
     </div>
   );
 };
