@@ -17,6 +17,13 @@ import { isMachineUnmapped } from '../../utils/machineStatus';
 
 import { useUIStore } from '../../state/uiStore';
 
+function getErrorIntent(err: number | null | undefined): 'success' | 'accent' | 'warning' | 'default' {
+  if (err == null) return 'default';
+  if (err <= 0.015) return 'success';
+  if (err <= 0.05) return 'accent';
+  return 'warning';
+}
+
 export default function MachineManagerView() {
   const {
     machines,
@@ -116,6 +123,11 @@ export default function MachineManagerView() {
         {machines.map((m, idx) => {
           const isExpanded = expandedEquipmentId === m.id;
           
+          const activeRear = m.calibrationProfiles?.find(p => p.rear?.hc === m.constants.rear.hc && p.rear?.o === m.constants.rear.o)
+                      || m.calibrationProfiles?.filter(p => p.rear).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+          const activeFront = m.calibrationProfiles?.find(p => p.front?.hc === m.constants.front.hc && p.front?.o === m.constants.front.o)
+                      || m.calibrationProfiles?.filter(p => p.front).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+          
           return (
             <ExpandableCard
               key={m.id}
@@ -132,14 +144,39 @@ export default function MachineManagerView() {
                       <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] ml-auto mr-1 shrink-0" />
                     )}
                   </div>
-                  <div className="flex items-center gap-2 min-h-[24px]">
+                  <div className="flex flex-wrap items-center gap-2 min-h-[24px]">
+                    <Tag intent="default" appearance="ghost">
+                      Ø {m.axleDiameter ?? 12}mm
+                    </Tag>
+                    {activeRear && (
+                      <Tag 
+                        intent="accent" 
+                        appearance="concave" 
+                        mono 
+                        badge={activeRear.rear?.angleErrorDeg != null ? `ε ${activeRear.rear.angleErrorDeg.toFixed(3)}°` : undefined}
+                        badgeIntent={getErrorIntent(activeRear.rear?.angleErrorDeg)}
+                      >
+                        {m.constants.rear.hc.toFixed(1)} / {m.constants.rear.o.toFixed(1)}
+                      </Tag>
+                    )}
+                    {activeFront && (
+                      <Tag 
+                        intent="info" 
+                        appearance="concave" 
+                        mono 
+                        badge={activeFront.front?.angleErrorDeg != null ? `ε ${activeFront.front.angleErrorDeg.toFixed(3)}°` : undefined}
+                        badgeIntent={getErrorIntent(activeFront.front?.angleErrorDeg)}
+                      >
+                        {m.constants.front.hc.toFixed(1)} / {m.constants.front.o.toFixed(1)}
+                      </Tag>
+                    )}
                     {m.id === defaultMachineId && (
-                      <Tag intent="accent" appearance="outline">
+                      <Tag intent="accent" appearance="ghost">
                         Default
                       </Tag>
                     )}
                     {(!m.calibrationProfiles || m.calibrationProfiles.length === 0) && (
-                      <Tag intent="warning" appearance="outline">
+                      <Tag intent="warning" appearance="ghost">
                         Unmapped
                       </Tag>
                     )}
@@ -150,16 +187,16 @@ export default function MachineManagerView() {
               <div className="p-4 sm:p-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
                     
                 <TextInput
-  label="Machine Name"
-  defaultValue={m.name}
-                    onBlur={e => onUpdateMachine(m.id, { name: e.target.value.trim() })}
-/>
+                  label="Machine Name"
+                  defaultValue={m.name}
+                  onBlur={e => onUpdateMachine(m.id, { name: e.target.value.trim() })}
+                />
                 
                 <NumberInput
-  label="Axle Diameter (mm)"
-  defaultValue={m.axleDiameter ?? 12}
-                    onBlur={e => onUpdateMachine(m.id, { axleDiameter: Number(e.target.value) })}
-/>
+                  label="Axle Diameter (mm)"
+                  defaultValue={m.axleDiameter ?? 12}
+                  onBlur={e => onUpdateMachine(m.id, { axleDiameter: Number(e.target.value) })}
+                />
 
                 <div className="flex flex-col gap-3 mt-2">
                   <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Geometry Mapping</span>
@@ -173,15 +210,13 @@ export default function MachineManagerView() {
                           hc: <b className="text-white font-bold">{m.constants.rear.hc.toFixed(1)}</b>, o: <b className="text-white font-bold">{m.constants.rear.o.toFixed(1)}</b>
                         </span>
                         {(() => {
-                          const active = m.calibrationProfiles?.find(p => p.rear?.hc === m.constants.rear.hc && p.rear?.o === m.constants.rear.o)
-                                      || m.calibrationProfiles?.filter(p => p.rear).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-                          if (!active) return null;
+                          if (!activeRear) return null;
                           return (
                             <div 
                                className="text-[9px] text-white/50 mt-1 border-t border-white/5 pt-1.5 flex justify-between items-center"
                             >
-                              <span>{new Date(active.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
-                              <span className="font-mono text-amber-300/80">err: {(active.rear?.angleErrorDeg ?? 0).toFixed(3)}°</span>
+                              <span>{new Date(activeRear.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
+                              <span className="font-mono text-amber-300/80">ε {(activeRear.rear?.angleErrorDeg ?? 0).toFixed(3)}°</span>
                             </div>
                           );
                         })()}
@@ -202,15 +237,13 @@ export default function MachineManagerView() {
                           hc: <b className="text-white font-bold">{m.constants.front.hc.toFixed(1)}</b>, o: <b className="text-white font-bold">{m.constants.front.o.toFixed(1)}</b>
                         </span>
                         {(() => {
-                          const active = m.calibrationProfiles?.find(p => p.front?.hc === m.constants.front.hc && p.front?.o === m.constants.front.o)
-                                      || m.calibrationProfiles?.filter(p => p.front).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-                          if (!active) return null;
+                          if (!activeFront) return null;
                           return (
                             <div 
                                className="text-[9px] text-white/50 mt-1 border-t border-white/5 pt-1.5 flex justify-between items-center"
                             >
-                              <span>{new Date(active.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
-                              <span className="font-mono text-blue-300/80">err: {(active.front?.angleErrorDeg ?? 0).toFixed(3)}°</span>
+                              <span>{new Date(activeFront.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
+                              <span className="font-mono text-blue-300/80">ε {(activeFront.front?.angleErrorDeg ?? 0).toFixed(3)}°</span>
                             </div>
                           );
                         })()}
@@ -267,7 +300,7 @@ export default function MachineManagerView() {
                   key={p.id}
                   selected={isActive}
                   intent={base === 'rear' ? 'accent' : 'focus'}
-                  meta={`Err: ${(data.angleErrorDeg ?? 0).toFixed(3)}°`}
+                  meta={`ε ${(data.angleErrorDeg ?? 0).toFixed(3)}°`}
                   onClick={() => {
                     if (!isActive) {
                       const newConstants = { ...selectedMachine.constants };
