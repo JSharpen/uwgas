@@ -8,7 +8,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../state/store';
 import { useWheelResults } from '../services/calculationService';
 import ExpandableCard from './ui/ExpandableCard';
-import { Tag, Divider } from './ui';
+import { Tag } from './ui';
 import { isWheelOverdue, getMeasurementCountdownText } from '../utils/wheelWear';
 
 export type ProgressionViewProps = Record<string, never>;
@@ -127,68 +127,21 @@ const StepCard = React.memo(function StepCard({
       index={index}
       className="relative motion-list-item scroll-m-[120px] sm:scroll-m-[160px]"
       style={{ viewTransitionName: `step-${stepId}` } as React.CSSProperties}
-      headerClassName="flex items-stretch justify-between px-4 sm:px-6 py-3 sm:py-3.5 relative z-10 w-full"
+      headerClassName="flex flex-col p-3.5 relative z-10 w-full"
       headerStyle={{ minHeight: 'var(--step-card-height, 6.75rem)' }}
       header={
         <>
-          {/* Left Column: Identity, Setup & Hardware */}
-          <div className="flex flex-col justify-between flex-1 min-w-0 pr-3 sm:pr-3.5 py-0.5 gap-1.5">
-            {/* Line 1: Step Number + Wheel Name + Grit/Honing chip */}
-            <div className="flex items-center gap-2 min-w-0">
-              {r.step && (
-                <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center text-[10px] font-bold tabular-nums text-white border border-black/60 shadow-inner shrink-0">
-                  {index + 1}
-                </div>
-              )}
-              <span className={`text-base font-semibold tracking-wide truncate transition-colors ${isExpanded ? 'text-amber-400' : 'text-white'}`}>
-                {r.wheel.name}
-              </span>
-              {r.wheel.grit && (
-                <Tag intent="default" appearance="outline" mono className="shrink-0 text-[10px] px-1.5 py-0 border-white/20 text-white/70">
-                  {r.wheel.grit.startsWith('#') ? r.wheel.grit : `#${r.wheel.grit}`}
-                </Tag>
-              )}
-              {r.wheel.isHoning && (
-                <Tag intent="accent" appearance="ghost" className="shrink-0 text-[10px] px-1.5 py-0">
-                  Honing
-                </Tag>
-              )}
-            </div>
-
-            {/* Line 2: Angle Offset, Direction, Angle/Base */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {hasOffset && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 shadow-sm ${angleOffset > 0 ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'bg-danger/20 text-danger border border-danger/20'}`}>
-                  {angleOffset > 0 ? '+' : ''}{angleOffset.toFixed(1)}°
-                </span>
-              )}
-              {r.step && (
-                <div className="flex items-center shrink-0 ml-0.5" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
-                  {r.step.base === 'rear' ? <IconEdgeLeading className="w-3.5 h-3.5 text-[var(--color-accent)] opacity-80" /> : <IconEdgeTrailing className="w-3.5 h-3.5 text-sky-400 opacity-80" />}
-                </div>
-              )}
-              <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold truncate">
-                {formatDeg(r.betaEffDeg)}° / {r.step?.base === 'front' ? 'FRONT' : 'REAR'}
-              </span>
-            </div>
-
-            {/* Line 3: Hardware Tags (Diameter Tag on Left, followed by overrides) */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <Tag 
-                intent="default" 
-                appearance="ghost"
-                badge={countdownText}
-                badgeIntent={isWheelOverdue(r.wheel) ? 'warning' : 'accent'}
-                className="shrink-0"
-              >
-                Ø {r.wheel.D}mm
-              </Tag>
+          {/* Full-Width Top Strip: Hardware Overrides */}
+          {(showAdvancedStepOverrides || r.step?.machineId || r.step?.usbId) && (
+            <div className="flex items-center gap-1.5 flex-wrap w-full mb-3">
               {(showAdvancedStepOverrides || r.step?.machineId) && effectiveMachine && (
                 <Tag 
                   intent={isMachineChanged ? 'warning' : 'default'} 
-                  appearance={isMachineChanged ? 'solid' : 'ghost'}
-                  mono={!isMachineChanged} 
+                  appearance={isMachineChanged ? 'solid' : 'ghost'} bold
+                  badge={isMachineChanged ? 'OVERRIDE' : undefined}
+                  badgeIntent="warning"
                   uppercase={false}
+                  className="shrink-0"
                 >
                   {effectiveMachine.name}
                 </Tag>
@@ -197,54 +150,107 @@ const StepCard = React.memo(function StepCard({
                 <Tag 
                   intent={isUsbChanged ? 'warning' : 'default'} 
                   appearance={isUsbChanged ? 'solid' : 'ghost'}
-                  mono={!isUsbChanged} 
+                  badge={isUsbChanged ? 'OVERRIDE' : undefined}
+                  badgeIntent="warning"
                   uppercase={false}
+                  className="shrink-0"
                 >
                   {effectiveUsb.name}
                 </Tag>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Neumorphic Vertical Divider */}
-          <Divider orientation="vertical" className="my-1" />
-
-          {/* Right Column: Dedicated Output Gauge Pillar */}
-          <div className="flex flex-col items-end justify-center shrink-0 pl-3 sm:pl-3.5 relative z-10 min-w-[88px] sm:min-w-[104px]">
-            <span className="text-2xl sm:text-3xl font-bold text-amber-400 tracking-tight amber-glow tabular-nums leading-none">
-              {isProjectionMode ? (
-                r.isReachable !== false && r.requiredProjectionA != null ? (
-                  <>{r.requiredProjectionA.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
-                ) : (
-                  <span className="text-danger text-xl">OOR</span>
-                )
-              ) : heightMode === 'hn' ? (
-                <>{r.hnBase.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
-              ) : (
-                <>{r.hrWheel.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
-              )}
-            </span>
-            
-            {(deltaTurnsText || deltaText) && (
-              <div className="flex flex-col items-end mt-1.5">
-                {deltaTurnsText ? (
-                   <div className="flex flex-col items-end gap-1">
-                      <Tag intent="warning" appearance="concave">{deltaTurnsText}</Tag>
-                      <span className="text-[10px] text-white/30 font-bold uppercase tracking-wide">{deltaText}</span>
-                   </div>
-                ) : deltaText ? (
-                  <span className="text-[10px] text-amber-400 uppercase tracking-wide font-bold">
-                    {deltaText}
-                  </span>
-                ) : null}
+          {/* Main Content Row */}
+          <div className="flex items-stretch justify-between w-full">
+            {/* Left Column: Identity, Setup & Hardware */}
+            <div className="flex flex-col justify-between flex-1 min-w-0 pr-3 sm:pr-3.5 gap-1.5">
+              {/* Line 1: Step Number + Wheel Name + Grit/Honing chip */}
+              <div className="flex items-center gap-2 min-w-0">
+                {r.step && (
+                  <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center text-[10px] font-bold tabular-nums text-white border border-black/60 shadow-inner shrink-0">
+                    {index + 1}
+                  </div>
+                )}
+                <span className={`text-base font-semibold tracking-wide truncate transition-colors ${isExpanded ? 'text-amber-400' : 'text-white'}`}>
+                  {r.wheel.name}
+                </span>
+                {r.wheel.grit && (
+                  <Tag intent="default" appearance="outline" className="shrink-0 border-white/20 text-white/70">
+                    {r.wheel.grit.startsWith('#') ? r.wheel.grit : `#${r.wheel.grit}`}
+                  </Tag>
+                )}
+                {r.wheel.isHoning && (
+                  <Tag intent="accent" appearance="ghost" className="shrink-0">
+                    Honing
+                  </Tag>
+                )}
               </div>
-            )}
+
+              {/* Line 2: Angle Offset, Direction, Angle/Base, and Diameter */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {hasOffset && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 shadow-sm ${angleOffset > 0 ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'bg-danger/20 text-danger border border-danger/20'}`}>
+                    {angleOffset > 0 ? '+' : ''}{angleOffset.toFixed(1)}°
+                  </span>
+                )}
+                {r.step && (
+                  <div className="flex items-center shrink-0 ml-0.5" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
+                    {r.step.base === 'rear' ? <IconEdgeLeading className="w-3.5 h-3.5 text-[var(--color-accent)] opacity-80" /> : <IconEdgeTrailing className="w-3.5 h-3.5 text-sky-400 opacity-80" />}
+                  </div>
+                )}
+                <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold truncate">
+                  {formatDeg(r.betaEffDeg)}° / {r.step?.base === 'front' ? 'FRONT' : 'REAR'}
+                </span>
+                <Tag 
+                  intent="default" 
+                  appearance="ghost"
+                  badge={countdownText}
+                  badgeIntent={isWheelOverdue(r.wheel) ? 'warning' : 'accent'}
+                  className="shrink-0"
+                >
+                  Ø {r.wheel.D}mm
+                </Tag>
+              </div>
+            </div>
+
+            {/* Right Column: Dedicated Output Gauge Pillar */}
+            <div className="flex flex-col items-end justify-center shrink-0 pl-3 sm:pl-3.5 relative z-10 min-w-[88px] sm:min-w-[104px]">
+              <span className="text-2xl sm:text-3xl font-bold text-amber-400 tracking-tight amber-glow tabular-nums leading-none">
+                {isProjectionMode ? (
+                  r.isReachable !== false && r.requiredProjectionA != null ? (
+                    <>{r.requiredProjectionA.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
+                  ) : (
+                    <span className="text-danger text-xl">OOR</span>
+                  )
+                ) : heightMode === 'hn' ? (
+                  <>{r.hnBase.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
+                ) : (
+                  <>{r.hrWheel.toFixed(2)}<span className="text-sm sm:text-base text-white/50 font-medium ml-1">mm</span></>
+                )}
+              </span>
+              
+              {(deltaTurnsText || deltaText) && (
+                <div className="flex flex-col items-end mt-1.5">
+                  {deltaTurnsText ? (
+                     <div className="flex flex-col items-end gap-1">
+                        <Tag intent="warning" appearance="concave" numeric>{deltaTurnsText}</Tag>
+                        <span className="text-[10px] text-white/30 font-bold uppercase tracking-wide">{deltaText}</span>
+                     </div>
+                  ) : deltaText ? (
+                    <span className="text-[10px] text-amber-400 uppercase tracking-wide font-bold">
+                      {deltaText}
+                    </span>
+                  ) : null}
+                </div>
+              )}
+            </div>
           </div>
         </>
       }
     >
       {r.step && onUpdateStep && (
-        <div className="px-4 sm:px-6 pb-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
+        <div className="px-3.5 pb-5 pt-0 flex flex-col gap-4 mt-2" onClick={e => e.stopPropagation()}>
               
               {/* Row 1: Wheel & Base Selection */}
               <div className="flex items-center gap-4">
@@ -389,7 +395,7 @@ export function ProgressionView() {
                     meta={
                       <span className="flex items-center gap-2">
                         {isWheelOverdue(w) && (
-                          <Tag intent="warning" appearance="solid" className="px-1.5 py-0 leading-none">
+                          <Tag intent="warning" appearance="solid" className="px-1.5 leading-none">
                             Overdue
                           </Tag>
                         )}

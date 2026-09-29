@@ -3,7 +3,7 @@ import { useStore, usePresetState } from '../state/store';
 import { useUIStore } from '../state/uiStore';
 import { IconFolder } from '../icons';
 import { ContextBar } from '../components/layout/ContextBar';
-import ExpandableCard from '../components/ui/ExpandableCard';
+import { ExpandableCard, Tag } from '../components/ui';
 
 export default function PresetsView() {
   const presetState = usePresetState();
@@ -222,33 +222,40 @@ export default function PresetsView() {
                     )}
                     
                     <div className="flex flex-wrap items-center gap-1.5 mt-2.5 w-full">
-                      <span className="shrink-0 text-[10px] text-white/40 font-medium mr-1">{p.steps.length} step{p.steps.length === 1 ? '' : 's'}</span>
-                      <span className={`rounded px-2 py-0.5 text-[9px] font-mono truncate max-w-[100px] ${
-                        isAngleBound 
-                          ? 'bg-emerald-500/5 border border-emerald-500/30 text-emerald-400' 
-                          : 'neu-concave border border-white/5 text-white/40'
-                      }`}>
+                      <Tag appearance="ghost" className="mr-1">
+                        {p.steps.length} step{p.steps.length === 1 ? '' : 's'}
+                      </Tag>
+                      <Tag 
+                        intent={isAngleBound ? 'success' : 'default'}
+                        appearance="outline"
+                        mono
+                        className="max-w-[100px]"
+                      >
                         {displayAngle}°
-                      </span>
+                      </Tag>
                       
                       {reqMachines.map(({ item, isBound }) => item && (
-                        <span key={`m-${item.id}`} className={`rounded px-2 py-0.5 text-[9px] font-mono truncate flex-1 min-w-[60px] text-center ${
-                          isBound
-                            ? 'bg-cyan-500/5 border border-cyan-500/30 text-cyan-400' 
-                            : 'neu-concave border border-white/5 text-white/40'
-                        }`}>
+                        <Tag 
+                          key={`m-${item.id}`} 
+                          intent={isBound ? 'info' : 'default'}
+                          appearance="outline"
+                          mono
+                          className="flex-1 min-w-[60px]"
+                        >
                           {item.name}
-                        </span>
+                        </Tag>
                       ))}
                       
                       {reqUsbs.map(({ item, isBound }) => item && (
-                        <span key={`u-${item.id}`} className={`rounded px-2 py-0.5 text-[9px] font-mono truncate flex-1 min-w-[60px] text-center ${
-                          isBound
-                            ? 'bg-cyan-500/5 border border-cyan-500/30 text-cyan-400' 
-                            : 'neu-concave border border-white/5 text-white/40'
-                        }`}>
+                        <Tag 
+                          key={`u-${item.id}`} 
+                          intent={isBound ? 'info' : 'default'}
+                          appearance="outline"
+                          mono
+                          className="flex-1 min-w-[60px]"
+                        >
                           {item.name}
-                        </span>
+                        </Tag>
                       ))}
                     </div>
                   </>

@@ -324,17 +324,17 @@ export default function CalibrationWizard({
     }
     let label = '';
     let badgeCls = '';
-    if (a <= 0.05) {
+    if (a <= 0.025) {
       label = 'Excellent';
       badgeCls = 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400';
-    } else if (a <= 0.1) {
+    } else if (a <= 0.05) {
       label = 'Good';
+      badgeCls = 'bg-lime-500/20 border-lime-500/30 text-lime-400';
+    } else if (a <= 0.1) {
+      label = 'Borderline';
       badgeCls = 'bg-amber-500/20 border-amber-500/30 text-amber-400';
-    } else if (a <= 0.2) {
-      label = 'Fair';
-      badgeCls = 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400';
     } else {
-      label = 'Poor';
+      label = 'Unacceptable';
       badgeCls = 'bg-red-500/20 border-red-500/30 text-red-400';
     }
     return (
@@ -649,14 +649,18 @@ export default function CalibrationWizard({
                   <div className="flex items-center gap-3 bg-black/40 border border-white/5 rounded-lg p-3">
                     <div className="flex-1 flex flex-col gap-0.5">
                       <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Current Precision</span>
-                      <span className={`text-sm font-mono font-bold ${maxErr <= 0.015 ? 'text-emerald-400' : maxErr <= 0.05 ? 'text-amber-400' : 'text-red-400'}`}>
+                      <span className={`text-sm font-mono font-bold ${maxErr <= 0.025 ? 'text-emerald-400' : maxErr <= 0.05 ? 'text-lime-400' : maxErr <= 0.1 ? 'text-amber-400' : 'text-red-400'}`}>
                         ±{maxErr.toFixed(3)}°
                       </span>
                     </div>
-                    {maxErr <= 0.015 ? (
+                    {maxErr <= 0.025 ? (
                       <Tag intent="success" appearance="solid">Flawless</Tag>
+                    ) : maxErr <= 0.05 ? (
+                      <Tag intent="good" appearance="solid">Good</Tag>
+                    ) : maxErr <= 0.1 ? (
+                      <Tag intent="accent" appearance="outline">Refining...</Tag>
                     ) : (
-                      <Tag intent="warning" appearance="outline">Refining...</Tag>
+                      <Tag intent="warning" appearance="outline">Poor</Tag>
                     )}
                   </div>
                   
@@ -801,8 +805,8 @@ export default function CalibrationWizard({
           {/* Potential Improvement Banner */}
           {(() => {
             const worstError = Math.max(rearResult?.angleErrorDeg ?? 0, frontResult?.angleErrorDeg ?? 0);
-            if (worstError > 0.015) {
-              const diff = worstError - 0.015;
+            if (worstError > 0.025) {
+              const diff = worstError - 0.025;
               return (
                 <div className="relative overflow-hidden bg-gradient-to-br from-amber-500/10 to-amber-900/10 border border-amber-500/20 rounded-[var(--ui-radius-core)] p-5 flex gap-4 shadow-[0_4px_20px_rgba(245,158,11,0.05)] animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none" />
@@ -810,7 +814,7 @@ export default function CalibrationWizard({
                   <div className="relative z-10 flex flex-col gap-1.5">
                     <strong className="text-[13px] text-amber-400 font-extrabold tracking-tight">Precision Check</strong>
                     <p className="text-xs text-amber-100/80 leading-relaxed font-medium">
-                      Your mapping has a {worstError.toFixed(3)}° worst-case error. The physical limit of your calipers is ≈ 0.015°, meaning you have <strong className="text-amber-300">{diff.toFixed(3)}° of potential improvement</strong> left.
+                      Your mapping has a {worstError.toFixed(3)}° worst-case error. The physical limit of your calipers is ≈ 0.025°, meaning you have <strong className="text-amber-300">{diff.toFixed(3)}° of potential improvement</strong> left.
                     </p>
                   </div>
                 </div>

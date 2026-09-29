@@ -177,7 +177,10 @@ export default function CalculatorView() {
 
             <ContextBar.Slot name="right">
               {isPresetMenuOpen ? (
-                <ContextBar.Button variant="ghost" onClick={() => useUIStore.setState({ isPresetMenuOpen: false, isPresetManagerOpen: true })}>Manage</ContextBar.Button>
+                <ContextBar.Button variant="ghost" onClick={() => {
+                  useUIStore.setState({ isPresetMenuOpen: false });
+                  useUIStore.getState().setView('presets');
+                }}>Manage</ContextBar.Button>
               ) : (
                 <ContextBar.Button variant="primary" onClick={() => setAddStepPickerOpen(true)}>+ Add Step</ContextBar.Button>
               )}

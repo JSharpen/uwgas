@@ -17,10 +17,11 @@ import { isMachineUnmapped } from '../../utils/machineStatus';
 
 import { useUIStore } from '../../state/uiStore';
 
-function getErrorIntent(err: number | null | undefined): 'success' | 'accent' | 'warning' | 'default' {
+function getErrorIntent(err: number | null | undefined): 'success' | 'good' | 'accent' | 'warning' | 'default' {
   if (err == null) return 'default';
-  if (err <= 0.015) return 'success';
-  if (err <= 0.05) return 'accent';
+  if (err <= 0.025) return 'success';
+  if (err <= 0.05) return 'good';
+  if (err <= 0.1) return 'accent';
   return 'warning';
 }
 
@@ -151,8 +152,7 @@ export default function MachineManagerView() {
                     {activeRear && (
                       <Tag 
                         intent="accent" 
-                        appearance="concave" 
-                        mono 
+                        appearance="concave" numeric 
                         badge={activeRear.rear?.angleErrorDeg != null ? `ε ${activeRear.rear.angleErrorDeg.toFixed(3)}°` : undefined}
                         badgeIntent={getErrorIntent(activeRear.rear?.angleErrorDeg)}
                       >
@@ -162,8 +162,7 @@ export default function MachineManagerView() {
                     {activeFront && (
                       <Tag 
                         intent="info" 
-                        appearance="concave" 
-                        mono 
+                        appearance="concave" numeric 
                         badge={activeFront.front?.angleErrorDeg != null ? `ε ${activeFront.front.angleErrorDeg.toFixed(3)}°` : undefined}
                         badgeIntent={getErrorIntent(activeFront.front?.angleErrorDeg)}
                       >

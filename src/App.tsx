@@ -6,7 +6,6 @@ import CalculatorView from './views/CalculatorView';
 import HardwareView from './views/HardwareView';
 import SettingsView from './views/SettingsView';
 import PresetsView from './views/PresetsView';
-import { PresetManagerModal } from './components/presets/PresetManagerModal';
 import { SavePresetDialog } from './components/presets/SavePresetDialog';
 import { ContextBarShell } from './components/layout/ContextBar';
 import { BottomTabBar } from './components/layout/BottomTabBar';
@@ -74,7 +73,6 @@ export default function App() {
       </main>
 
       {/* Global Modals */}
-      <PresetManagerModal />
       <SavePresetDialog />
 
       {/* Workshop Bottom Tab Navigation Bar */}

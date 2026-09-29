@@ -42,8 +42,6 @@ export interface UIState {
   isPresetDialogClosing: boolean;
   presetNameDraft: string;
   clearAfterSave: boolean;
-  isPresetManagerOpen: boolean;
-  isPresetManagerClosing: boolean;
   isConfirmingClear: boolean; // Note: to be replaced by topBarConfirmation eventually, but keeping for now
   topBarConfirmation: TopBarConfirmation | null;
   focusWheelId: string | null;
@@ -75,8 +73,6 @@ export interface UIState {
   setPresetDialogClosing: (isClosing: boolean) => void;
   setPresetNameDraft: (name: string) => void;
   setClearAfterSave: (clearAfterSave: boolean) => void;
-  setPresetManagerOpen: (isPresetManagerOpen: boolean) => void;
-  setPresetManagerClosing: (isClosing: boolean) => void;
   setIsConfirmingClear: (confirming: boolean) => void;
   setTopBarConfirmation: (conf: TopBarConfirmation | null) => void;
   setFocusWheelId: (wheelId: string | null) => void;
@@ -127,8 +123,6 @@ export const useUIStore = create<UIState>((set) => ({
   isPresetDialogClosing: false,
   presetNameDraft: '',
   clearAfterSave: false,
-  isPresetManagerOpen: false,
-  isPresetManagerClosing: false,
   isConfirmingClear: false,
   topBarConfirmation: null,
   focusWheelId: null,
@@ -155,8 +149,6 @@ export const useUIStore = create<UIState>((set) => ({
   setPresetDialogClosing: (isPresetDialogClosing) => set({ isPresetDialogClosing }),
   setPresetNameDraft: (presetNameDraft) => set({ presetNameDraft }),
   setClearAfterSave: (clearAfterSave) => set({ clearAfterSave }),
-  setPresetManagerOpen: (isPresetManagerOpen) => set({ isPresetManagerOpen }),
-  setPresetManagerClosing: (isPresetManagerClosing) => set({ isPresetManagerClosing }),
   setIsConfirmingClear: (isConfirmingClear) => set({ isConfirmingClear }),
   setTopBarConfirmation: (topBarConfirmation) => set({ topBarConfirmation }),
   setFocusWheelId: (focusWheelId) => set({ focusWheelId }),

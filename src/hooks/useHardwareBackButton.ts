@@ -19,13 +19,6 @@ export function useHardwareBackButton() {
       if (state.topBarConfirmation) {
         state.setTopBarConfirmation(null);
         
-      } else if (state.isPresetManagerOpen) {
-        state.setPresetManagerClosing(true);
-        setTimeout(() => {
-          useUIStore.getState().setPresetManagerOpen(false);
-          useUIStore.getState().setPresetManagerClosing(false);
-        }, 200);
-        
       } else if (state.isPresetDialogOpen) {
         state.setPresetDialogClosing(true);
         setTimeout(() => {
@@ -53,7 +46,6 @@ export function useHardwareBackButton() {
     const unsubscribe = useUIStore.subscribe((state) => {
       const needsTrap = 
         state.topBarConfirmation !== null ||
-        state.isPresetManagerOpen ||
         state.isPresetDialogOpen ||
         state.isPresetMenuOpen ||
         (state.view === 'settings' && state.settingsView !== 'root') ||
@@ -75,7 +67,6 @@ export function useHardwareBackButton() {
     const state = useUIStore.getState();
     const needsTrap = 
       state.topBarConfirmation !== null ||
-      state.isPresetManagerOpen ||
       state.isPresetDialogOpen ||
       state.isPresetMenuOpen ||
       (state.view === 'settings' && state.settingsView !== 'root') ||
