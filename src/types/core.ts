@@ -96,7 +96,8 @@ export type GlobalState = {
   fixedUsbFront?: number; // fixed USB height for front base (mm)
   fixedUsbMode?: 'hn' | 'hr'; // reference for fixed USB height: 'hn' (base) or 'hr' (wheel)
   useCustomFrontUsb?: boolean;
-  showAdvancedStepOverrides?: boolean; // whether front USB height in projection mode overrides suggested value
+  showMachineOverrides?: boolean;
+  showUsbOverrides?: boolean;
 };
 
 export type AppPersistedState = {
@@ -163,6 +164,7 @@ export type WheelResult = {
   unadjustedBetaDeg?: number | null;
   requiredJigAdjustmentMm?: number | null;
   requiredJigTurns?: number | null;
+  tonInput?: TonInput;
 };
 
 export type CalibrationMeasurement = {

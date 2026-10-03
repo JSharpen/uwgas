@@ -164,7 +164,8 @@ export const GlobalStateSchema = z.object({
   fixedUsbFront: z.number().optional(),
   fixedUsbMode: z.enum(['hn', 'hr']).optional(),
   useCustomFrontUsb: z.boolean().optional(),
-  showAdvancedStepOverrides: z.boolean().optional(),
+  showMachineOverrides: z.boolean().optional(),
+  showUsbOverrides: z.boolean().optional(),
 });
 
 export const AppPersistedStateSchema = z.object({

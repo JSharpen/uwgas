@@ -39,6 +39,12 @@ export interface ReadonlyTonOutput {
   readonly betaEffDeg: number;
 }
 
+export interface ReadonlyNutAdjustmentOutput {
+  readonly distanceMm: number;
+  readonly turns: number;
+  readonly direction: 'UP' | 'DOWN' | 'NONE';
+}
+
 export interface ReadonlyProjectionInput {
   readonly base: BaseSide;
   readonly D: number;

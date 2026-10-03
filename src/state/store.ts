@@ -248,7 +248,8 @@ export const useCalculatorSettings = () =>
       setUseCustomFrontUsb: s.setUseCustomFrontUsb,
       setProtrusionMode: s.setProtrusionMode,
       setProtrusion: s.setProtrusion,
-      setShowAdvancedStepOverrides: s.setShowAdvancedStepOverrides,
+      setShowMachineOverrides: s.setShowMachineOverrides,
+      setShowUsbOverrides: s.setShowUsbOverrides,
       resetGlobal: s.resetGlobal,
     }))
   );

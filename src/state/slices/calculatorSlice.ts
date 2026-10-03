@@ -18,7 +18,8 @@ export interface CalculatorSlice {
   setUseCustomFrontUsb: (useCustomFrontUsb: boolean) => void;
   setProtrusionMode: (useProtrusionMode: boolean) => void;
   setProtrusion: (protrusion: number) => void;
-  setShowAdvancedStepOverrides: (show: boolean) => void;
+  setShowMachineOverrides: (show: boolean) => void;
+  setShowUsbOverrides: (show: boolean) => void;
   resetGlobal: () => void;
 }
 
@@ -92,7 +93,9 @@ export const createCalculatorSlice: StateCreator<
     set((state) => ({ global: { ...state.global, useProtrusionMode } })),
   setProtrusion: (protrusion) =>
     set((state) => ({ global: { ...state.global, protrusion } })),
-  setShowAdvancedStepOverrides: (showAdvancedStepOverrides) =>
-    set((state) => ({ global: { ...state.global, showAdvancedStepOverrides } })),
+  setShowMachineOverrides: (showMachineOverrides) =>
+    set((state) => ({ global: { ...state.global, showMachineOverrides } })),
+  setShowUsbOverrides: (showUsbOverrides) =>
+    set((state) => ({ global: { ...state.global, showUsbOverrides } })),
   resetGlobal: () => set({ global: DEFAULT_GLOBAL }),
 });

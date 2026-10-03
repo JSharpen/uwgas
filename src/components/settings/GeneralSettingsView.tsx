@@ -8,7 +8,8 @@ export default function GeneralSettingsView() {
   const setHeightMode = useStore((s) => s.setHeightMode);
   const calcMode = useStore((s) => s.global.calcMode);
   const useProtrusionMode = useStore((s) => s.global.useProtrusionMode);
-  const showAdvancedStepOverrides = useStore((s) => s.global.showAdvancedStepOverrides);
+  const showMachineOverrides = useStore((s) => s.global.showMachineOverrides);
+  const showUsbOverrides = useStore((s) => s.global.showUsbOverrides);
   const setGlobal = useStore((s) => s.setGlobal);
 
   const solverDescription =
@@ -24,10 +25,6 @@ export default function GeneralSettingsView() {
     heightMode === 'hr'
       ? 'Measures Support Bar height (hr) from the grindstone wheel perimeter to the top of the USB bar.'
       : 'Measures Support Bar height (hn) from the machine casing datum to the top of the USB bar.';
-
-  const overridesDescription = showAdvancedStepOverrides
-    ? 'Enabled: Step cards display custom Machine and Support Bar (USB) override pickers.'
-    : 'Disabled: Step cards automatically inherit global machine and support bar settings.';
 
   return (
     <section className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-200 max-w-3xl mx-auto pb-20 w-full">
@@ -102,15 +99,28 @@ export default function GeneralSettingsView() {
         caption="Step customization and hardware overrides"
       >
         <SettingItem
-          title="Per-Step Hardware Overrides"
-          description={overridesDescription}
+          title="Machine Overrides"
+          description={showMachineOverrides ? 'Enabled: Step cards can define custom machine overrides.' : 'Disabled: Steps inherit the global machine setting.'}
           control={
             <SwitchToggle
-              checked={!!showAdvancedStepOverrides}
+              checked={!!showMachineOverrides}
               onChange={(checked) =>
-                setGlobal((g) => ({ ...g, showAdvancedStepOverrides: checked }))
+                setGlobal((g) => ({ ...g, showMachineOverrides: checked }))
               }
-              ariaLabel="Toggle Per-Step Hardware Overrides"
+              ariaLabel="Toggle Per-Step Machine Overrides"
+            />
+          }
+        />
+        <SettingItem
+          title="Support Bar (USB) Overrides"
+          description={showUsbOverrides ? 'Enabled: Step cards can define custom Support Bar (USB) overrides.' : 'Disabled: Steps inherit the global USB setting.'}
+          control={
+            <SwitchToggle
+              checked={!!showUsbOverrides}
+              onChange={(checked) =>
+                setGlobal((g) => ({ ...g, showUsbOverrides: checked }))
+              }
+              ariaLabel="Toggle Per-Step USB Overrides"
             />
           }
         />

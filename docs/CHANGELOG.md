@@ -6,6 +6,7 @@
 
 ## [Unreleased]
 ### Added
+- **Nut Micro-Adjustment Calculator**: The progression UI now calculates and displays exact micro-adjustment nut turns when changing wheels, base orientations, or grinding machines, dynamically scaling against the active support bar's thread pitch.
 - **Automated Versioning Pipeline [JOB-029]**:
   - Automatically bumps the build number stored in `package.json` on every commit via the dev console.
   - Added an interactive semantic version bump protocol (Patch/Minor/Major) natively into the `dev -> main` console release flow.

@@ -10,6 +10,7 @@ import { useWheelResults } from '../services/calculationService';
 import ExpandableCard from './ui/ExpandableCard';
 import { Tag } from './ui';
 import { isWheelOverdue, getMeasurementCountdownText } from '../utils/wheelWear';
+import { computeNutAdjustment } from '../math/tormek';
 
 export type ProgressionViewProps = Record<string, never>;
 
@@ -34,7 +35,8 @@ const StepCard = React.memo(function StepCard({
 }: StepCardProps) {
   const heightMode = useStore((s) => s.heightMode);
   const isProjectionMode = useStore((s) => s.global.calcMode === 'projection');
-  const showAdvancedStepOverrides = useStore((s) => s.global.showAdvancedStepOverrides);
+  const showMachineOverrides = useStore((s) => s.global.showMachineOverrides);
+  const showUsbOverrides = useStore((s) => s.global.showUsbOverrides);
   const globalMachineId = useStore((s) => s.global.activeMachineId);
   const globalUsbId = useStore((s) => s.global.activeUsbId);
   const globalJigId = useStore((s) => s.global.activeJigId);
@@ -67,38 +69,41 @@ const StepCard = React.memo(function StepCard({
   const prevEffectiveUsbId = index === 0 ? null : (prevR?.step?.usbId || globalUsbId);
   const currEffectiveUsbId = r.step?.usbId || globalUsbId;
   const isUsbChanged = currEffectiveUsbId !== prevEffectiveUsbId;
-  const isBaseChanged = r.baseForHn !== prevR?.baseForHn;
 
   let deltaText = null;
   let deltaTurnsText = null;
 
   if (prevR) {
     if (!isProjectionMode) {
-      // Relative nut adjustment is only physically valid on the same base, USB, and machine
-      if (!isBaseChanged && !isUsbChanged && !isMachineChanged) {
-        // Nut travel strictly alters datum height (hn), regardless of whether display is in hn or hr mode
-        const diffHn = r.hnBase - prevR.hnBase;
-        if (Math.abs(diffHn) >= 0.01) {
-          deltaText = `Δ ${diffHn > 0 ? '+' : ''}${diffHn.toFixed(2)} MM`;
-          if (effectiveUsb?.threadPitch) {
-            const turns = Math.abs(diffHn) / effectiveUsb.threadPitch;
-            if (effectiveUsb.microAdjustMarks) {
-              let fullTurns = Math.floor(turns);
-              let marks = Math.round((turns - fullTurns) * effectiveUsb.microAdjustMarks * 2) / 2;
-              if (marks === effectiveUsb.microAdjustMarks) {
-                fullTurns += 1;
-                marks = 0;
+      // Relative nut adjustment is valid on the same USB, even across base transitions or machine swaps
+      if (!isUsbChanged) {
+        if (prevR.tonInput && r.tonInput) {
+          const threadPitch = effectiveUsb?.threadPitch || 1;
+          const nutAdj = computeNutAdjustment(prevR.tonInput, r.tonInput, threadPitch);
+          
+          if (Math.abs(nutAdj.distanceMm) >= 0.01) {
+            const diffHn = nutAdj.distanceMm;
+            deltaText = `Δ ${diffHn > 0 ? '+' : ''}${diffHn.toFixed(2)} MM`;
+            
+            if (effectiveUsb?.threadPitch) {
+              const turns = nutAdj.turns;
+              if (effectiveUsb.microAdjustMarks) {
+                let fullTurns = Math.floor(turns);
+                let marks = Math.round((turns - fullTurns) * effectiveUsb.microAdjustMarks * 2) / 2;
+                if (marks === effectiveUsb.microAdjustMarks) {
+                  fullTurns += 1;
+                  marks = 0;
+                }
+                if (fullTurns > 0 && marks > 0) {
+                  deltaTurnsText = `${nutAdj.direction} ${fullTurns}T ${marks}M`;
+                } else if (fullTurns > 0) {
+                  deltaTurnsText = `${nutAdj.direction} ${fullTurns}T`;
+                } else if (marks > 0) {
+                  deltaTurnsText = `${nutAdj.direction} ${marks}M`;
+                }
+              } else {
+                deltaTurnsText = `${nutAdj.direction} ${turns.toFixed(1)}T`;
               }
-              const dir = diffHn > 0 ? 'UP' : 'DOWN';
-              if (fullTurns > 0 && marks > 0) {
-                deltaTurnsText = `${dir} ${fullTurns}T ${marks}M`;
-              } else if (fullTurns > 0) {
-                deltaTurnsText = `${dir} ${fullTurns}T`;
-              } else if (marks > 0) {
-                deltaTurnsText = `${dir} ${marks}M`;
-              }
-            } else {
-              deltaTurnsText = `${diffHn > 0 ? 'UP' : 'DOWN'} ${turns.toFixed(1)}T`;
             }
           }
         }
@@ -131,64 +136,56 @@ const StepCard = React.memo(function StepCard({
       headerStyle={{ minHeight: 'var(--step-card-height, 6.75rem)' }}
       header={
         <>
-          {/* Full-Width Top Strip: Hardware Overrides */}
-          {(showAdvancedStepOverrides || r.step?.machineId || r.step?.usbId) && (
-            <div className="flex items-center gap-1.5 flex-wrap w-full mb-3">
-              {(showAdvancedStepOverrides || r.step?.machineId) && effectiveMachine && (
-                <Tag 
-                  intent={isMachineChanged ? 'warning' : 'default'} 
-                  appearance={isMachineChanged ? 'solid' : 'ghost'} bold
-                  badge={isMachineChanged ? 'OVERRIDE' : undefined}
-                  badgeIntent="warning"
-                  uppercase={false}
-                  className="shrink-0"
-                >
-                  {effectiveMachine.name}
-                </Tag>
-              )}
-              {(showAdvancedStepOverrides || r.step?.usbId) && effectiveUsb && (
-                <Tag 
-                  intent={isUsbChanged ? 'warning' : 'default'} 
-                  appearance={isUsbChanged ? 'solid' : 'ghost'}
-                  badge={isUsbChanged ? 'OVERRIDE' : undefined}
-                  badgeIntent="warning"
-                  uppercase={false}
-                  className="shrink-0"
-                >
-                  {effectiveUsb.name}
-                </Tag>
-              )}
-            </div>
-          )}
+          {/* Top Row: Identity (Step Number, Wheel Name, Grit) */}
+          <div className="flex items-center gap-2 min-w-0 w-full mb-1.5">
+            {r.step && (
+              <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center text-[10px] font-bold tabular-nums text-white border border-black/60 shadow-inner shrink-0">
+                {index + 1}
+              </div>
+            )}
+            <span className={`text-base font-semibold tracking-wide truncate transition-colors ${isExpanded ? 'text-amber-400' : 'text-white'}`}>
+              {r.wheel.name}
+            </span>
+            {r.wheel.grit && (
+              <Tag intent="default" appearance="outline" className="shrink-0 border-white/20 text-white/70">
+                {r.wheel.grit.startsWith('#') ? r.wheel.grit : `#${r.wheel.grit}`}
+              </Tag>
+            )}
+          </div>
 
           {/* Main Content Row */}
-          <div className="flex items-stretch justify-between w-full">
-            {/* Left Column: Identity, Setup & Hardware */}
-            <div className="flex flex-col justify-between flex-1 min-w-0 pr-3 sm:pr-3.5 gap-1.5">
-              {/* Line 1: Step Number + Wheel Name + Grit/Honing chip */}
-              <div className="flex items-center gap-2 min-w-0">
-                {r.step && (
-                  <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center text-[10px] font-bold tabular-nums text-white border border-black/60 shadow-inner shrink-0">
-                    {index + 1}
-                  </div>
-                )}
-                <span className={`text-base font-semibold tracking-wide truncate transition-colors ${isExpanded ? 'text-amber-400' : 'text-white'}`}>
-                  {r.wheel.name}
-                </span>
-                {r.wheel.grit && (
-                  <Tag intent="default" appearance="outline" className="shrink-0 border-white/20 text-white/70">
-                    {r.wheel.grit.startsWith('#') ? r.wheel.grit : `#${r.wheel.grit}`}
-                  </Tag>
-                )}
-                {r.wheel.isHoning && (
-                  <Tag intent="accent" appearance="ghost" className="shrink-0">
-                    Honing
-                  </Tag>
-                )}
-              </div>
+          <div className="flex items-end justify-between w-full mt-2">
+            {/* Left Column: Stacked Hardware Tags + Angle Properties */}
+            <div className="flex flex-col items-start gap-1.5 flex-1 min-w-0 pr-3 sm:pr-3.5 pb-0.5">
+              
+              {/* Hardware Tags */}
+              {(showMachineOverrides || showUsbOverrides || r.step?.machineId || r.step?.usbId) && (
+                <div className="flex items-center gap-1.5 flex-wrap w-full">
+                  {(showMachineOverrides || r.step?.machineId) && effectiveMachine && (
+                    <Tag 
+                      intent={isMachineChanged ? 'warning' : 'default'} 
+                      appearance={isMachineChanged ? 'solid' : 'ghost'} bold
+                      uppercase={false}
+                      className="shrink-0"
+                    >
+                      {effectiveMachine.name}
+                    </Tag>
+                  )}
+                  {(showUsbOverrides || r.step?.usbId) && effectiveUsb && (
+                    <Tag 
+                      intent={isUsbChanged ? 'warning' : 'default'} 
+                      appearance={isUsbChanged ? 'solid' : 'ghost'}
+                      uppercase={false}
+                      className="shrink-0"
+                    >
+                      {effectiveUsb.name}
+                    </Tag>
+                  )}
+                </div>
+              )}
 
-              {/* Line 2: Angle Offset, Direction, Angle/Base, and Diameter */}
-              <div className="flex items-center gap-2 flex-wrap">
+              {/* Angle and Diameter */}
+              <div className="flex items-center gap-2 flex-wrap w-full">
                 {hasOffset && (
                   <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 shadow-sm ${angleOffset > 0 ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'bg-danger/20 text-danger border border-danger/20'}`}>
                     {angleOffset > 0 ? '+' : ''}{angleOffset.toFixed(1)}°
@@ -214,7 +211,7 @@ const StepCard = React.memo(function StepCard({
               </div>
             </div>
 
-            {/* Right Column: Dedicated Output Gauge Pillar */}
+            {/* Right Column: Output Gauge Pillar */}
             <div className="flex flex-col items-end justify-center shrink-0 pl-3 sm:pl-3.5 relative z-10 min-w-[88px] sm:min-w-[104px]">
               <span className="text-2xl sm:text-3xl font-bold text-amber-400 tracking-tight amber-glow tabular-nums leading-none">
                 {isProjectionMode ? (
@@ -233,10 +230,7 @@ const StepCard = React.memo(function StepCard({
               {(deltaTurnsText || deltaText) && (
                 <div className="flex flex-col items-end mt-1.5">
                   {deltaTurnsText ? (
-                     <div className="flex flex-col items-end gap-1">
-                        <Tag intent="warning" appearance="concave" numeric>{deltaTurnsText}</Tag>
-                        <span className="text-[10px] text-white/30 font-bold uppercase tracking-wide">{deltaText}</span>
-                     </div>
+                    <Tag intent="warning" appearance="concave" numeric>{deltaTurnsText}</Tag>
                   ) : deltaText ? (
                     <span className="text-[10px] text-amber-400 uppercase tracking-wide font-bold">
                       {deltaText}
@@ -304,34 +298,38 @@ const StepCard = React.memo(function StepCard({
               </div>
 
               {/* Advanced Step Overrides */}
-              {showAdvancedStepOverrides && (
+              {(showMachineOverrides || showUsbOverrides) && (
                 <div className="flex items-center gap-4 pt-1">
-                  <div className="flex-1 flex flex-col gap-2 w-full">
-                    <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Machine Override</label>
-                    <button 
-                      className="flex items-center justify-between w-full p-3 neu-button rounded-2xl text-[11px] font-semibold text-white/80 transition active:scale-[0.98]"
-                      onClick={() => setSheetConfig({ type: 'machine', stepId })}
-                    >
-                      <span className="truncate">
-                        {r.step?.machineId ? <span className="text-amber-400">Override: </span> : <span className="text-white/40">Inherit: </span>}
-                        {effectiveMachine?.name || 'Default Machine'}
-                      </span>
-                      <span className="text-white/30 ml-2">▼</span>
-                    </button>
-                  </div>
-                  <div className="flex-1 flex flex-col gap-2 w-full">
-                    <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Support Bar</label>
-                    <button 
-                      className="flex items-center justify-between w-full p-3 neu-button rounded-2xl text-[11px] font-semibold text-white/80 transition active:scale-[0.98]"
-                      onClick={() => setSheetConfig({ type: 'usb', stepId })}
-                    >
-                      <span className="truncate">
-                        {r.step?.usbId ? <span className="text-amber-400">Override: </span> : <span className="text-white/40">Inherit: </span>}
-                        {effectiveUsb?.name || 'Default USB'}
-                      </span>
-                      <span className="text-white/30 ml-2">▼</span>
-                    </button>
-                  </div>
+                  {showMachineOverrides && (
+                    <div className="flex-1 flex flex-col gap-2 w-full">
+                      <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Machine Override</label>
+                      <button 
+                        className="flex items-center justify-between w-full p-3 neu-button rounded-2xl text-[11px] font-semibold text-white/80 transition active:scale-[0.98]"
+                        onClick={() => setSheetConfig({ type: 'machine', stepId })}
+                      >
+                        <span className="truncate">
+                          {r.step?.machineId ? <span className="text-amber-400">Override: </span> : <span className="text-white/40">Inherit: </span>}
+                          {effectiveMachine?.name || 'Default Machine'}
+                        </span>
+                        <span className="text-white/30 ml-2">▼</span>
+                      </button>
+                    </div>
+                  )}
+                  {showUsbOverrides && (
+                    <div className="flex-1 flex flex-col gap-2 w-full">
+                      <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">Support Bar</label>
+                      <button 
+                        className="flex items-center justify-between w-full p-3 neu-button rounded-2xl text-[11px] font-semibold text-white/80 transition active:scale-[0.98]"
+                        onClick={() => setSheetConfig({ type: 'usb', stepId })}
+                      >
+                        <span className="truncate">
+                          {r.step?.usbId ? <span className="text-amber-400">Override: </span> : <span className="text-white/40">Inherit: </span>}
+                          {effectiveUsb?.name || 'Default USB'}
+                        </span>
+                        <span className="text-white/30 ml-2">▼</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

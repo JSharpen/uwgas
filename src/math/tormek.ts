@@ -25,6 +25,7 @@ import type {
   ReadonlyProjectionOutput,
   ReadonlyCalibrationMeasurement,
   CalibrationResultOutput,
+  ReadonlyNutAdjustmentOutput,
 } from './types.ts';
 
 export function deg2rad(d: number): number {
@@ -143,6 +144,29 @@ export function computeTonHeights(input: ReadonlyTonInput): ReadonlyTonOutput {
     y,
     phiRad: phi,
     betaEffDeg,
+  });
+}
+
+/**
+ * Calculates the exact USB nut micro-adjustment turns required when transitioning between two steps.
+ * Solves the forward heights for Step A and Step B, finds the height difference (hn),
+ * and divides by the USB's thread pitch to output the exact number of nut turns.
+ * Positive distance means moving the nut UP (increasing height).
+ */
+export function computeNutAdjustment(
+  stepA: ReadonlyTonInput,
+  stepB: ReadonlyTonInput,
+  threadPitch: number
+): ReadonlyNutAdjustmentOutput {
+  const hA = computeTonHeights(stepA).hn;
+  const hB = computeTonHeights(stepB).hn;
+  const distanceMm = hB - hA;
+  const direction = distanceMm > 0 ? 'UP' : distanceMm < 0 ? 'DOWN' : 'NONE';
+  const turns = (threadPitch && threadPitch > 0) ? Math.abs(distanceMm) / threadPitch : 0;
+  return Object.freeze({
+    distanceMm,
+    turns,
+    direction
   });
 }
 

@@ -80,7 +80,8 @@ describe('State Persistence & Storage Migration Challenger Suite', () => {
         setUseCustomFrontUsb,
         setProtrusionMode,
         setProtrusion,
-        setShowAdvancedStepOverrides,
+        setShowMachineOverrides,
+        setShowUsbOverrides,
         setGlobal,
         resetGlobal,
       } = useStore.getState();
@@ -121,8 +122,11 @@ describe('State Persistence & Storage Migration Challenger Suite', () => {
       setProtrusion(32.5);
       assert.strictEqual(useStore.getState().global.protrusion, 32.5);
 
-      setShowAdvancedStepOverrides(true);
-      assert.strictEqual(useStore.getState().global.showAdvancedStepOverrides, true);
+      setShowMachineOverrides(true);
+      assert.strictEqual(useStore.getState().global.showMachineOverrides, true);
+
+      setShowUsbOverrides(true);
+      assert.strictEqual(useStore.getState().global.showUsbOverrides, true);
 
       setGlobal({ targetAngle: 15.0 });
       assert.strictEqual(useStore.getState().global.targetAngle, 15.0);

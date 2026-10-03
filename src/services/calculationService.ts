@@ -173,6 +173,7 @@ export function computeWheelResults(
         unadjustedBetaDeg: null,
         requiredJigAdjustmentMm,
         requiredJigTurns,
+        tonInput: common,
       });
 
       continue;
@@ -204,6 +205,7 @@ export function computeWheelResults(
       isReachable: true,
       step,
       unadjustedBetaDeg: null,
+      tonInput: common,
     });
   }
 

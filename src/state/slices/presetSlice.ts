@@ -100,7 +100,8 @@ export const createPresetSlice: StateCreator<
       const preset = state.sessionPresets.find((p) => p.id === id);
       if (!preset) return state;
       
-      const hasComplexHardware = preset.steps.some((s) => s.machineId || s.usbId);
+      const hasMachineOverrides = preset.steps.some((s) => s.machineId);
+      const hasUsbOverrides = preset.steps.some((s) => s.usbId);
       
       const steps: SessionStep[] = preset.steps.map((s) => ({
         id: generateId(),
@@ -123,8 +124,11 @@ export const createPresetSlice: StateCreator<
       }
       
       // Independently enable advanced step overrides if the preset relies on them
-      if (hasComplexHardware && !state.global.showAdvancedStepOverrides) {
-        nextGlobal = { ...nextGlobal, showAdvancedStepOverrides: true };
+      if (hasMachineOverrides && !state.global.showMachineOverrides) {
+        nextGlobal = { ...nextGlobal, showMachineOverrides: true };
+      }
+      if (hasUsbOverrides && !state.global.showUsbOverrides) {
+        nextGlobal = { ...nextGlobal, showUsbOverrides: true };
       }
       
       // Apply angle from context if available
