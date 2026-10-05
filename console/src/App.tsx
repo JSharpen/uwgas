@@ -5,6 +5,7 @@ import { getGitStatus, getServerStatus, getLanIp } from './utils/system.js';
 import { startServer, stopServer, readLogs } from './utils/serverManager.js';
 import { detectCommitInfo, executeCommitAndPush, CommitInfo } from './utils/gitWorkflow.js';
 import { promoteAndDeploy, mergeFeatureToDev, DeployStep } from './utils/deployWorkflow.js';
+import QRCode from './components/QRCode.js';
 
 // Handle ESM import for ink-select-input
 const SelectInput = (SelectInputImport as any).default || SelectInputImport;
@@ -283,29 +284,41 @@ export default function App() {
                 <Box marginY={1}>
                     <Text color="cyan">{"-".repeat(70)}</Text>
                 </Box>
+                
                 <Box>
-                    <Text bold>Server: </Text>
-                    {serverStatus.isRunning ? (
-                        <Text bold color="green">● RUNNING <Text dimColor>(PID: {serverStatus.pid} | Port: {serverStatus.port})</Text></Text>
-                    ) : (
-                        <Text color="red">○ STOPPED <Text dimColor>(Port: {serverStatus.port})</Text></Text>
-                    )}
-                </Box>
-                <Box>
-                    <Text bold>URLs:   </Text>
-                    {serverStatus.isRunning ? (
-                        <Text color="cyan">http://localhost:{serverStatus.port} <Text dimColor>| LAN:</Text> <Text color="blue">http://{lanIp}:{serverStatus.port}</Text></Text>
-                    ) : (
-                        <Text dimColor>http://localhost:{serverStatus.port} (offline)</Text>
-                    )}
-                </Box>
-                <Box marginTop={1}>
-                    <Text bold>Git:    </Text>
-                    <Text color="magenta" bold>{gitStatus.branch}  </Text>
-                    {gitStatus.isDirty ? (
-                        <Text color="yellow">[{gitStatus.status}]</Text>
-                    ) : (
-                        <Text color="green">[Clean]</Text>
+                    <Box flexDirection="column" flexGrow={1}>
+                        <Box>
+                            <Text bold>Server: </Text>
+                            {serverStatus.isRunning ? (
+                                <Text bold color="green">● RUNNING <Text dimColor>(PID: {serverStatus.pid} | Port: {serverStatus.port})</Text></Text>
+                            ) : (
+                                <Text color="red">○ STOPPED <Text dimColor>(Port: {serverStatus.port})</Text></Text>
+                            )}
+                        </Box>
+                        <Box>
+                            <Text bold>URLs:   </Text>
+                            {serverStatus.isRunning ? (
+                                <Text color="cyan">http://localhost:{serverStatus.port} <Text dimColor>| LAN:</Text> <Text color="blue">http://{lanIp}:{serverStatus.port}</Text></Text>
+                            ) : (
+                                <Text dimColor>http://localhost:{serverStatus.port} (offline)</Text>
+                            )}
+                        </Box>
+                        <Box marginTop={1}>
+                            <Text bold>Git:    </Text>
+                            <Text color="magenta" bold>{gitStatus.branch}  </Text>
+                            {gitStatus.isDirty ? (
+                                <Text color="yellow">[{gitStatus.status}]</Text>
+                            ) : (
+                                <Text color="green">[Clean]</Text>
+                            )}
+                        </Box>
+                    </Box>
+                    
+                    {serverStatus.isRunning && (
+                        <Box borderStyle="round" borderColor="blue" paddingX={1} flexDirection="column" alignItems="center">
+                            <Text color="cyan" bold>Scan LAN</Text>
+                            <QRCode url={`http://${lanIp}:${serverStatus.port}`} />
+                        </Box>
                     )}
                 </Box>
             </Box>
