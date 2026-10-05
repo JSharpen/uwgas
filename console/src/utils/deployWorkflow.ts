@@ -87,3 +87,61 @@ export async function promoteAndDeploy(
         return false;
     }
 }
+
+export async function mergeFeatureToDev(
+    featureBranch: string,
+    onProgress: (steps: DeployStep[]) => void
+) {
+    const steps: DeployStep[] = [
+        { status: 'pending', message: 'Verify clean working tree' },
+        { status: 'pending', message: 'Checkout dev & pull' },
+        { status: 'pending', message: `Merge ${featureBranch} into dev` },
+        { status: 'pending', message: 'Push dev' },
+        { status: 'pending', message: `Delete ${featureBranch} branch` },
+    ];
+    
+    const update = (idx: number, status: DeployStep['status']) => {
+        steps[idx].status = status;
+        onProgress([...steps]);
+    };
+
+    try {
+        // Step 0: Verify clean tree
+        update(0, 'running');
+        const { stdout: rawStatus } = await execAsync('git status --porcelain', { cwd: ROOT_DIR });
+        if (rawStatus.trim().length > 0) {
+            update(0, 'error');
+            return false;
+        }
+        update(0, 'success');
+
+        // Step 1: Checkout dev & pull
+        update(1, 'running');
+        await execAsync('git checkout dev', { cwd: ROOT_DIR });
+        await execAsync('git pull origin dev || true', { cwd: ROOT_DIR });
+        update(1, 'success');
+
+        // Step 2: Merge feature branch
+        update(2, 'running');
+        await execAsync(`git merge ${featureBranch}`, { cwd: ROOT_DIR });
+        update(2, 'success');
+
+        // Step 3: Push dev
+        update(3, 'running');
+        await execAsync('git push origin dev', { cwd: ROOT_DIR });
+        update(3, 'success');
+
+        // Step 4: Delete feature branch
+        update(4, 'running');
+        await execAsync(`git branch -d ${featureBranch}`, { cwd: ROOT_DIR });
+        // Optionally delete remote branch if it exists, ignoring errors
+        await execAsync(`git push origin --delete ${featureBranch} || true`, { cwd: ROOT_DIR });
+        update(4, 'success');
+
+        return true;
+    } catch (e) {
+        const activeIdx = steps.findIndex(s => s.status === 'running');
+        if (activeIdx !== -1) update(activeIdx, 'error');
+        return false;
+    }
+}

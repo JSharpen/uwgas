@@ -4,7 +4,7 @@ import SelectInputImport from 'ink-select-input';
 import { getGitStatus, getServerStatus, getLanIp } from './utils/system.js';
 import { startServer, stopServer, readLogs } from './utils/serverManager.js';
 import { detectCommitInfo, executeCommitAndPush, CommitInfo } from './utils/gitWorkflow.js';
-import { promoteAndDeploy, DeployStep } from './utils/deployWorkflow.js';
+import { promoteAndDeploy, mergeFeatureToDev, DeployStep } from './utils/deployWorkflow.js';
 
 // Handle ESM import for ink-select-input
 const SelectInput = (SelectInputImport as any).default || SelectInputImport;
@@ -15,7 +15,7 @@ export default function App() {
     const [serverStatus, setServerStatus] = useState({ isRunning: false, pid: '', port: 5173 });
     const [lanIp, setLanIp] = useState('...');
     
-    const [view, setView] = useState<'menu' | 'logs' | 'commit' | 'deploy'>('menu');
+    const [view, setView] = useState<'menu' | 'logs' | 'commit' | 'deploy' | 'merge'>('menu');
     const [logs, setLogs] = useState<string>('');
     const [commitInfo, setCommitInfo] = useState<CommitInfo | null>(null);
     const [commitStatus, setCommitStatus] = useState<'loading' | 'confirm' | 'pushing' | 'done' | 'error'>('loading');
@@ -76,6 +76,22 @@ export default function App() {
                 setView('menu');
             }
         }
+        
+        if (view === 'merge' && deployStatus === 'confirm') {
+            if (input.toLowerCase() === 'y' || key.return) {
+                setDeployStatus('running');
+                await mergeFeatureToDev(gitStatus.branch, setDeploySteps);
+                setDeployStatus('done');
+            } else if (input.toLowerCase() === 'n' || key.escape) {
+                setView('menu');
+            }
+        }
+        
+        if (view === 'merge' && deployStatus === 'done') {
+            if (key.return || key.escape) {
+                setView('menu');
+            }
+        }
     });
 
     const handleSelect = async (item: any) => {
@@ -104,17 +120,75 @@ export default function App() {
                 setDeployStatus('confirm');
                 setDeploySteps([]);
             }
+        } else if (item.value === 'merge') {
+            if (!gitStatus.isDirty) {
+                setView('merge');
+                setDeployStatus('confirm');
+                setDeploySteps([]);
+            }
         }
     };
+
+    const isFeatureBranch = gitStatus.branch !== 'dev' && gitStatus.branch !== 'main' && gitStatus.branch !== '...';
 
     const items = [
         { label: '🚀 Start Dev Server', value: 'start_server' },
         { label: '🛑 Stop Dev Server', value: 'stop_server' },
         { label: '🪵 View Server Logs', value: 'logs' },
         { label: `💾 Commit & Push (${gitStatus.branch})${gitStatus.isDirty ? '' : ' [Disabled: Clean]'}`, value: 'commit' },
-        { label: `🚢 Promote dev -> main${gitStatus.isDirty ? ' [Disabled: Dirty]' : ''}`, value: 'promote' },
-        { label: '❌ Exit Console', value: 'exit' },
     ];
+    
+    if (isFeatureBranch) {
+        items.push({ label: `🔀 Merge ${gitStatus.branch} -> dev${gitStatus.isDirty ? ' [Disabled: Dirty]' : ''}`, value: 'merge' });
+    } else {
+        items.push({ label: `🚢 Promote dev -> main${gitStatus.isDirty ? ' [Disabled: Dirty]' : ''}`, value: 'promote' });
+    }
+    
+    items.push({ label: '❌ Exit Console', value: 'exit' });
+
+    const renderSteps = () => (
+        <Box flexDirection="column">
+            {deploySteps.map((step, i) => {
+                let icon = '○'; let color = 'gray';
+                if (step.status === 'running') { icon = '●'; color = 'cyan'; }
+                else if (step.status === 'success') { icon = '✓'; color = 'green'; }
+                else if (step.status === 'error') { icon = '✗'; color = 'red'; }
+                
+                return (
+                    <Box key={i}>
+                        <Text color={color}>{icon} {step.message}</Text>
+                    </Box>
+                );
+            })}
+        </Box>
+    );
+
+    if (view === 'merge') {
+        return (
+            <Box flexDirection="column" padding={1}>
+                <Box borderStyle="bold" borderColor="magenta" paddingX={2} flexDirection="column">
+                    <Text bold color="magenta">Merge Feature Branch Protocol</Text>
+                </Box>
+                <Box marginY={1} paddingX={1} flexDirection="column">
+                    {deployStatus === 'confirm' && (
+                        <Box flexDirection="column">
+                            <Text>This will checkout 'dev', merge '{gitStatus.branch}',</Text>
+                            <Text>push the result, and delete your feature branch locally and remotely.</Text>
+                            <Box marginTop={1}>
+                                <Text bold color="yellow">Proceed with merge? [Y/n]: </Text>
+                            </Box>
+                        </Box>
+                    )}
+                    {deployStatus !== 'confirm' && renderSteps()}
+                    {deployStatus === 'done' && (
+                        <Box marginTop={2}>
+                            <Text dimColor>(Press Enter to return)</Text>
+                        </Box>
+                    )}
+                </Box>
+            </Box>
+        );
+    }
 
     if (view === 'deploy') {
         return (
@@ -132,22 +206,7 @@ export default function App() {
                             </Box>
                         </Box>
                     )}
-                    {deployStatus !== 'confirm' && (
-                        <Box flexDirection="column">
-                            {deploySteps.map((step, i) => {
-                                let icon = '○'; let color = 'gray';
-                                if (step.status === 'running') { icon = '●'; color = 'cyan'; }
-                                else if (step.status === 'success') { icon = '✓'; color = 'green'; }
-                                else if (step.status === 'error') { icon = '✗'; color = 'red'; }
-                                
-                                return (
-                                    <Box key={i}>
-                                        <Text color={color}>{icon} {step.message}</Text>
-                                    </Box>
-                                );
-                            })}
-                        </Box>
-                    )}
+                    {deployStatus !== 'confirm' && renderSteps()}
                     {deployStatus === 'done' && (
                         <Box marginTop={2}>
                             <Text dimColor>(Press Enter to return)</Text>
