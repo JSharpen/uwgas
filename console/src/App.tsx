@@ -285,7 +285,8 @@ export default function App() {
                     <Text color="cyan">{"-".repeat(70)}</Text>
                 </Box>
                 
-                <Box>
+
+                <Box flexDirection="row">
                     <Box flexDirection="column" flexGrow={1}>
                         <Box>
                             <Text bold>Server: </Text>
@@ -312,19 +313,19 @@ export default function App() {
                                 <Text color="green">[Clean]</Text>
                             )}
                         </Box>
+                        
+                        <Box marginTop={2}>
+                            <SelectInput items={items} onSelect={handleSelect} />
+                        </Box>
                     </Box>
                     
                     {serverStatus.isRunning && (
-                        <Box borderStyle="round" borderColor="blue" paddingX={1} flexDirection="column" alignItems="center">
+                        <Box borderStyle="round" borderColor="blue" paddingX={1} flexDirection="column" alignItems="center" flexShrink={0} marginLeft={2}>
                             <Text color="cyan" bold>Scan LAN</Text>
                             <QRCode url={`http://${lanIp}:${serverStatus.port}`} />
                         </Box>
                     )}
                 </Box>
-            </Box>
-
-            <Box marginTop={1} marginLeft={2}>
-                <SelectInput items={items} onSelect={handleSelect} />
             </Box>
         </Box>
     );

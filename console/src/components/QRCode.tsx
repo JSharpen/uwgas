@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text } from 'ink';
+import { Text, Box } from 'ink';
 import qrcode from 'qrcode';
 
 export default function QRCode({ url }: { url: string }) {
