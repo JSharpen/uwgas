@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, Box } from 'ink';
+import { Text } from 'ink';
 import qrcode from 'qrcode';
 
 export default function QRCode({ url }: { url: string }) {
@@ -7,6 +7,7 @@ export default function QRCode({ url }: { url: string }) {
 
     useEffect(() => {
         if (!url) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setQrCodeStr('');
             return;
         }

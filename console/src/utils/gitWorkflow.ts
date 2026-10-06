@@ -164,7 +164,7 @@ export async function executeCommitAndPush(info: CommitInfo, branch: string) {
         
         await execAsync(`git push origin ${branch}`, { cwd: ROOT_DIR });
         return true;
-    } catch (e) {
+    } catch {
         return false;
     }
 }

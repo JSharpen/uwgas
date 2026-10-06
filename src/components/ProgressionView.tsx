@@ -153,62 +153,51 @@ const StepCard = React.memo(function StepCard({
             )}
           </div>
 
+          {/* Subheading Row: Micro-text Hardware Overrides */}
+          {(showMachineOverrides || showUsbOverrides || r.step?.machineId || r.step?.usbId) && (
+            <div className="flex items-center gap-1.5 w-full mb-1.5 -mt-1">
+              {(showMachineOverrides || r.step?.machineId) && effectiveMachine && (
+                <span className={`text-[9.5px] uppercase font-bold tracking-widest ${isMachineChanged ? 'text-amber-400' : 'text-white/40'}`}>
+                  {effectiveMachine.name}
+                </span>
+              )}
+              {(showMachineOverrides || r.step?.machineId) && effectiveMachine && (showUsbOverrides || r.step?.usbId) && effectiveUsb && (
+                <span className="text-[9px] text-white/20">•</span>
+              )}
+              {(showUsbOverrides || r.step?.usbId) && effectiveUsb && (
+                <span className={`text-[9.5px] uppercase font-bold tracking-widest ${isUsbChanged ? 'text-amber-400' : 'text-white/40'}`}>
+                  {effectiveUsb.name}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Main Content Row */}
-          <div className="flex items-end justify-between w-full mt-2">
-            {/* Left Column: Stacked Hardware Tags + Angle Properties */}
-            <div className="flex flex-col items-start gap-1.5 flex-1 min-w-0 pr-3 sm:pr-3.5 pb-0.5">
-              
-              {/* Hardware Tags */}
-              {(showMachineOverrides || showUsbOverrides || r.step?.machineId || r.step?.usbId) && (
-                <div className="flex items-center gap-1.5 flex-wrap w-full">
-                  {(showMachineOverrides || r.step?.machineId) && effectiveMachine && (
-                    <Tag 
-                      intent={isMachineChanged ? 'warning' : 'default'} 
-                      appearance={isMachineChanged ? 'solid' : 'ghost'} bold
-                      uppercase={false}
-                      className="shrink-0"
-                    >
-                      {effectiveMachine.name}
-                    </Tag>
-                  )}
-                  {(showUsbOverrides || r.step?.usbId) && effectiveUsb && (
-                    <Tag 
-                      intent={isUsbChanged ? 'warning' : 'default'} 
-                      appearance={isUsbChanged ? 'solid' : 'ghost'}
-                      uppercase={false}
-                      className="shrink-0"
-                    >
-                      {effectiveUsb.name}
-                    </Tag>
-                  )}
+          <div className="flex items-end justify-between w-full mt-auto">
+            {/* Left Column: Angle Properties */}
+            <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0 pr-3 sm:pr-3.5 pb-0.5">
+              {hasOffset && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 shadow-sm ${angleOffset > 0 ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'bg-danger/20 text-danger border border-danger/20'}`}>
+                  {angleOffset > 0 ? '+' : ''}{angleOffset.toFixed(1)}°
+                </span>
+              )}
+              {r.step && (
+                <div className="flex items-center shrink-0 ml-0.5" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
+                  {r.step.base === 'rear' ? <IconEdgeLeading className="w-3.5 h-3.5 text-[var(--color-accent)] opacity-80" /> : <IconEdgeTrailing className="w-3.5 h-3.5 text-sky-400 opacity-80" />}
                 </div>
               )}
-
-              {/* Angle and Diameter */}
-              <div className="flex items-center gap-2 flex-wrap w-full">
-                {hasOffset && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0 shadow-sm ${angleOffset > 0 ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20' : 'bg-danger/20 text-danger border border-danger/20'}`}>
-                    {angleOffset > 0 ? '+' : ''}{angleOffset.toFixed(1)}°
-                  </span>
-                )}
-                {r.step && (
-                  <div className="flex items-center shrink-0 ml-0.5" title={r.step.base === 'rear' ? 'Edge Leading' : 'Edge Trailing'}>
-                    {r.step.base === 'rear' ? <IconEdgeLeading className="w-3.5 h-3.5 text-[var(--color-accent)] opacity-80" /> : <IconEdgeTrailing className="w-3.5 h-3.5 text-sky-400 opacity-80" />}
-                  </div>
-                )}
-                <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold truncate">
-                  {formatDeg(r.betaEffDeg)}° / {r.step?.base === 'front' ? 'FRONT' : 'REAR'}
-                </span>
-                <Tag 
-                  intent="default" 
-                  appearance="ghost"
-                  badge={countdownText}
-                  badgeIntent={isWheelOverdue(r.wheel) ? 'warning' : 'accent'}
-                  className="shrink-0"
-                >
-                  Ø {r.wheel.D}mm
-                </Tag>
-              </div>
+              <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold truncate">
+                {formatDeg(r.betaEffDeg)}° / {r.step?.base === 'front' ? 'FRONT' : 'REAR'}
+              </span>
+              <Tag 
+                intent="default" 
+                appearance="ghost"
+                badge={countdownText}
+                badgeIntent={isWheelOverdue(r.wheel) ? 'warning' : 'accent'}
+                className="shrink-0"
+              >
+                Ø {r.wheel.D}mm
+              </Tag>
             </div>
 
             {/* Right Column: Output Gauge Pillar */}

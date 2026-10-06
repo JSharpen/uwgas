@@ -80,7 +80,7 @@ export async function promoteAndDeploy(
         update(4, 'success');
 
         return true;
-    } catch (e) {
+    } catch {
         // Find running step and mark as error
         const activeIdx = steps.findIndex(s => s.status === 'running');
         if (activeIdx !== -1) update(activeIdx, 'error');
@@ -139,7 +139,7 @@ export async function mergeFeatureToDev(
         update(4, 'success');
 
         return true;
-    } catch (e) {
+    } catch {
         const activeIdx = steps.findIndex(s => s.status === 'running');
         if (activeIdx !== -1) update(activeIdx, 'error');
         return false;

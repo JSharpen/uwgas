@@ -8,6 +8,7 @@ import { promoteAndDeploy, mergeFeatureToDev, DeployStep } from './utils/deployW
 import QRCode from './components/QRCode.js';
 
 // Handle ESM import for ink-select-input
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SelectInput = (SelectInputImport as any).default || SelectInputImport;
 
 export default function App() {
@@ -95,7 +96,7 @@ export default function App() {
         }
     });
 
-    const handleSelect = async (item: any) => {
+    const handleSelect = async (item: { label: string; value: string }) => {
         if (item.value === 'exit') {
             exit();
         } else if (item.value === 'start_server') {

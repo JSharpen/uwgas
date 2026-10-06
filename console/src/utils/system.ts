@@ -18,7 +18,7 @@ export async function getGitStatus() {
             isDirty: changes > 0,
             status: changes > 0 ? `Modified (${changes} changes)` : 'Clean'
         };
-    } catch (e) {
+    } catch {
         return { branch: '[No Git]', isDirty: false, status: 'N/A' };
     }
 }
@@ -31,7 +31,7 @@ export async function getServerStatus(port: number = 5173) {
             return { isRunning: true, pid, port };
         }
         return { isRunning: false, pid: '', port };
-    } catch (e) {
+    } catch {
         return { isRunning: false, pid: '', port };
     }
 }
@@ -45,7 +45,7 @@ export async function getLanIp() {
         const { stdout: hostOut } = await execAsync(`hostname -I | awk '{print $1}' || true`);
         const hostIp = hostOut.trim();
         return hostIp || '127.0.0.1';
-    } catch (e) {
+    } catch {
         return '127.0.0.1';
     }
 }

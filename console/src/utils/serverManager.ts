@@ -47,7 +47,7 @@ export async function stopServer(port: number = 5173) {
             fs.unlinkSync(PID_FILE);
         }
         return true;
-    } catch (e) {
+    } catch {
         return false;
     }
 }
@@ -57,7 +57,7 @@ export async function readLogs(lines: number = 40): Promise<string> {
         if (!fs.existsSync(DEV_LOG)) return 'No logs available.';
         const { stdout } = await execAsync(`tail -n ${lines} ${DEV_LOG}`);
         return stdout;
-    } catch (e) {
+    } catch {
         return 'Error reading logs.';
     }
 }
