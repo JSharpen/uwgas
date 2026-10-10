@@ -48,8 +48,8 @@ export const createPresetSlice: StateCreator<
         contextObj.targetAngle = state.global.targetAngle;
         hasContext = true;
       }
-      if (saveMachine && state.global.activeMachineId) {
-        contextObj.machineId = state.global.activeMachineId;
+      if (saveMachine && state.defaultMachineId) {
+        contextObj.machineId = state.defaultMachineId;
         hasContext = true;
       }
       if (saveUsb && state.global.activeUsbId) {
@@ -115,11 +115,10 @@ export const createPresetSlice: StateCreator<
       let nextGlobal = state.global;
       
       // Apply hardware from context if available
-      if (preset.context?.machineId || preset.context?.usbId) {
+      if (preset.context?.usbId) {
         nextGlobal = {
           ...nextGlobal,
-          activeMachineId: preset.context.machineId ?? nextGlobal.activeMachineId,
-          activeUsbId: preset.context.usbId ?? nextGlobal.activeUsbId,
+          activeUsbId: preset.context.usbId,
         };
       }
       
@@ -141,7 +140,8 @@ export const createPresetSlice: StateCreator<
       
       return { 
         sessionSteps: steps,
-        global: nextGlobal
+        global: nextGlobal,
+        ...(preset.context?.machineId ? { defaultMachineId: preset.context.machineId } : {})
       };
     }),
 });

@@ -11,6 +11,7 @@ export function PresetMenuPopover() {
   const machines = useStore(useShallow(s => s.machines));
   const usbs = useStore(useShallow(s => s.usbs));
   const global = useStore(useShallow(s => s.global));
+  const defaultMachineId = useStore(s => s.defaultMachineId);
   const selectedPresetId = useUIStore(s => s.selectedPresetId);
   const setSelectedPresetId = useUIStore(s => s.setSelectedPresetId);
   
@@ -96,7 +97,7 @@ export function PresetMenuPopover() {
             
             if (needsMachineFallback) {
               if (p.context?.machineId) machineIds.add(p.context.machineId);
-              else machineIds.add(global.activeMachineId || machines[0]?.id || '');
+              else machineIds.add(defaultMachineId || machines[0]?.id || '');
             }
             
             if (needsUsbFallback) {

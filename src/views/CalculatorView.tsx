@@ -5,7 +5,7 @@ import { EmptyProgressionState } from '../components/calculator/EmptyProgression
 import { useProgressionState, useStore } from '../state/store';
 import { useUIStore } from '../state/uiStore';
 import { ContextBar } from '../components/layout/ContextBar';
-import { ModalSelector } from '../components/ui/ModalSelector';
+import { ModalSelector, ModalShell, Button } from '../components/ui';
 import { useShallow } from 'zustand/react/shallow';
 
 export default function CalculatorView() {
@@ -22,6 +22,16 @@ export default function CalculatorView() {
   const [isAddStepPickerOpen, setAddStepPickerOpen] = React.useState(false);
 
   const { sessionSteps, addStep, clearSessionSteps } = useProgressionState();
+  const globalState = useStore(s => s.global);
+
+  const hasDormantOverrides = React.useMemo(() => {
+    return sessionSteps.some(step => 
+      (step.machineId && !globalState.showMachineOverrides) || 
+      (step.usbId && !globalState.showUsbOverrides)
+    );
+  }, [sessionSteps, globalState.showMachineOverrides, globalState.showUsbOverrides]);
+
+  const [isDormantModalOpen, setDormantModalOpen] = React.useState(false);
 
   // Collapse open steps when setup panel opens
   React.useEffect(() => {
@@ -167,12 +177,21 @@ export default function CalculatorView() {
             </ContextBar.Slot>
             
             <ContextBar.Slot name="center">
-              <ContextBar.DropdownTitle 
-                title={presetName}
-                isOpen={isPresetMenuOpen}
-                isPrimary={!!activePreset}
-                onClick={() => setPresetMenuOpen(!isPresetMenuOpen)}
-              />
+              <div className="flex items-center gap-2">
+                <ContextBar.DropdownTitle 
+                  title={presetName}
+                  isOpen={isPresetMenuOpen}
+                  isPrimary={!!activePreset}
+                  onClick={() => setPresetMenuOpen(!isPresetMenuOpen)}
+                />
+                {hasDormantOverrides && (
+                  <button 
+                    onClick={() => setDormantModalOpen(true)}
+                    className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)] shrink-0 transition-transform active:scale-90 cursor-pointer -ml-0.5"
+                    aria-label="Hardware overrides dormant"
+                  />
+                )}
+              </div>
             </ContextBar.Slot>
 
             <ContextBar.Slot name="right">
@@ -233,6 +252,48 @@ export default function CalculatorView() {
               </ModalSelector.Item>
             ))}
       </ModalSelector>
+
+      {isDormantModalOpen && (
+        <ModalShell
+          title="Dormant Overrides Detected"
+          subtitle="This progression contains step-level hardware overrides, but manual controls are currently disabled in settings."
+          onClose={() => setDormantModalOpen(false)}
+        >
+          <div className="flex flex-col gap-3 mt-1">
+            <Button
+              variant="solid"
+              intent="accent"
+              fluid
+              onClick={() => {
+                useStore.getState().setGlobal({ showMachineOverrides: true, showUsbOverrides: true });
+                setDormantModalOpen(false);
+              }}
+            >
+              Enable Controls
+            </Button>
+            <Button
+              variant="neu"
+              fluid
+              onClick={() => {
+                const steps = useStore.getState().sessionSteps;
+                steps.forEach(s => {
+                  useStore.getState().updateStep(s.id, { machineId: undefined, usbId: undefined });
+                });
+                setDormantModalOpen(false);
+              }}
+            >
+              Clear Overrides
+            </Button>
+            <Button
+              variant="ghost"
+              fluid
+              onClick={() => setDormantModalOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </ModalShell>
+      )}
     </>
   );
 }

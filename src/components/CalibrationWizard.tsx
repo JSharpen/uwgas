@@ -14,6 +14,7 @@ import { calculateOptimalMeasurementTargets, calculateNextOptimalTarget, solveWi
 import { estimateMaxAngleErrorDeg } from '../services/calculationService';
 import { ContextBar } from './layout/ContextBar';
 import { Tag } from './ui/Tag';
+import { TextInput, NumberInput } from './ui';
 
 type CalibrationWizardProps = {
   activeMachine: MachineConfig;
@@ -513,21 +514,15 @@ export default function CalibrationWizard({
           </div>
 
           {/* Profile Name Field */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold pl-1">
-              Calibration Profile Name
-            </label>
-            <input
-              type="text"
-              className="h-12 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-[var(--ui-radius-core)] px-4 text-base font-semibold text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-400/20 transition w-full"
-              value={calibName}
-              onChange={e => {
-                setCalibName(e.target.value);
-                if (validationError) setValidationError(null);
-              }}
-              placeholder="e.g. Workshop Precision Mapping 2026"
-            />
-          </div>
+          <TextInput
+            label="Calibration Profile Name"
+            value={calibName}
+            onChange={e => {
+              setCalibName(e.target.value);
+              if (validationError) setValidationError(null);
+            }}
+            placeholder="e.g. Workshop Precision Mapping 2026"
+          />
 
           {/* USB Selector */}
           <div className="flex flex-col gap-1.5">
@@ -688,44 +683,22 @@ export default function CalibrationWizard({
                   </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
-                      hₙ (Datum)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="h-10 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-amber-400/20 transition w-full"
-                        placeholder="mm"
-                        value={rearRows[measIndex]?.hn}
-                        onChange={e => updateRear('hn', e.target.value)}
-                        autoFocus
-                      />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
-                        mm
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
-                      CAₒ (Axle Top)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="h-10 bg-black/30 border border-white/5 focus:border-amber-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-amber-400/20 transition w-full"
-                        placeholder="mm"
-                        value={rearRows[measIndex]?.CAo}
-                        onChange={e => updateRear('CAo', e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') window.dispatchEvent(new CustomEvent('wizard-next')); }}
-                      />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
-                        mm
-                      </span>
-                    </div>
-                  </div>
+                  <NumberInput
+                    label="hₙ (Datum) in mm"
+                    step="0.01"
+                    placeholder="mm"
+                    value={rearRows[measIndex]?.hn}
+                    onChange={e => updateRear('hn', e.target.value)}
+                    autoFocus
+                  />
+                  <NumberInput
+                    label="CAₒ (Axle Top) in mm"
+                    step="0.01"
+                    placeholder="mm"
+                    value={rearRows[measIndex]?.CAo}
+                    onChange={e => updateRear('CAo', e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') window.dispatchEvent(new CustomEvent('wizard-next')); }}
+                  />
                 </div>
               </div>
             )}
@@ -742,43 +715,21 @@ export default function CalibrationWizard({
                   </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
-                      hₙ (Datum)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="h-10 bg-black/30 border border-white/5 focus:border-blue-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-400/20 transition w-full"
-                        placeholder="mm"
-                        value={frontRows[measIndex]?.hn}
-                        onChange={e => updateFront('hn', e.target.value)}
-                      />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
-                        mm
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] text-white/50 uppercase tracking-widest font-bold pl-1 truncate">
-                      CAₒ (Axle Top)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="h-10 bg-black/30 border border-white/5 focus:border-blue-400/60 rounded-lg pl-3 pr-8 text-sm font-mono font-bold text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-blue-400/20 transition w-full"
-                        placeholder="mm"
-                        value={frontRows[measIndex]?.CAo}
-                        onChange={e => updateFront('CAo', e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') window.dispatchEvent(new CustomEvent('wizard-next')); }}
-                      />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 pointer-events-none">
-                        mm
-                      </span>
-                    </div>
-                  </div>
+                  <NumberInput
+                    label="hₙ (Datum) in mm"
+                    step="0.01"
+                    placeholder="mm"
+                    value={frontRows[measIndex]?.hn}
+                    onChange={e => updateFront('hn', e.target.value)}
+                  />
+                  <NumberInput
+                    label="CAₒ (Axle Top) in mm"
+                    step="0.01"
+                    placeholder="mm"
+                    value={frontRows[measIndex]?.CAo}
+                    onChange={e => updateFront('CAo', e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') window.dispatchEvent(new CustomEvent('wizard-next')); }}
+                  />
                 </div>
               </div>
             )}

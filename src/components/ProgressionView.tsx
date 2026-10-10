@@ -37,7 +37,6 @@ const StepCard = React.memo(function StepCard({
   const isProjectionMode = useStore((s) => s.global.calcMode === 'projection');
   const showMachineOverrides = useStore((s) => s.global.showMachineOverrides);
   const showUsbOverrides = useStore((s) => s.global.showUsbOverrides);
-  const globalMachineId = useStore((s) => s.global.activeMachineId);
   const globalUsbId = useStore((s) => s.global.activeUsbId);
   const globalJigId = useStore((s) => s.global.activeJigId);
   const defaultMachineId = useStore((s) => s.defaultMachineId);
@@ -50,7 +49,7 @@ const StepCard = React.memo(function StepCard({
   const cardRef = React.useRef<HTMLDivElement>(null);
   const formatDeg = (val: number) => val.toFixed(2).replace(/\.?0+$/, '');
 
-  const effectiveSessionMachineId = globalMachineId || defaultMachineId;
+  const effectiveSessionMachineId = defaultMachineId;
 
   const effectiveMachine = r.step?.machineId
     ? machines.find(m => m.id === r.step!.machineId)

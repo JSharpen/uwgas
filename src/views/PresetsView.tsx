@@ -3,7 +3,7 @@ import { useStore, usePresetState } from '../state/store';
 import { useUIStore } from '../state/uiStore';
 import { IconFolder } from '../icons';
 import { ContextBar } from '../components/layout/ContextBar';
-import { ExpandableCard, Tag } from '../components/ui';
+import { ExpandableCard, Tag, TextInput } from '../components/ui';
 
 export default function PresetsView() {
   const presetState = usePresetState();
@@ -11,6 +11,7 @@ export default function PresetsView() {
   const machines = useStore((s) => s.machines);
   const usbs = useStore((s) => s.usbs);
   const global = useStore((s) => s.global);
+  const defaultMachineId = useStore((s) => s.defaultMachineId);
   const renamePreset = useStore((s) => s.renamePreset);
   
   const selectedPresetId = useUIStore(s => s.selectedPresetId);
@@ -160,7 +161,7 @@ export default function PresetsView() {
             
             if (needsMachineFallback) {
               if (p.context?.machineId) machineIds.add(p.context.machineId);
-              else machineIds.add(global.activeMachineId || machines[0]?.id || '');
+              else machineIds.add(defaultMachineId || machines[0]?.id || '');
             }
             
             if (needsUsbFallback) {
@@ -194,21 +195,21 @@ export default function PresetsView() {
                 headerClassName="w-full px-5 py-4 flex flex-col justify-center items-start"
                 header={
                   <>
-                    <div className="flex items-center gap-2 w-full min-w-0 h-[22px]">
+                    <div className="flex items-center gap-2 w-full min-w-0 min-h-[22px]">
                       {isEditing ? (
-                        <input
-                          type="text"
-                          className="flex-1 h-full bg-black/40 border border-amber-400/60 rounded px-2 text-[15px] text-white font-bold focus:outline-none focus:ring-1 focus:ring-amber-400/50"
-                          value={presetRenameValue}
-                          onChange={e => setPresetRenameValue(e.target.value)}
-                          onBlur={handleCommitRename}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') handleCommitRename();
-                            if (e.key === 'Escape') handleCancelRename();
-                          }}
-                          autoFocus
-                          onClick={e => e.stopPropagation()}
-                        />
+                        <div className="flex-1 w-full" onClick={e => e.stopPropagation()}>
+                          <TextInput
+                            value={presetRenameValue}
+                            onChange={e => setPresetRenameValue(e.target.value)}
+                            onBlur={handleCommitRename}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleCommitRename();
+                              if (e.key === 'Escape') handleCancelRename();
+                            }}
+                            autoFocus
+                            className="text-[15px] !p-1 !h-8"
+                          />
+                        </div>
                       ) : (
                         <span className={`text-base font-medium tracking-wide truncate ${isActive ? 'text-amber-400' : isExpanded ? 'text-amber-400/80' : 'text-white'}`}>
                           {p.name}
@@ -221,15 +222,14 @@ export default function PresetsView() {
                       </div>
                     )}
                     
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2.5 w-full">
-                      <Tag appearance="ghost" className="mr-1">
+                    <div className="flex flex-wrap items-center gap-2 mt-2 w-full min-h-[24px]">
+                      <Tag intent="default" appearance="ghost">
                         {p.steps.length} step{p.steps.length === 1 ? '' : 's'}
                       </Tag>
                       <Tag 
-                        intent={isAngleBound ? 'success' : 'default'}
-                        appearance="outline"
+                        intent={isAngleBound ? 'accent' : 'default'}
+                        appearance="ghost"
                         mono
-                        className="max-w-[100px]"
                       >
                         {displayAngle}°
                       </Tag>
@@ -237,10 +237,8 @@ export default function PresetsView() {
                       {reqMachines.map(({ item, isBound }) => item && (
                         <Tag 
                           key={`m-${item.id}`} 
-                          intent={isBound ? 'info' : 'default'}
-                          appearance="outline"
-                          mono
-                          className="flex-1 min-w-[60px]"
+                          intent={isBound ? 'accent' : 'default'}
+                          appearance="ghost"
                         >
                           {item.name}
                         </Tag>
@@ -249,10 +247,8 @@ export default function PresetsView() {
                       {reqUsbs.map(({ item, isBound }) => item && (
                         <Tag 
                           key={`u-${item.id}`} 
-                          intent={isBound ? 'info' : 'default'}
-                          appearance="outline"
-                          mono
-                          className="flex-1 min-w-[60px]"
+                          intent={isBound ? 'accent' : 'default'}
+                          appearance="ghost"
                         >
                           {item.name}
                         </Tag>

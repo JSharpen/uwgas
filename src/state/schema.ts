@@ -152,7 +152,6 @@ export const CalcModeSchema = z.enum(['height', 'projection']);
 
 export const GlobalStateSchema = z.object({
   projection: z.number(),
-  activeMachineId: z.string().optional(),
   activeUsbId: z.string(),
   targetAngle: z.number(),
   activeJigId: z.string(),
